@@ -15,25 +15,25 @@ namespace RawRabbit.Common
 		public void AddOrUpdate(BasicDeliverEventArgs args)
 		{
 			TryAddOriginalDelivered(args, DateTime.UtcNow);
-			AddOrUpdateNumberOfRetries(args);
+			this.AddOrUpdateNumberOfRetries(args);
 		}
 
 		public void AddOrUpdate(BasicDeliverEventArgs args, RetryInformation retryInfo)
 		{
 			TryAddOriginalDelivered(args, retryInfo.OriginalDelivered);
-			AddOrUpdateNumberOfRetries(args);
+			this.AddOrUpdateNumberOfRetries(args);
 		}
 
 		private void AddOrUpdateNumberOfRetries(BasicDeliverEventArgs args)
 		{
-			var currentRetry = 0;
+			int currentRetry = 0;
 			if (args.BasicProperties.Headers.ContainsKey(RetryHeaders.NumberOfRetries))
 			{
-				var valueStr = GetHeaderString(args.BasicProperties.Headers, RetryHeaders.NumberOfRetries);
+				string valueStr = GetHeaderString(args.BasicProperties.Headers, RetryHeaders.NumberOfRetries);
 				currentRetry = int.Parse(valueStr);
 				args.BasicProperties.Headers.Remove(RetryHeaders.NumberOfRetries);
 			}
-			var nextRetry = (++currentRetry).ToString();
+			string nextRetry = (++currentRetry).ToString();
 			args.BasicProperties.Headers.Add(RetryHeaders.NumberOfRetries, nextRetry);
 		}
 
@@ -61,7 +61,7 @@ namespace RawRabbit.Common
 				return null;
 			}
 
-			var headerStr = System.Text.Encoding.UTF8.GetString(headerBytes);
+			string headerStr = System.Text.Encoding.UTF8.GetString(headerBytes);
 				return headerStr;
 		}
 	}

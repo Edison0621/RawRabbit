@@ -17,28 +17,29 @@ namespace RawRabbit.Operations.StateMachine.Core
 
 		public StateMachineActivator(IModelRepository modelRepo, IDependencyResolver resolver)
 		{
-			_modelRepo = modelRepo;
-			_resolver = resolver;
+			this._modelRepo = modelRepo;
+			this._resolver = resolver;
 		}
 
 		public async Task<StateMachineBase> ActivateAsync(Guid id, Type stateMachineType)
 		{
-			var model = await _modelRepo.GetAsync(id);
+			Model model = await this._modelRepo.GetAsync(id);
 			if (model != null)
 			{
-				var machine = _resolver.GetService(stateMachineType, model) as StateMachineBase;
+				StateMachineBase machine = this._resolver.GetService(stateMachineType, model) as StateMachineBase;
 				return machine;
 			}
-			var newMachine = _resolver.GetService(stateMachineType) as StateMachineBase;
-			var newModel = newMachine.GetDto();
+			StateMachineBase newMachine = this._resolver.GetService(stateMachineType) as StateMachineBase;
+			// ReSharper disable once PossibleNullReferenceException
+			Model newModel = newMachine.GetDto();
 			newModel.Id = id;
-			await _modelRepo.AddOrUpdateAsync(newModel);
+			await this._modelRepo.AddOrUpdateAsync(newModel);
 			return newMachine;
 		}
 		
 		public async Task PersistAsync(StateMachineBase stateMachine)
 		{
-			await _modelRepo.AddOrUpdateAsync(stateMachine.GetDto());
+			await this._modelRepo.AddOrUpdateAsync(stateMachine.GetDto());
 		}
 	}
 }

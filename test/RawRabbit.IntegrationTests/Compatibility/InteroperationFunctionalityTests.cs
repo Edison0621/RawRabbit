@@ -10,7 +10,7 @@ namespace RawRabbit.IntegrationTests.Compatibility
 		[Fact]
 		public async Task Throws_Publish_Confirm_Exception_If_Rpc_Response_Sent()
 		{
-			using (var client = RawRabbitFactory.CreateTestClient())
+			using (Instantiation.Disposable.BusClient client = RawRabbitFactory.CreateTestClient())
 			{
 				// Setup 
 				await client.RespondAsync<BasicRequest, BasicResponse>(request => Task.FromResult(new BasicResponse()));

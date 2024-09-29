@@ -1,9 +1,8 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Linq;
 using Autofac;
 using Autofac.Core;
-using Autofac.Core.Registration;
-using RawRabbit.DependencyInjection;
 
 namespace RawRabbit.DependencyInjection.Autofac
 {
@@ -18,20 +17,20 @@ namespace RawRabbit.DependencyInjection.Autofac
 
 		public ComponentContextAdapter(IComponentContext context)
 		{
-			_context = context;
+			this._context = context;
 		}
 
 		public TService GetService<TService>(params object[] additional)
 		{
-			return (TService)GetService(typeof(TService), additional);
+			return (TService)this.GetService(typeof(TService), additional);
 		}
 
 		public object GetService(Type serviceType, params object[] additional)
 		{
-			var parameters = additional
+			List<Parameter> parameters = additional
 				.Select(a => new TypedParameter(a.GetType(), a))
 				.ToList<Parameter>();
-			return _context.Resolve(serviceType, parameters);
+			return this._context.Resolve(serviceType, parameters);
 		}
 	}
 }

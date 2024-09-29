@@ -14,9 +14,9 @@ namespace RawRabbit.Operations.MessageSequence.Model
 
 		public ExecutionState()
 		{
-			Skipped = new List<ExecutionResult>();
-			Completed = new List<ExecutionResult>();
-			HandlerTasks = new List<Task>();
+			this.Skipped = new List<ExecutionResult>();
+			this.Completed = new List<ExecutionResult>();
+			this.HandlerTasks = new List<Task>();
 		}
 	}
 }

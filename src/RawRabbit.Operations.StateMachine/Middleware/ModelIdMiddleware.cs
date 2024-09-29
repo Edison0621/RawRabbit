@@ -14,39 +14,39 @@ namespace RawRabbit.Operations.StateMachine.Middleware
 
 	public class ModelIdMiddleware : Pipe.Middleware.Middleware
 	{
-		protected Func<IPipeContext, Func<object[], Guid>> CorrelationFunc;
-		protected Func<IPipeContext, object[]> CorrelationArgsFunc;
-		protected Func<IPipeContext, Guid> ModelIdFunc;
+		protected readonly Func<IPipeContext, Func<object[], Guid>> _correlationFunc;
+		protected readonly Func<IPipeContext, object[]> _correlationArgsFunc;
+		protected readonly Func<IPipeContext, Guid> _modelIdFunc;
 
 		public ModelIdMiddleware(ModelIdOptions options = null)
 		{
-			CorrelationFunc = options?.CorrelationFunc ?? (context => context.GetIdCorrelationFunc());
-			CorrelationArgsFunc = options?.CorrelationArgsFunc ?? (context => context.GetLazyCorrelationArgs());
-			ModelIdFunc = options?.ModelIdFunc ?? (context => context.GetModelId());
+			this._correlationFunc = options?.CorrelationFunc ?? (context => context.GetIdCorrelationFunc());
+			this._correlationArgsFunc = options?.CorrelationArgsFunc ?? (context => context.GetLazyCorrelationArgs());
+			this._modelIdFunc = options?.ModelIdFunc ?? (context => context.GetModelId());
 		}
 
-		public override async Task InvokeAsync(IPipeContext context, CancellationToken token)
+		public override async Task InvokeAsync(IPipeContext context, CancellationToken token = default(CancellationToken))
 		{
-			var corrFunc = GetCorrelationFunc(context);
-			var corrArgs = GetCorrelationArgs(context);
-			var id = GetModelId(context, corrFunc, corrArgs);
+			Func<object[], Guid> corrFunc = this.GetCorrelationFunc(context);
+			object[] corrArgs = this.GetCorrelationArgs(context);
+			Guid id = this.GetModelId(context, corrFunc, corrArgs);
 			context.Properties.TryAdd(StateMachineKey.ModelId, id);
-			await Next.InvokeAsync(context, token);
+			await this.Next.InvokeAsync(context, token);
 		}
 
 		protected virtual Func<object[], Guid> GetCorrelationFunc(IPipeContext context)
 		{
-			return CorrelationFunc.Invoke(context);
+			return this._correlationFunc.Invoke(context);
 		}
 
 		protected virtual object[] GetCorrelationArgs(IPipeContext context)
 		{
-			return CorrelationArgsFunc?.Invoke(context);
+			return this._correlationArgsFunc?.Invoke(context);
 		}
 
 		protected virtual Guid GetModelId(IPipeContext context, Func<object[], Guid> corrFunc, object[] args)
 		{
-			var fromContext = ModelIdFunc.Invoke(context);
+			Guid fromContext = this._modelIdFunc.Invoke(context);
 			return fromContext != Guid.Empty ? fromContext : corrFunc(args);
 		}
 	}

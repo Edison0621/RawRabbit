@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Threading;
 using System.Threading.Tasks;
+using RawRabbit.Configuration.BasicPublish;
 using RawRabbit.Logging;
 using RawRabbit.Pipe;
 using RawRabbit.Pipe.Middleware;
@@ -17,18 +18,18 @@ namespace RawRabbit.Enrichers.GlobalExecutionId.Middleware
 	public class ExecutionIdRoutingMiddleware : StagedMiddleware
 	{
 		public override string StageMarker => Pipe.StageMarker.PublishConfigured;
-		protected Func<IPipeContext, bool> EnableRoutingFunc;
-		protected Func<IPipeContext, string> ExecutionIdFunc;
-		protected Func<IPipeContext, string, string> UpdateAction;
+		protected readonly Func<IPipeContext, bool> _enableRoutingFunc;
+		protected readonly Func<IPipeContext, string> _executionIdFunc;
+		protected readonly Func<IPipeContext, string, string> _updateAction;
 		private readonly ILog _logger = LogProvider.For<ExecutionIdRoutingMiddleware>();
 
 		public ExecutionIdRoutingMiddleware(ExecutionIdRoutingOptions options = null)
 		{
-			EnableRoutingFunc = options?.EnableRoutingFunc ?? (c => c.GetClientConfiguration()?.RouteWithGlobalId ?? false);
-			ExecutionIdFunc = options?.ExecutionIdFunc ?? (c => c.GetGlobalExecutionId());
-			UpdateAction = options?.UpdateAction ?? ((context, executionId) =>
+			this._enableRoutingFunc = options?.EnableRoutingFunc ?? (c => c.GetClientConfiguration()?.RouteWithGlobalId ?? false);
+			this._executionIdFunc = options?.ExecutionIdFunc ?? (c => c.GetGlobalExecutionId());
+			this._updateAction = options?.UpdateAction ?? ((context, executionId) =>
 			{
-				var pubConfig = context.GetBasicPublishConfiguration();
+				BasicPublishConfiguration pubConfig = context.GetBasicPublishConfiguration();
 				if (pubConfig != null)
 				{
 					pubConfig.RoutingKey = $"{pubConfig.RoutingKey}.{executionId}";
@@ -38,34 +39,34 @@ namespace RawRabbit.Enrichers.GlobalExecutionId.Middleware
 			});
 		}
 
-		public override Task InvokeAsync(IPipeContext context, CancellationToken token)
+		public override Task InvokeAsync(IPipeContext context, CancellationToken token = default(CancellationToken))
 		{
-			var enabled = GetRoutingEnabled(context);
+			bool enabled = this.GetRoutingEnabled(context);
 			if (!enabled)
 			{
-				_logger.Debug("Routing with GlobalExecutionId disabled.");
-				return Next.InvokeAsync(context, token);
+				this._logger.Debug("Routing with GlobalExecutionId disabled.");
+				return this.Next.InvokeAsync(context, token);
 			}
-			var executionId = GetExecutionId(context);
-			UpdateRoutingKey(context, executionId);
-			return Next.InvokeAsync(context, token);
+			string executionId = this.GetExecutionId(context);
+			this.UpdateRoutingKey(context, executionId);
+			return this.Next.InvokeAsync(context, token);
 		}
 
 		protected virtual void UpdateRoutingKey(IPipeContext context, string executionId)
 		{
-			_logger.Debug("Updating routing key with GlobalExecutionId {globalExecutionId}", executionId);
-			var updated = UpdateAction(context, executionId);
-			_logger.Info("Routing key updated with GlobalExecutionId: {routingKey}", updated);
+			this._logger.Debug("Updating routing key with GlobalExecutionId {globalExecutionId}", executionId);
+			string updated = this._updateAction(context, executionId);
+			this._logger.Info("Routing key updated with GlobalExecutionId: {routingKey}", updated);
 		}
 
 		protected virtual bool GetRoutingEnabled(IPipeContext pipeContext)
 		{
-			return EnableRoutingFunc(pipeContext);
+			return this._enableRoutingFunc(pipeContext);
 		}
 
 		protected virtual string GetExecutionId(IPipeContext context)
 		{
-			return ExecutionIdFunc(context);
+			return this._executionIdFunc(context);
 		}
 	}
 }

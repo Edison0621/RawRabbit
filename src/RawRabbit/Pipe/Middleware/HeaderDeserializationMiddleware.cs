@@ -1,5 +1,4 @@
 ﻿using System;
-using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using RabbitMQ.Client.Events;
@@ -18,65 +17,65 @@ namespace RawRabbit.Pipe.Middleware
 
 	public class HeaderDeserializationMiddleware : StagedMiddleware
 	{
-		protected readonly ISerializer Serializer;
-		protected Func<IPipeContext, BasicDeliverEventArgs> DeliveryArgsFunc;
-		protected Action<IPipeContext, object> ContextSaveAction;
-		protected Func<IPipeContext, string> HeaderKeyFunc;
-		protected Func<IPipeContext, Type> HeaderTypeFunc;
+		protected readonly ISerializer _serializer;
+		protected readonly Func<IPipeContext, BasicDeliverEventArgs> _deliveryArgsFunc;
+		protected readonly Action<IPipeContext, object> _contextSaveAction;
+		protected readonly Func<IPipeContext, string> _headerKeyFunc;
+		protected readonly Func<IPipeContext, Type> _headerTypeFunc;
 		private readonly ILog _logger = LogProvider.For<HeaderDeserializationMiddleware>();
 
 		public HeaderDeserializationMiddleware(ISerializer serializer, HeaderDeserializationOptions options = null)
 		{
-			DeliveryArgsFunc = options?.DeliveryArgsFunc ?? (context => context.GetDeliveryEventArgs());
-			HeaderKeyFunc = options?.HeaderKeyFunc;
-			ContextSaveAction = options?.ContextSaveAction ?? ((context, item) => context.Properties.TryAdd(HeaderKeyFunc(context), item));
-			HeaderTypeFunc = options?.HeaderTypeFunc ?? (context =>typeof(object)) ;
-			Serializer = serializer;
+			this._deliveryArgsFunc = options?.DeliveryArgsFunc ?? (context => context.GetDeliveryEventArgs());
+			this._headerKeyFunc = options?.HeaderKeyFunc;
+			this._contextSaveAction = options?.ContextSaveAction ?? ((context, item) => context.Properties.TryAdd(this._headerKeyFunc(context), item));
+			this._headerTypeFunc = options?.HeaderTypeFunc ?? (context =>typeof(object)) ;
+			this._serializer = serializer;
 		}
 
 		public override async Task InvokeAsync(IPipeContext context, CancellationToken token = default(CancellationToken))
 		{
-			var headerObject = GetHeaderObject(context);
+			object headerObject = this.GetHeaderObject(context);
 			if (headerObject != null)
 			{
-				SaveInContext(context, headerObject);
+				this.SaveInContext(context, headerObject);
 			}
-			await Next.InvokeAsync(context, token);
+			await this.Next.InvokeAsync(context, token);
 		}
 
 		protected virtual void SaveInContext(IPipeContext context, object headerValue)
 		{
-			ContextSaveAction?.Invoke(context, headerValue);
+			this._contextSaveAction?.Invoke(context, headerValue);
 		}
 
 		protected virtual object GetHeaderObject(IPipeContext context)
 		{
-			var bytes = GetHeaderBytes(context);
+			byte[] bytes = this.GetHeaderBytes(context);
 			if (bytes == null)
 			{
 				return null;
 			}
-			var type = GetHeaderType(context);
-			return Serializer.Deserialize(type, bytes);
+			Type type = this.GetHeaderType(context);
+			return this._serializer.Deserialize(type, bytes);
 		}
 
 		protected virtual byte[] GetHeaderBytes(IPipeContext context)
 		{
-			var headerKey = GetHeaderKey(context);
-			var args = GetDeliveryArgs(context);
+			string headerKey = this.GetHeaderKey(context);
+			BasicDeliverEventArgs args = this.GetDeliveryArgs(context);
 			if (string.IsNullOrEmpty(headerKey))
 			{
-				_logger.Debug("Key {headerKey} not found.", headerKey);
+				this._logger.Debug("Key {headerKey} not found.", headerKey);
 				return null;
 			}
 			if (args == null)
 			{
-				_logger.Debug("DeliveryEventArgs not found.");
+				this._logger.Debug("DeliveryEventArgs not found.");
 				return null;
 			}
 			if (args.BasicProperties.Headers == null || !args.BasicProperties.Headers.ContainsKey(headerKey))
 			{
-				_logger.Info("BasicProperties Header does not contain {headerKey}", headerKey);
+				this._logger.Info("BasicProperties Header does not contain {headerKey}", headerKey);
 				return null;
 			}
 
@@ -88,38 +87,38 @@ namespace RawRabbit.Pipe.Middleware
 
 		protected virtual BasicDeliverEventArgs GetDeliveryArgs(IPipeContext context)
 		{
-			var args = DeliveryArgsFunc(context);
+			BasicDeliverEventArgs args = this._deliveryArgsFunc(context);
 			if (args == null)
 			{
-				_logger.Warn("Unable to extract delivery args from Pipe Context.");
+				this._logger.Warn("Unable to extract delivery args from Pipe Context.");
 			}
 			return args;
 		}
 
 		protected virtual string GetHeaderKey(IPipeContext context)
 		{
-			var key = HeaderKeyFunc(context);
+			string key = this._headerKeyFunc(context);
 			if (key == null)
 			{
-				_logger.Warn("Unable to extract header key from Pipe context.");
+				this._logger.Warn("Unable to extract header key from Pipe context.");
 			}
 			else
 			{
-				_logger.Debug("Trying to extract {headerKey} from header", key);
+				this._logger.Debug("Trying to extract {headerKey} from header", key);
 			}
 			return key;
 		}
 
 		protected virtual Type GetHeaderType(IPipeContext context)
 		{
-			var type = HeaderTypeFunc(context);
+			Type type = this._headerTypeFunc(context);
 			if (type == null)
 			{
-				_logger.Warn("Unable to extract header type from Pipe context.");
+				this._logger.Warn("Unable to extract header type from Pipe context.");
 			}
 			else
 			{
-				_logger.Debug("Header type extracted: '{headerType}'", type.Name);
+				this._logger.Debug("Header type extracted: '{headerType}'", type.Name);
 			}
 			return type;
 		}

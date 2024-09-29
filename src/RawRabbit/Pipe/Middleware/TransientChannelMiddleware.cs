@@ -8,27 +8,27 @@ namespace RawRabbit.Pipe.Middleware
 {
 	public class TransientChannelMiddleware : Middleware
 	{
-		protected readonly IChannelFactory ChannelFactory;
+		protected readonly IChannelFactory _channelFactory;
 		private readonly ILog _logger = LogProvider.For<TransientChannelMiddleware>();
 
 		public TransientChannelMiddleware(IChannelFactory channelFactory)
 		{
-			ChannelFactory = channelFactory;
+			this._channelFactory = channelFactory;
 		}
 
-		public override async Task InvokeAsync(IPipeContext context, CancellationToken token)
+		public override async Task InvokeAsync(IPipeContext context, CancellationToken token = default(CancellationToken))
 		{
-			using (var channel = await CreateChannelAsync(context, token))
+			using (IModel channel = await this.CreateChannelAsync(context, token))
 			{
-				_logger.Debug("Adding channel {channelNumber} to Execution Context.", channel.ChannelNumber);
+				this._logger.Debug("Adding channel {channelNumber} to Execution Context.", channel.ChannelNumber);
 				context.Properties.Add(PipeKey.TransientChannel, channel);
-				await Next.InvokeAsync(context, token);
+				await this.Next.InvokeAsync(context, token);
 			}
 		}
 
 		protected virtual Task<IModel> CreateChannelAsync(IPipeContext context, CancellationToken ct)
 		{
-			return ChannelFactory.CreateChannelAsync(ct);
+			return this._channelFactory.CreateChannelAsync(ct);
 		}
 	}
 }

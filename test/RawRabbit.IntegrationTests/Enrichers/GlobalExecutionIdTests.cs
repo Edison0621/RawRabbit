@@ -8,7 +8,6 @@ using RawRabbit.Configuration.Queue;
 using RawRabbit.Enrichers.GlobalExecutionId;
 using RawRabbit.Instantiation;
 using RawRabbit.IntegrationTests.TestMessages;
-using RawRabbit.Pipe;
 using RawRabbit.Pipe.Middleware;
 using Xunit;
 
@@ -19,18 +18,18 @@ namespace RawRabbit.IntegrationTests.Enrichers
 		[Fact]
 		public async Task Should_Forward_On_Pub_Sub()
 		{
-			var withGloblalExecutionId = new RawRabbitOptions
+			RawRabbitOptions withGloblalExecutionId = new RawRabbitOptions
 			{
 				Plugins = p => p.UseGlobalExecutionId()
 			};
-			using (var publisher = RawRabbitFactory.CreateTestClient(withGloblalExecutionId))
-			using (var firstSubscriber = RawRabbitFactory.CreateTestClient(withGloblalExecutionId))
-			using (var secondSubscriber = RawRabbitFactory.CreateTestClient(withGloblalExecutionId))
-			using (var thridSubscriber = RawRabbitFactory.CreateTestClient(withGloblalExecutionId))
-			using (var consumer = RawRabbitFactory.CreateTestClient())
+			using (Instantiation.Disposable.BusClient publisher = RawRabbitFactory.CreateTestClient(withGloblalExecutionId))
+			using (Instantiation.Disposable.BusClient firstSubscriber = RawRabbitFactory.CreateTestClient(withGloblalExecutionId))
+			using (Instantiation.Disposable.BusClient secondSubscriber = RawRabbitFactory.CreateTestClient(withGloblalExecutionId))
+			using (Instantiation.Disposable.BusClient thridSubscriber = RawRabbitFactory.CreateTestClient(withGloblalExecutionId))
+			using (Instantiation.Disposable.BusClient consumer = RawRabbitFactory.CreateTestClient())
 			{
 				/* Setup */
-				var taskCompletionSources = new List<TaskCompletionSource<BasicDeliverEventArgs>>
+				List<TaskCompletionSource<BasicDeliverEventArgs>> taskCompletionSources = new List<TaskCompletionSource<BasicDeliverEventArgs>>
 				{
 					new TaskCompletionSource<BasicDeliverEventArgs>(),
 					new TaskCompletionSource<BasicDeliverEventArgs>(),
@@ -46,7 +45,7 @@ namespace RawRabbit.IntegrationTests.Enrichers
 				});
 				await consumer.BasicConsumeAsync(args =>
 					{
-						var tsc = taskCompletionSources.First(t => !t.Task.IsCompleted);
+						TaskCompletionSource<BasicDeliverEventArgs> tsc = taskCompletionSources.First(t => !t.Task.IsCompleted);
 						tsc.TrySetResult(args);
 						return Task.FromResult<Acknowledgement>(new Ack());
 					}, ctx => ctx.UseConsumeConfiguration(cfg => cfg
@@ -60,10 +59,10 @@ namespace RawRabbit.IntegrationTests.Enrichers
 				await publisher.PublishAsync(new FirstMessage());
 				Task.WaitAll(taskCompletionSources.Select(t => t.Task).ToArray<Task>());
 
-				var results = new List<string>();
-				foreach (var tcs in taskCompletionSources)
+				List<string> results = new List<string>();
+				foreach (TaskCompletionSource<BasicDeliverEventArgs> tcs in taskCompletionSources)
 				{
-					var id = Encoding.UTF8.GetString(tcs.Task.Result.BasicProperties.Headers[RawRabbit.Enrichers.GlobalExecutionId.PropertyHeaders.GlobalExecutionId] as byte[]);
+					string id = Encoding.UTF8.GetString(tcs.Task.Result.BasicProperties.Headers[RawRabbit.Enrichers.GlobalExecutionId.PropertyHeaders.GlobalExecutionId] as byte[]);
 					results.Add(id);
 				}
 
@@ -77,18 +76,18 @@ namespace RawRabbit.IntegrationTests.Enrichers
 		[Fact]
 		public async Task Should_Forward_For_Rpc()
 		{
-			var withGloblalExecutionId = new RawRabbitOptions
+			RawRabbitOptions withGloblalExecutionId = new RawRabbitOptions
 			{
 				Plugins = p => p.UseGlobalExecutionId()
 			};
-			using (var requester = RawRabbitFactory.CreateTestClient(withGloblalExecutionId))
-			using (var firstResponder = RawRabbitFactory.CreateTestClient(withGloblalExecutionId))
-			using (var secondResponder = RawRabbitFactory.CreateTestClient(withGloblalExecutionId))
-			using (var thridResponder = RawRabbitFactory.CreateTestClient(withGloblalExecutionId))
-			using (var consumer = RawRabbitFactory.CreateTestClient())
+			using (Instantiation.Disposable.BusClient requester = RawRabbitFactory.CreateTestClient(withGloblalExecutionId))
+			using (Instantiation.Disposable.BusClient firstResponder = RawRabbitFactory.CreateTestClient(withGloblalExecutionId))
+			using (Instantiation.Disposable.BusClient secondResponder = RawRabbitFactory.CreateTestClient(withGloblalExecutionId))
+			using (Instantiation.Disposable.BusClient thridResponder = RawRabbitFactory.CreateTestClient(withGloblalExecutionId))
+			using (Instantiation.Disposable.BusClient consumer = RawRabbitFactory.CreateTestClient())
 			{
 				/* Setup */
-				var taskCompletionSources = new List<TaskCompletionSource<BasicDeliverEventArgs>>
+				List<TaskCompletionSource<BasicDeliverEventArgs>> taskCompletionSources = new List<TaskCompletionSource<BasicDeliverEventArgs>>
 				{
 					new TaskCompletionSource<BasicDeliverEventArgs>(),
 					new TaskCompletionSource<BasicDeliverEventArgs>(),
@@ -108,7 +107,7 @@ namespace RawRabbit.IntegrationTests.Enrichers
 				});
 				await consumer.BasicConsumeAsync(args =>
 				{
-					var tsc = taskCompletionSources.First(t => !t.Task.IsCompleted);
+					TaskCompletionSource<BasicDeliverEventArgs> tsc = taskCompletionSources.First(t => !t.Task.IsCompleted);
 					tsc.TrySetResult(args);
 					return Task.FromResult<Acknowledgement>(new Ack());
 				}, ctx => ctx
@@ -123,10 +122,10 @@ namespace RawRabbit.IntegrationTests.Enrichers
 				await requester.RequestAsync<FirstRequest, FirstResponse>();
 				Task.WaitAll(taskCompletionSources.Select(t => t.Task).ToArray<Task>());
 
-				var results = new List<string>();
-				foreach (var tcs in taskCompletionSources)
+				List<string> results = new List<string>();
+				foreach (TaskCompletionSource<BasicDeliverEventArgs> tcs in taskCompletionSources)
 				{
-					var id = Encoding.UTF8.GetString(tcs.Task.Result.BasicProperties.Headers[RawRabbit.Enrichers.GlobalExecutionId.PropertyHeaders.GlobalExecutionId] as byte[]);
+					string id = Encoding.UTF8.GetString(tcs.Task.Result.BasicProperties.Headers[RawRabbit.Enrichers.GlobalExecutionId.PropertyHeaders.GlobalExecutionId] as byte[]);
 					results.Add(id);
 				}
 

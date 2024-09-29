@@ -1,5 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
 using Polly;
@@ -10,26 +9,26 @@ namespace RawRabbit.Enrichers.Polly.Services
 {
 	public class ChannelFactory : Channel.ChannelFactory
 	{
-		protected Policy CreateChannelPolicy;
-		protected Policy ConnectPolicy;
-		protected Policy GetConnectionPolicy;
+		protected readonly Policy _createChannelPolicy;
+		protected readonly Policy _connectPolicy;
+		protected readonly Policy _getConnectionPolicy;
 
 		public ChannelFactory(IConnectionFactory connectionFactory, RawRabbitConfiguration config, ConnectionPolicies policies = null)
 			: base(connectionFactory, config)
 		{
-			CreateChannelPolicy = policies?.CreateChannel ?? Policy.NoOpAsync();
-			ConnectPolicy = policies?.Connect ?? Policy.NoOpAsync();
-			GetConnectionPolicy = policies?.GetConnection ?? Policy.NoOpAsync();
+			this._createChannelPolicy = policies?.CreateChannel ?? Policy.NoOpAsync();
+			this._connectPolicy = policies?.Connect ?? Policy.NoOpAsync();
+			this._getConnectionPolicy = policies?.GetConnection ?? Policy.NoOpAsync();
 		}
 
 		public override Task ConnectAsync(CancellationToken token = default(CancellationToken))
 		{
-			return ConnectPolicy.ExecuteAsync(
+			return this._connectPolicy.ExecuteAsync(
 				action: ct => base.ConnectAsync(ct),
 				contextData: new Dictionary<string, object>
 				{
-					[RetryKey.ConnectionFactory] = ConnectionFactory,
-					[RetryKey.ClientConfiguration] = ClientConfig
+					[RetryKey.ConnectionFactory] = this._connectionFactory,
+					[RetryKey.ClientConfiguration] = this._clientConfig
 				},
 				cancellationToken: token
 			);
@@ -37,12 +36,12 @@ namespace RawRabbit.Enrichers.Polly.Services
 
 		protected override Task<IConnection> GetConnectionAsync(CancellationToken token = default(CancellationToken))
 		{
-			return GetConnectionPolicy.ExecuteAsync(
+			return this._getConnectionPolicy.ExecuteAsync(
 				action: ct => base.GetConnectionAsync(ct),
 				contextData: new Dictionary<string, object>
 				{
-					[RetryKey.ConnectionFactory] = ConnectionFactory,
-					[RetryKey.ClientConfiguration] = ClientConfig
+					[RetryKey.ConnectionFactory] = this._connectionFactory,
+					[RetryKey.ClientConfiguration] = this._clientConfig
 				},
 				cancellationToken: token
 			);
@@ -50,12 +49,12 @@ namespace RawRabbit.Enrichers.Polly.Services
 
 		public override Task<IModel> CreateChannelAsync(CancellationToken token = default(CancellationToken))
 		{
-			return CreateChannelPolicy.ExecuteAsync(
+			return this._createChannelPolicy.ExecuteAsync(
 				action: ct => base.CreateChannelAsync(ct),
 				contextData: new Dictionary<string, object>
 				{
-					[RetryKey.ConnectionFactory] = ConnectionFactory,
-					[RetryKey.ClientConfiguration] = ClientConfig
+					[RetryKey.ConnectionFactory] = this._connectionFactory,
+					[RetryKey.ClientConfiguration] = this._clientConfig
 				},
 				cancellationToken: token
 			);

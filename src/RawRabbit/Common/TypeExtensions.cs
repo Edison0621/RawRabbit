@@ -7,12 +7,12 @@ namespace RawRabbit.Common
 	{
 		public static string GetUserFriendlyName(this Type type)
 		{
-			var name = $"{type.Namespace}.{type.Name}";
+			string name = $"{type.Namespace}.{type.Name}";
 			if (type.GenericTypeArguments.Length > 0)
 			{
-				var shouldInsertComma = false;
+				bool shouldInsertComma = false;
 				name += '[';
-				foreach (var genericType in type.GenericTypeArguments)
+				foreach (Type genericType in type.GenericTypeArguments)
 				{
 					if (shouldInsertComma)
 						name += ",";

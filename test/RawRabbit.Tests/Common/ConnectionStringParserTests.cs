@@ -1,5 +1,6 @@
 ﻿using System;
 using RawRabbit.Common;
+using RawRabbit.Configuration;
 using Xunit;
 
 namespace RawRabbit.Tests.Common
@@ -13,7 +14,7 @@ namespace RawRabbit.Tests.Common
 			const string connectionString = "host";
 
 			/* Test */
-			var config = ConnectionStringParser.Parse(connectionString);
+			RawRabbitConfiguration config = ConnectionStringParser.Parse(connectionString);
 
 			/* Assert */
 			Assert.Equal(expected: "guest", actual: config.Username);
@@ -30,7 +31,7 @@ namespace RawRabbit.Tests.Common
 			const string connectionString = "host:1234";
 
 			/* Test */
-			var config = ConnectionStringParser.Parse(connectionString);
+			RawRabbitConfiguration config = ConnectionStringParser.Parse(connectionString);
 
 			/* Assert */
 			Assert.Equal(expected: "guest", actual: config.Username);
@@ -47,7 +48,7 @@ namespace RawRabbit.Tests.Common
 			const string connectionString = "host/virtualHost";
 
 			/* Test */
-			var config = ConnectionStringParser.Parse(connectionString);
+			RawRabbitConfiguration config = ConnectionStringParser.Parse(connectionString);
 
 			/* Assert */
 			Assert.Equal(expected: "guest", actual: config.Username);
@@ -71,7 +72,7 @@ namespace RawRabbit.Tests.Common
 											"&topologyRecovery=false";
 
 			/* Test */
-			var config = ConnectionStringParser.Parse(connectionString);
+			RawRabbitConfiguration config = ConnectionStringParser.Parse(connectionString);
 
 			/* Assert */
 			Assert.Equal(expected: "guest", actual: config.Username);
@@ -96,7 +97,7 @@ namespace RawRabbit.Tests.Common
 			const string connectionString = "host:1234/virtualHost";
 
 			/* Test */
-			var config = ConnectionStringParser.Parse(connectionString);
+			RawRabbitConfiguration config = ConnectionStringParser.Parse(connectionString);
 
 			/* Assert */
 			Assert.Equal(expected: "guest", actual: config.Username);
@@ -113,7 +114,7 @@ namespace RawRabbit.Tests.Common
 			const string connectionString = "username:password@host1,host2";
 
 			/* Test */
-			var config = ConnectionStringParser.Parse(connectionString);
+			RawRabbitConfiguration config = ConnectionStringParser.Parse(connectionString);
 
 			/* Assert */
 			Assert.Equal(expected: "username", actual: config.Username);
@@ -131,7 +132,7 @@ namespace RawRabbit.Tests.Common
 			const string connectionString = "username:password@host1,host2/virtualHost";
 
 			/* Test */
-			var config = ConnectionStringParser.Parse(connectionString);
+			RawRabbitConfiguration config = ConnectionStringParser.Parse(connectionString);
 
 			/* Assert */
 			Assert.Equal(expected: "username", actual: config.Username);
@@ -149,7 +150,7 @@ namespace RawRabbit.Tests.Common
 			const string connectionString = "username:password@host1,host2:1234";
 
 			/* Test */
-			var config = ConnectionStringParser.Parse(connectionString);
+			RawRabbitConfiguration config = ConnectionStringParser.Parse(connectionString);
 
 			/* Assert */
 			Assert.Equal(expected: "username", actual: config.Username);
@@ -167,7 +168,7 @@ namespace RawRabbit.Tests.Common
 			const string connectionString = "username:password@host1,host2:1234/virtualHost";
 
 			/* Test */
-			var config = ConnectionStringParser.Parse(connectionString);
+			RawRabbitConfiguration config = ConnectionStringParser.Parse(connectionString);
 
 			/* Assert */
 			Assert.Equal(expected: "username", actual: config.Username);
@@ -192,7 +193,7 @@ namespace RawRabbit.Tests.Common
 											"&topologyRecovery=false";
 
 			/* Test */
-			var config = ConnectionStringParser.Parse(connectionString);
+			RawRabbitConfiguration config = ConnectionStringParser.Parse(connectionString);
 
 			/* Assert */
 			Assert.Equal(expected: "username", actual: config.Username);
@@ -224,7 +225,7 @@ namespace RawRabbit.Tests.Common
 											"&topologyRecovery=false";
 
 			/* Test */
-			var config = ConnectionStringParser.Parse(connectionString);
+			RawRabbitConfiguration config = ConnectionStringParser.Parse(connectionString);
 
 			/* Assert */
 			Assert.Equal(expected: "username", actual: config.Username);
@@ -256,7 +257,7 @@ namespace RawRabbit.Tests.Common
 											"&topologyRecovery=false";
 
 			/* Test */
-			var config = ConnectionStringParser.Parse(connectionString);
+			RawRabbitConfiguration config = ConnectionStringParser.Parse(connectionString);
 
 			/* Assert */
 			Assert.Equal(expected: "guest", actual: config.Username);
@@ -288,7 +289,7 @@ namespace RawRabbit.Tests.Common
 											"&topologyRecovery=false";
 
 			/* Test */
-			var config = ConnectionStringParser.Parse(connectionString);
+			RawRabbitConfiguration config = ConnectionStringParser.Parse(connectionString);
 
 			/* Assert */
 			Assert.Equal(expected: "username", actual: config.Username);

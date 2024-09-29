@@ -19,15 +19,16 @@ namespace RawRabbit.Operations.StateMachine.Core
 		{
 			if (exclusiveExecute == null)
 			{
-				var processLock = new ProcessGlobalLock();
+				ProcessGlobalLock processLock = new ProcessGlobalLock();
 				exclusiveExecute = (id, handler, ct) => processLock.ExecuteAsync(id, handler, ct);
 			}
-			_exclusiveExecute = exclusiveExecute;
+
+			this._exclusiveExecute = exclusiveExecute;
 		}
 
 		public Task ExecuteAsync(Guid modelId, Func<Task> handler, CancellationToken ct = new CancellationToken())
 		{
-			return _exclusiveExecute(modelId, handler, ct);
+			return this._exclusiveExecute(modelId, handler, ct);
 		}
 	}
 
@@ -38,12 +39,12 @@ namespace RawRabbit.Operations.StateMachine.Core
 
 		public ProcessGlobalLock()
 		{
-			_semaphores = new ConcurrentDictionary<Guid, SemaphoreSlim>();
+			this._semaphores = new ConcurrentDictionary<Guid, SemaphoreSlim>();
 		}
 		
 		public async Task ExecuteAsync(Guid modelId, Func<Task> handler, CancellationToken ct = default(CancellationToken))
 		{
-			var semaphore = _semaphores.GetOrAdd(modelId, guid => new SemaphoreSlim(1, 1));
+			SemaphoreSlim semaphore = this._semaphores.GetOrAdd(modelId, guid => new SemaphoreSlim(1, 1));
 			await semaphore.WaitAsync(ct);
 			try
 			{
@@ -51,7 +52,7 @@ namespace RawRabbit.Operations.StateMachine.Core
 			}
 			catch (Exception e)
 			{
-				_logger.Error(e, "Unhandled exception during execution under Global Lock");
+				this._logger.Error(e, "Unhandled exception during execution under Global Lock");
 			}
 			finally
 			{

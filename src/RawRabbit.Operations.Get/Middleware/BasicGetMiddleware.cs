@@ -16,28 +16,28 @@ namespace RawRabbit.Operations.Get.Middleware
 
 	public class BasicGetMiddleware : Pipe.Middleware.Middleware
 	{
-		protected Func<IPipeContext, IModel> ChannelFunc;
-		protected  Func<IPipeContext, string> QueueNameFunc;
-		protected Func<IPipeContext, bool> AutoAckFunc;
-		protected Action<IPipeContext, BasicGetResult> PostExecutionAction;
+		protected readonly Func<IPipeContext, IModel> _channelFunc;
+		protected readonly Func<IPipeContext, string> _queueNameFunc;
+		protected readonly Func<IPipeContext, bool> _autoAckFunc;
+		protected readonly Action<IPipeContext, BasicGetResult> _postExecutionAction;
 
 		public BasicGetMiddleware(BasicGetOptions options = null)
 		{
-			ChannelFunc = options?.ChannelFunc ?? (context => context.GetChannel());
-			QueueNameFunc = options?.QueueNameFunc ?? (context => context.GetGetConfiguration()?.QueueName);
-			AutoAckFunc = options?.AutoAckFunc ?? (context => context.GetGetConfiguration()?.AutoAck ?? false);
-			PostExecutionAction = options?.PostExecutionAction;
+			this._channelFunc = options?.ChannelFunc ?? (context => context.GetChannel());
+			this._queueNameFunc = options?.QueueNameFunc ?? (context => context.GetGetConfiguration()?.QueueName);
+			this._autoAckFunc = options?.AutoAckFunc ?? (context => context.GetGetConfiguration()?.AutoAck ?? false);
+			this._postExecutionAction = options?.PostExecutionAction;
 		}
 
-		public override Task InvokeAsync(IPipeContext context, CancellationToken token)
+		public override Task InvokeAsync(IPipeContext context, CancellationToken token = default(CancellationToken))
 		{
-			var channel = GetChannel(context);
-			var queueNamme = GetQueueName(context);
-			var autoAck = GetAutoAck(context);
-			var getResult = PerformBasicGet(channel, queueNamme, autoAck);
+			IModel channel = this.GetChannel(context);
+			string queueNamme = this.GetQueueName(context);
+			bool autoAck = this.GetAutoAck(context);
+			BasicGetResult getResult = this.PerformBasicGet(channel, queueNamme, autoAck);
 			context.Properties.TryAdd(GetPipeExtensions.BasicGetResult, getResult);
-			PostExecutionAction?.Invoke(context, getResult);
-			return Next.InvokeAsync(context, token);
+			this._postExecutionAction?.Invoke(context, getResult);
+			return this.Next.InvokeAsync(context, token);
 		}
 
 		protected virtual BasicGetResult PerformBasicGet(IModel channel, string queueName, bool autoAck)
@@ -47,17 +47,17 @@ namespace RawRabbit.Operations.Get.Middleware
 
 		protected virtual bool GetAutoAck(IPipeContext context)
 		{
-			return AutoAckFunc(context);
+			return this._autoAckFunc(context);
 		}
 
 		protected virtual string GetQueueName(IPipeContext context)
 		{
-			return QueueNameFunc(context);
+			return this._queueNameFunc(context);
 		}
 
 		protected virtual IModel GetChannel(IPipeContext context)
 		{
-			return ChannelFunc(context);
+			return this._channelFunc(context);
 		}
 	}
 }

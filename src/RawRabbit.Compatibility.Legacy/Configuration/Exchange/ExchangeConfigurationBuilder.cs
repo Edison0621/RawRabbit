@@ -6,42 +6,42 @@
 
 		public ExchangeConfigurationBuilder(ExchangeConfiguration initialExchange = null)
 		{
-			Configuration = initialExchange ?? ExchangeConfiguration.Default;
+			this.Configuration = initialExchange ?? ExchangeConfiguration.Default;
 		}
 
 		public IExchangeConfigurationBuilder WithName(string exchangeName)
 		{
-			Configuration.ExchangeName = exchangeName;
+			this.Configuration.ExchangeName = exchangeName;
 			return this;
 		}
 
 		public IExchangeConfigurationBuilder WithType(ExchangeType exchangeType)
 		{
-			Configuration.ExchangeType = exchangeType.ToString().ToLower();
+			this.Configuration.ExchangeType = exchangeType.ToString().ToLower();
 			return this;
 		}
 
 		public IExchangeConfigurationBuilder WithDurability(bool durable = true)
 		{
-			Configuration.Durable = durable;
+			this.Configuration.Durable = durable;
 			return this;
 		}
 
 		public IExchangeConfigurationBuilder WithAutoDelete(bool autoDelete = true)
 		{
-			Configuration.AutoDelete = autoDelete;
+			this.Configuration.AutoDelete = autoDelete;
 			return this;
 		}
 
 		public IExchangeConfigurationBuilder WithArgument(string name, string value)
 		{
-			Configuration.Arguments.Add(name, value);
+			this.Configuration.Arguments.Add(name, value);
 			return this;
 		}
 
 		public IExchangeConfigurationBuilder AssumeInitialized(bool asumption = true)
 		{
-			Configuration.AssumeInitialized = asumption;
+			this.Configuration.AssumeInitialized = asumption;
 			return this;
 		}
 	}

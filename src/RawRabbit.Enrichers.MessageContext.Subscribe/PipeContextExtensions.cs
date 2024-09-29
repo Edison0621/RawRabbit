@@ -1,5 +1,4 @@
 ﻿using System;
-using RabbitMQ.Client.Events;
 using RawRabbit.Operations.Subscribe.Context;
 using RawRabbit.Pipe;
 

@@ -23,10 +23,10 @@ namespace RawRabbit.Common
 		private readonly ConcurrentDictionary<Type, int> _subscriberCounter;
 		private readonly string _applicationName;
 		private const string IisWorkerProcessName = "w3wp";
-		private static readonly Regex DllRegex = new Regex(@"(?<ApplicationName>[^\\]*).dll", RegexOptions.Compiled);
-		private static readonly Regex ConsoleOrServiceRegex = new Regex(@"(?<ApplicationName>[^\\]*).exe", RegexOptions.Compiled);
-		private static readonly Regex IisHostedAppRegexVer1 = new Regex(@"-ap\s\\""(?<ApplicationName>[^\\]+)");
-		private static readonly Regex IisHostedAppRegexVer2 = new Regex(@"\\\\apppools\\\\(?<ApplicationName>[^\\]+)");
+		private static readonly Regex _dllRegex = new Regex(@"(?<ApplicationName>[^\\]*).dll", RegexOptions.Compiled);
+		private static readonly Regex _consoleOrServiceRegex = new Regex(@"(?<ApplicationName>[^\\]*).exe", RegexOptions.Compiled);
+		private static readonly Regex _iisHostedAppRegexVer1 = new Regex(@"-ap\s\\""(?<ApplicationName>[^\\]+)");
+		private static readonly Regex _iisHostedAppRegexVer2 = new Regex(@"\\\\apppools\\\\(?<ApplicationName>[^\\]+)");
 
 		public virtual Func<Type, string> ExchangeNamingConvention { get; set; }
 		public virtual Func<Type, string> QueueNamingConvention { get; set; }
@@ -38,32 +38,32 @@ namespace RawRabbit.Common
 
 		public NamingConventions()
 		{
-			_subscriberCounter = new ConcurrentDictionary<Type,int>();
-			_applicationName = GetApplicationName(string.Join(" ", Environment.GetCommandLineArgs()));
+			this._subscriberCounter = new ConcurrentDictionary<Type,int>();
+			this._applicationName = GetApplicationName(string.Join(" ", Environment.GetCommandLineArgs()));
 
-			ExchangeNamingConvention = type => type?.Namespace?.ToLower() ?? string.Empty;
-			QueueNamingConvention = type => CreateShortAfqn(type);
-			RoutingKeyConvention = type => CreateShortAfqn(type);
-			ErrorExchangeNamingConvention = () => "default_error_exchange";
-			SubscriberQueueSuffix = GetSubscriberQueueSuffix;
-			RetryLaterExchangeConvention = span => "default_retry_later_exchange";
-			RetryLaterQueueNameConvetion = (exchange, span) => $"retry_for_{exchange.Replace(".","_")}_in_{span.TotalMilliseconds}_ms";
+			this.ExchangeNamingConvention = type => type?.Namespace?.ToLower() ?? string.Empty;
+			this.QueueNamingConvention = type => CreateShortAfqn(type);
+			this.RoutingKeyConvention = type => CreateShortAfqn(type);
+			this.ErrorExchangeNamingConvention = () => "default_error_exchange";
+			this.SubscriberQueueSuffix = this.GetSubscriberQueueSuffix;
+			this.RetryLaterExchangeConvention = span => "default_retry_later_exchange";
+			this.RetryLaterQueueNameConvetion = (exchange, span) => $"retry_for_{exchange.Replace(".","_")}_in_{span.TotalMilliseconds}_ms";
 		}
 
 		private string GetSubscriberQueueSuffix(Type messageType)
 		{
-			var sb = new StringBuilder(_applicationName);
+			StringBuilder sb = new StringBuilder(this._applicationName);
 
-			_subscriberCounter.AddOrUpdate(
+			this._subscriberCounter.AddOrUpdate(
 				key: messageType,
 				addValueFactory: type =>
 				{
-					var next = 0;
+					int next = 0;
 					return next;
 				},
 				updateValueFactory:(type, i) =>
 				{
-					var next = i+1;
+					int next = i+1;
 					sb.Append($"_{next}");
 					return next;
 				});
@@ -73,39 +73,35 @@ namespace RawRabbit.Common
 
 		public static string GetApplicationName(params string[] commandLine)
 		{
-			var match = ConsoleOrServiceRegex.Match(commandLine.FirstOrDefault() ?? string.Empty);
-			var applicationName = string.Empty;
+			Match match = _consoleOrServiceRegex.Match(commandLine.FirstOrDefault() ?? string.Empty);
+			string applicationName = string.Empty;
 
-			if (commandLine == null)
-			{
-				return string.Empty;
-			}
 			if (match.Success && match.Groups["ApplicationName"].Value != IisWorkerProcessName)
 			{
 				applicationName = match.Groups["ApplicationName"].Value;
-				if (applicationName.EndsWith(".vshost"))
+				if (applicationName.EndsWith(".vshost", StringComparison.Ordinal))
 					applicationName = applicationName.Remove(applicationName.Length - ".vshost".Length);
 			}
 			else
 			{
-				match = IisHostedAppRegexVer1.Match(commandLine.FirstOrDefault() ?? string.Empty);
+				match = _iisHostedAppRegexVer1.Match(commandLine.FirstOrDefault() ?? string.Empty);
 				if (match.Success)
 				{
 					applicationName = match.Groups["ApplicationName"].Value;
 				}
 				else
 				{
-					match = IisHostedAppRegexVer2.Match(commandLine.FirstOrDefault() ?? string.Empty);
+					match = _iisHostedAppRegexVer2.Match(commandLine.FirstOrDefault() ?? string.Empty);
 					if (match.Success)
 					{
 						applicationName = match.Groups["ApplicationName"].Value;
 					}
 					else
 					{
-						var index = commandLine.Length > 1 ? 1 : 0;
-						if (DllRegex.IsMatch(commandLine[index]))
+						int index = commandLine.Length > 1 ? 1 : 0;
+						if (_dllRegex.IsMatch(commandLine[index]))
 						{
-							applicationName = DllRegex.Match(commandLine[index]).Groups["ApplicationName"].Value;
+							applicationName = _dllRegex.Match(commandLine[index]).Groups["ApplicationName"].Value;
 						}
 					}
 				}
@@ -116,15 +112,12 @@ namespace RawRabbit.Common
 
 		private static string CreateShortAfqn(Type type, string path = "", string delimeter = ".")
 		{
-			var t = $"{path}{(string.IsNullOrEmpty(path) ? string.Empty : delimeter)}{GetNonGenericTypeName(type)}";
+			string t = $"{path}{(string.IsNullOrEmpty(path) ? string.Empty : delimeter)}{GetNonGenericTypeName(type)}";
 
 			if (type.GetTypeInfo().IsGenericType)
 			{
 				t += "[";
-				foreach (var argument in type.GenericTypeArguments)
-				{
-					t = CreateShortAfqn(argument, t, t.EndsWith("[") ? string.Empty : ",");
-				}
+				t = type.GenericTypeArguments.Aggregate(t, (current, argument) => CreateShortAfqn(argument, current, current.EndsWith("[", StringComparison.Ordinal) ? string.Empty : ","));
 				t += "]";
 			}
 
@@ -135,7 +128,7 @@ namespace RawRabbit.Common
 
 		public static string GetNonGenericTypeName(Type type)
 		{
-			var name = !type.GetTypeInfo().IsGenericType
+			string[] name = !type.GetTypeInfo().IsGenericType
 				? new[] { type.Name }
 				: type.Name.Split('`');
 

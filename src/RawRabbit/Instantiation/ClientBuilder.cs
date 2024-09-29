@@ -16,14 +16,14 @@ namespace RawRabbit.Instantiation
 
 		public ClientBuilder()
 		{
-			PipeBuilderAction = builder => { };
-			DependencyInjection = collection => { };
+			this.PipeBuilderAction = builder => { };
+			this.DependencyInjection = collection => { };
 		}
 
 		public void Register(Action<IPipeBuilder> pipe, Action<IDependencyRegister> ioc)
 		{
-			PipeBuilderAction += pipe;
-			DependencyInjection += ioc;
+			this.PipeBuilderAction += pipe;
+			this.DependencyInjection += ioc;
 		}
 	}
 }

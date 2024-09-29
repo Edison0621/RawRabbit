@@ -22,28 +22,28 @@ namespace RawRabbit.Operations.Respond.Middleware
 
 	public class RespondExceptionMiddleware : ExceptionHandlingMiddleware
 	{
-		protected Func<IPipeContext, BasicDeliverEventArgs> DeliveryArgsFunc;
-		protected Func<IPipeContext, ConsumeConfiguration> ConsumeConfigFunc;
-		protected Func<IPipeContext, IModel> ChannelFunc;
-		protected Action<IPipeContext, ExceptionInformation> SaveAction;
+		protected readonly Func<IPipeContext, BasicDeliverEventArgs> _deliveryArgsFunc;
+		protected readonly Func<IPipeContext, ConsumeConfiguration> _consumeConfigFunc;
+		protected Func<IPipeContext, IModel> _channelFunc;
+		protected readonly Action<IPipeContext, ExceptionInformation> _saveAction;
 
 		public RespondExceptionMiddleware(IPipeBuilderFactory factory, RespondExceptionOptions options = null)
 			: base(factory, new ExceptionHandlingOptions { InnerPipe = options?.InnerPipe })
 		{
-			DeliveryArgsFunc = options?.DeliveryArgsFunc ?? (context => context.GetDeliveryEventArgs());
-			ConsumeConfigFunc = options?.ConsumeConfigFunc ?? (context => context.GetConsumeConfiguration());
-			SaveAction = options?.SaveAction ?? ((context, information) => context.Properties.TryAdd(RespondKey.ResponseMessage, information));
+			this._deliveryArgsFunc = options?.DeliveryArgsFunc ?? (context => context.GetDeliveryEventArgs());
+			this._consumeConfigFunc = options?.ConsumeConfigFunc ?? (context => context.GetConsumeConfiguration());
+			this._saveAction = options?.SaveAction ?? ((context, information) => context.Properties.TryAdd(RespondKey.ResponseMessage, information));
 		}
 
 		protected override Task OnExceptionAsync(Exception exception, IPipeContext context, CancellationToken token)
 		{
-			var innerException = UnwrapInnerException(exception);
-			var args = GetDeliveryArgs(context);
-			var cfg = GetConsumeConfiguration(context);
-			AddAcknowledgementToContext(context, cfg);
-			var exceptionInfo = CreateExceptionInformation(innerException, args, cfg, context);
-			SaveInContext(context, exceptionInfo);
-			return Next.InvokeAsync(context, token);
+			Exception innerException = UnwrapInnerException(exception);
+			BasicDeliverEventArgs args = this.GetDeliveryArgs(context);
+			ConsumeConfiguration cfg = this.GetConsumeConfiguration(context);
+			this.AddAcknowledgementToContext(context, cfg);
+			ExceptionInformation exceptionInfo = this.CreateExceptionInformation(innerException, args, cfg, context);
+			this.SaveInContext(context, exceptionInfo);
+			return this.Next.InvokeAsync(context, token);
 		}
 
 		protected virtual void AddAcknowledgementToContext(IPipeContext context, ConsumeConfiguration cfg)
@@ -57,12 +57,12 @@ namespace RawRabbit.Operations.Respond.Middleware
 
 		protected virtual BasicDeliverEventArgs GetDeliveryArgs(IPipeContext context)
 		{
-			return DeliveryArgsFunc(context);
+			return this._deliveryArgsFunc(context);
 		}
 
 		protected virtual ConsumeConfiguration GetConsumeConfiguration(IPipeContext context)
 		{
-			return ConsumeConfigFunc(context);
+			return this._consumeConfigFunc(context);
 		}
 
 		protected virtual ExceptionInformation CreateExceptionInformation(Exception exception, BasicDeliverEventArgs args, ConsumeConfiguration cfg, IPipeContext context)
@@ -78,7 +78,7 @@ namespace RawRabbit.Operations.Respond.Middleware
 
 		protected virtual void SaveInContext(IPipeContext context, ExceptionInformation info)
 		{
-			SaveAction?.Invoke(context, info);
+			this._saveAction?.Invoke(context, info);
 		}
 	}
 }

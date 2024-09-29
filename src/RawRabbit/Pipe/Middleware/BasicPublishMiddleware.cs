@@ -19,39 +19,38 @@ namespace RawRabbit.Pipe.Middleware
 
 	public class BasicPublishMiddleware : Middleware
 	{
-		protected readonly IExclusiveLock Exclusive;
-		protected Func<IPipeContext, IModel> ChannelFunc;
-		protected Func<IPipeContext, string> ExchangeNameFunc;
-		protected Func<IPipeContext, string> RoutingKeyFunc;
-		protected Func<IPipeContext, bool> MandatoryFunc;
-		protected Func<IPipeContext, IBasicProperties> BasicPropsFunc;
-		protected Func<IPipeContext, byte[]> BodyFunc;
+		protected readonly IExclusiveLock _exclusive;
+		protected readonly Func<IPipeContext, IModel> _channelFunc;
+		protected readonly Func<IPipeContext, string> _exchangeNameFunc;
+		protected readonly Func<IPipeContext, string> _routingKeyFunc;
+		protected readonly Func<IPipeContext, bool> _mandatoryFunc;
+		protected readonly Func<IPipeContext, IBasicProperties> _basicPropsFunc;
+		protected readonly Func<IPipeContext, byte[]> _bodyFunc;
 		private ILog _logger = LogProvider.For<BasicPublishMiddleware>();
 
 		public BasicPublishMiddleware(IExclusiveLock exclusive, BasicPublishOptions options = null)
 		{
-			Exclusive = exclusive;
-			ChannelFunc = options?.ChannelFunc ?? (context => context.GetTransientChannel());
-			ExchangeNameFunc = options?.ExchangeNameFunc ?? (c => c.GetBasicPublishConfiguration()?.ExchangeName);
-			RoutingKeyFunc = options?.RoutingKeyFunc ?? (c => c.GetBasicPublishConfiguration()?.RoutingKey);
-			MandatoryFunc = options?.MandatoryFunc ?? (c => c.GetBasicPublishConfiguration()?.Mandatory ?? false);
-			BasicPropsFunc = options?.BasicPropsFunc ?? (c => c.GetBasicProperties());
-			BodyFunc = options?.BodyFunc ?? (c => c.GetBasicPublishConfiguration()?.Body);
+			this._exclusive = exclusive;
+			this._channelFunc = options?.ChannelFunc ?? (context => context.GetTransientChannel());
+			this._exchangeNameFunc = options?.ExchangeNameFunc ?? (c => c.GetBasicPublishConfiguration()?.ExchangeName);
+			this._routingKeyFunc = options?.RoutingKeyFunc ?? (c => c.GetBasicPublishConfiguration()?.RoutingKey);
+			this._mandatoryFunc = options?.MandatoryFunc ?? (c => c.GetBasicPublishConfiguration()?.Mandatory ?? false);
+			this._basicPropsFunc = options?.BasicPropsFunc ?? (c => c.GetBasicProperties());
+			this._bodyFunc = options?.BodyFunc ?? (c => c.GetBasicPublishConfiguration()?.Body);
 		}
 
-		public override async Task InvokeAsync(IPipeContext context, CancellationToken token)
+		public override async Task InvokeAsync(IPipeContext context, CancellationToken token = default(CancellationToken))
 		{
-			var channel = GetOrCreateChannel(context);
-			var exchangeName = GetExchangeName(context);
-			var routingKey = GetRoutingKey(context);
-			var mandatory = GetMandatoryOptions(context);
-			var basicProps = GetBasicProps(context);
-			var body = GetMessageBody(context);
+			IModel channel = this.GetOrCreateChannel(context);
+			string exchangeName = this.GetExchangeName(context);
+			string routingKey = this.GetRoutingKey(context);
+			bool mandatory = this.GetMandatoryOptions(context);
+			IBasicProperties basicProps = this.GetBasicProps(context);
+			byte[] body = this.GetMessageBody(context);
 
-			_logger.Info("Performing basic publish with routing key {routingKey} on exchange {exchangeName}.", routingKey, exchangeName);
+			this._logger.Info("Performing basic publish with routing key {routingKey} on exchange {exchangeName}.", routingKey, exchangeName);
 
-			ExclusiveExecute(channel, c =>
-					BasicPublish(
+			this.ExclusiveExecute(channel, c => this.BasicPublish(
 						channel: c,
 						exchange: exchangeName,
 						routingKey: routingKey,
@@ -62,7 +61,7 @@ namespace RawRabbit.Pipe.Middleware
 					), token
 			);
 
-			await Next.InvokeAsync(context, token);
+			await this.Next.InvokeAsync(context, token);
 		}
 
 		protected virtual void BasicPublish(IModel channel, string exchange, string routingKey, bool mandatory, IBasicProperties basicProps, byte[] body, IPipeContext context)
@@ -78,60 +77,60 @@ namespace RawRabbit.Pipe.Middleware
 
 		protected virtual void ExclusiveExecute(IModel channel, Action<IModel> action, CancellationToken token)
 		{
-			Exclusive.Execute(channel, action, token);
+			this._exclusive.Execute(channel, action, token);
 		}
 
 		protected virtual byte[] GetMessageBody(IPipeContext context)
 		{
-			var body = BodyFunc(context);
+			byte[] body = this._bodyFunc(context);
 			if (body == null)
 			{
-				_logger.Warn("No body found in the Pipe context.");
+				this._logger.Warn("No body found in the Pipe context.");
 			}
 			return body;
 		}
 
 		protected virtual IBasicProperties GetBasicProps(IPipeContext context)
 		{
-			var props = BasicPropsFunc(context);
+			IBasicProperties props = this._basicPropsFunc(context);
 			if (props == null)
 			{
-				_logger.Warn("No basic properties found in the Pipe context.");
+				this._logger.Warn("No basic properties found in the Pipe context.");
 			}
 			return props;
 		}
 
 		protected virtual bool GetMandatoryOptions(IPipeContext context)
 		{
-			return MandatoryFunc(context);
+			return this._mandatoryFunc(context);
 		}
 
 		protected virtual string GetRoutingKey(IPipeContext context)
 		{
-			var routingKey =  RoutingKeyFunc(context);
+			string routingKey = this._routingKeyFunc(context);
 			if (routingKey == null)
 			{
-				_logger.Warn("No routing key found in the Pipe context.");
+				this._logger.Warn("No routing key found in the Pipe context.");
 			}
 			return routingKey;
 		}
 
 		protected virtual string GetExchangeName(IPipeContext context)
 		{
-			var exchange = ExchangeNameFunc(context);
+			string exchange = this._exchangeNameFunc(context);
 			if (exchange == null)
 			{
-				_logger.Warn("No exchange name found in the Pipe context.");
+				this._logger.Warn("No exchange name found in the Pipe context.");
 			}
 			return exchange;
 		}
 
 		protected virtual IModel GetOrCreateChannel(IPipeContext context)
 		{
-			var channel = ChannelFunc(context);
+			IModel channel = this._channelFunc(context);
 			if (channel == null)
 			{
-				_logger.Warn("No channel to perform publish found.");
+				this._logger.Warn("No channel to perform publish found.");
 			}
 			return channel;
 		}

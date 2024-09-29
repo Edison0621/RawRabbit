@@ -1,6 +1,7 @@
 ﻿using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
+using Polly;
 using RabbitMQ.Client;
 using RawRabbit.Channel.Abstraction;
 using RawRabbit.Pipe;
@@ -14,7 +15,7 @@ namespace RawRabbit.Enrichers.Polly.Middleware
 
 		protected override Task<IModel> CreateChannelAsync(IPipeContext context, CancellationToken token)
 		{
-			var policy = context.GetPolicy(PolicyKeys.ChannelCreate);
+			Policy policy = context.GetPolicy(PolicyKeys.ChannelCreate);
 			return policy.ExecuteAsync(
 				action: ct => base.CreateChannelAsync(context, ct),
 				cancellationToken: token,
@@ -22,7 +23,7 @@ namespace RawRabbit.Enrichers.Polly.Middleware
 				{
 					[RetryKey.PipeContext] = context,
 					[RetryKey.CancellationToken] = token,
-					[RetryKey.ChannelFactory] = ChannelFactory
+					[RetryKey.ChannelFactory] = this._channelFactory
 				}
 			);
 		}

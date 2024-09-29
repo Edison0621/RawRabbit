@@ -8,7 +8,7 @@ namespace RawRabbit.Pipe.Middleware
 		public override Task InvokeAsync(IPipeContext context, CancellationToken token = new CancellationToken())
 		{
 			token.ThrowIfCancellationRequested();
-			return Next.InvokeAsync(context, token);
+			return this.Next.InvokeAsync(context, token);
 		}
 	}
 }

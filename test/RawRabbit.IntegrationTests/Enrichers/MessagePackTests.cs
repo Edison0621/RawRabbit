@@ -1,9 +1,9 @@
 ﻿using System.Threading.Tasks;
 using MessagePack;
 using RawRabbit.Enrichers.MessagePack;
-using RawRabbit.Enrichers.ZeroFormatter;
 using RawRabbit.Instantiation;
 using Xunit;
+#pragma warning disable CS1587 // XML comment is not placed on a valid language element
 
 namespace RawRabbit.IntegrationTests.Enrichers
 {
@@ -12,11 +12,11 @@ namespace RawRabbit.IntegrationTests.Enrichers
 		[Fact]
 		public async Task Should_Publish_And_Subscribe_with_Zero_Formatter()
 		{
-			using (var client = RawRabbitFactory.CreateTestClient(new RawRabbitOptions { Plugins = p => p.UseMessagePack() }))
+			using (Instantiation.Disposable.BusClient client = RawRabbitFactory.CreateTestClient(new RawRabbitOptions { Plugins = p => p.UseMessagePack() }))
 			{
 				/** Setup **/
-				var tcs = new TaskCompletionSource<MessagePackMessage>();
-				var message = new MessagePackMessage
+				TaskCompletionSource<MessagePackMessage> tcs = new TaskCompletionSource<MessagePackMessage>();
+				MessagePackMessage message = new MessagePackMessage
 				{
 					TagLine = "Extremely Fast MessagePack Serializer for C#"
 				};

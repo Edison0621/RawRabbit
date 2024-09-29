@@ -18,8 +18,8 @@ namespace RawRabbit.Configuration.Exchange
 
 		public ExchangeDeclarationFactory(RawRabbitConfiguration config, INamingConventions conventions)
 		{
-			_config = config;
-			_conventions = conventions;
+			this._config = config;
+			this._conventions = conventions;
 		}
 
 		public ExchangeDeclaration Create(string exchangeName)
@@ -27,22 +27,22 @@ namespace RawRabbit.Configuration.Exchange
 			return new ExchangeDeclaration
 			{
 				Arguments = new Dictionary<string, object>(),
-				ExchangeType = _config.Exchange.Type.ToString().ToLower(),
-				Durable = _config.Exchange.Durable,
-				AutoDelete = _config.Exchange.AutoDelete,
+				ExchangeType = this._config.Exchange.Type.ToString().ToLower(),
+				Durable = this._config.Exchange.Durable,
+				AutoDelete = this._config.Exchange.AutoDelete,
 				Name = exchangeName
 			};
 		}
 
 		public ExchangeDeclaration Create<TMessage>()
 		{
-			return Create(typeof(TMessage));
+			return this.Create(typeof(TMessage));
 		}
 
 		public ExchangeDeclaration Create(Type messageType)
 		{
-			var exchangeName = _conventions.ExchangeNamingConvention(messageType);
-			return Create(exchangeName);
+			string exchangeName = this._conventions.ExchangeNamingConvention(messageType);
+			return this.Create(exchangeName);
 		}
 	}
 }

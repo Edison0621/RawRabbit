@@ -23,58 +23,58 @@ namespace RawRabbit.Operations.Request.Middleware
 	public class ResponderExceptionMiddleware : Pipe.Middleware.Middleware
 	{
 		private readonly ISerializer _serializer;
-		protected Func<IPipeContext, object> ExceptionInfoFunc;
-		protected Func<ExceptionInformation, IPipeContext, Task> HandlerFunc;
+		protected Func<IPipeContext, object> _exceptionInfoFunc;
+		protected readonly Func<ExceptionInformation, IPipeContext, Task> _handlerFunc;
 		private readonly ILog _logger = LogProvider.For<ResponderExceptionMiddleware>();
-		protected Func<IPipeContext, Type> ResponseTypeFunc;
+		protected readonly Func<IPipeContext, Type> _responseTypeFunc;
 		private readonly Func<IPipeContext, BasicDeliverEventArgs> _deliveryArgFunc;
 
 		public ResponderExceptionMiddleware(ISerializer serializer, ResponderExceptionOptions options = null)
 		{
-			_serializer = serializer;
-			ExceptionInfoFunc = options?.MessageFunc ?? (context => context.GetResponseMessage());
-			HandlerFunc = options?.HandlerFunc;
-			_deliveryArgFunc = options?.DeliveryArgsFunc ?? (context => context.GetDeliveryEventArgs());
-			ResponseTypeFunc = options?.ResponseTypeFunc ?? (context =>
+			this._serializer = serializer;
+			this._exceptionInfoFunc = options?.MessageFunc ?? (context => context.GetResponseMessage());
+			this._handlerFunc = options?.HandlerFunc;
+			this._deliveryArgFunc = options?.DeliveryArgsFunc ?? (context => context.GetDeliveryEventArgs());
+			this._responseTypeFunc = options?.ResponseTypeFunc ?? (context =>
 			{
-				var type = GetDeliverEventArgs(context)?.BasicProperties.Type;
+				string type = this.GetDeliverEventArgs(context)?.BasicProperties.Type;
 				return !string.IsNullOrWhiteSpace(type) ? Type.GetType(type, false) : typeof(object);
 			});
 		}
 
 		public override Task InvokeAsync(IPipeContext context, CancellationToken token = new CancellationToken())
 		{
-			var responseType = GetResponseType(context);
+			Type responseType = this.GetResponseType(context);
 			if (responseType == typeof(ExceptionInformation))
 			{
-				var exceptionInfo = GetExceptionInfo(context);
-				return HandleRespondException(exceptionInfo, context);
+				ExceptionInformation exceptionInfo = this.GetExceptionInfo(context);
+				return this.HandleRespondException(exceptionInfo, context);
 			}
-			return Next.InvokeAsync(context, token);
+			return this.Next.InvokeAsync(context, token);
 		}
 
 		protected virtual BasicDeliverEventArgs GetDeliverEventArgs(IPipeContext context)
 		{
-			return _deliveryArgFunc?.Invoke(context);
+			return this._deliveryArgFunc?.Invoke(context);
 		}
 
 		protected virtual Type GetResponseType(IPipeContext context)
 		{
-			return ResponseTypeFunc?.Invoke(context);
+			return this._responseTypeFunc?.Invoke(context);
 		}
 
 		protected virtual byte[] GetMessageBody(IPipeContext context)
 		{
-			var deliveryArgs = GetDeliverEventArgs(context);
+			BasicDeliverEventArgs deliveryArgs = this.GetDeliverEventArgs(context);
 			return deliveryArgs?.Body ?? new byte[0];
 		}
 
 		protected virtual ExceptionInformation GetExceptionInfo(IPipeContext context)
 		{
-			var body = GetMessageBody(context);
+			byte[] body = this.GetMessageBody(context);
 			try
 			{
-				return _serializer.Deserialize<ExceptionInformation>(body);
+				return this._serializer.Deserialize<ExceptionInformation>(body);
 			}
 			catch (Exception e)
 			{
@@ -91,14 +91,14 @@ namespace RawRabbit.Operations.Request.Middleware
 
 		protected virtual Task HandleRespondException(ExceptionInformation exceptionInfo, IPipeContext context)
 		{
-			_logger.Info("An unhandled exception occured when remote tried to handle request.\n  Message: {exceptionMessage}\n  Stack Trace: {stackTrace}", exceptionInfo.Message, exceptionInfo.StackTrace);
+			this._logger.Info("An unhandled exception occured when remote tried to handle request.\n  Message: {exceptionMessage}\n  Stack Trace: {stackTrace}", exceptionInfo.Message, exceptionInfo.StackTrace);
 
-			if (HandlerFunc != null)
+			if (this._handlerFunc != null)
 			{
-				return HandlerFunc(exceptionInfo, context);
+				return this._handlerFunc(exceptionInfo, context);
 			}
 
-			var exception = new MessageHandlerException(exceptionInfo.Message)
+			MessageHandlerException exception = new MessageHandlerException(exceptionInfo.Message)
 			{
 				InnerExceptionType = exceptionInfo.ExceptionType,
 				InnerStackTrace = exceptionInfo.StackTrace,

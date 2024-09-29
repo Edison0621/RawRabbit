@@ -3,6 +3,8 @@ using System.Threading.Tasks;
 using BenchmarkDotNet.Attributes;
 using RawRabbit.Enrichers.MessageContext;
 using RawRabbit.Instantiation;
+// ReSharper disable All
+#pragma warning disable CS4014 // Because this call is not awaited, execution of the current method continues before the call is completed
 
 namespace RawRabbit.PerformanceTest
 {
@@ -19,59 +21,59 @@ namespace RawRabbit.PerformanceTest
 		[Setup]
 		public void Setup()
 		{
-			_withoutContext = RawRabbitFactory.CreateSingleton();
-			_withContext = RawRabbitFactory.CreateSingleton(new RawRabbitOptions
+			this._withoutContext = RawRabbitFactory.CreateSingleton();
+			this._withContext = RawRabbitFactory.CreateSingleton(new RawRabbitOptions
 			{
 				Plugins = p => p.UseMessageContext<MessageContext>()
 			});
-			_completedTask = Task.FromResult(0);
-			_messageA = new MessageA();
-			_messageB = new MessageB();
-			_withoutContext.SubscribeAsync<MessageA>(message =>
+			this._completedTask = Task.FromResult(0);
+			this._messageA = new MessageA();
+			this._messageB = new MessageB();
+			this._withoutContext.SubscribeAsync<MessageA>(message =>
 			{
-				MessageReceived(message, EventArgs.Empty);
-				return _completedTask;
+				this.MessageReceived(message, EventArgs.Empty);
+				return this._completedTask;
 			});
-			_withContext.SubscribeAsync<MessageB, MessageContext>((message, context) =>
+			this._withContext.SubscribeAsync<MessageB, MessageContext>((message, context) =>
 			{
-				MessageReceived(message, EventArgs.Empty);
-				return _completedTask;
+				this.MessageReceived(message, EventArgs.Empty);
+				return this._completedTask;
 			});
 		}
 
 		[Cleanup]
 		public void Cleanup()
 		{
-			_withoutContext.DeleteQueueAsync<MessageA>();
-			_withoutContext.DeleteQueueAsync<MessageB>();
-			(_withoutContext as IDisposable).Dispose();
-			(_withContext as IDisposable).Dispose();
+			this._withoutContext.DeleteQueueAsync<MessageA>();
+			this._withoutContext.DeleteQueueAsync<MessageB>();
+			(this._withoutContext as IDisposable).Dispose();
+			(this._withContext as IDisposable).Dispose();
 		}
 
 		[Benchmark]
 		public async Task MessageContext_FromFactory()
 		{
-			var msgTsc = new TaskCompletionSource<Message>();
+			TaskCompletionSource<Message> msgTsc = new TaskCompletionSource<Message>();
 
 			EventHandler onMessageReceived = (sender, args) => { msgTsc.TrySetResult(sender as Message); };
-			MessageReceived += onMessageReceived;
+			this.MessageReceived += onMessageReceived;
 
-			_withContext.PublishAsync(_messageB);
+			this._withContext.PublishAsync(this._messageB);
 			await msgTsc.Task;
-			MessageReceived -= onMessageReceived;
+			this.MessageReceived -= onMessageReceived;
 		}
 
 		[Benchmark]
 		public async Task MessageContext_None()
 		{
-			var msgTsc = new TaskCompletionSource<Message>();
+			TaskCompletionSource<Message> msgTsc = new TaskCompletionSource<Message>();
 
 			EventHandler onMessageReceived = (sender, args) => { msgTsc.TrySetResult(sender as Message); };
-			MessageReceived += onMessageReceived;
+			this.MessageReceived += onMessageReceived;
 
-			_withoutContext.PublishAsync(_messageA);
+			this._withoutContext.PublishAsync(this._messageA);
 			await msgTsc.Task;
-			MessageReceived -= onMessageReceived;
+			this.MessageReceived -= onMessageReceived;
 		}
 
 

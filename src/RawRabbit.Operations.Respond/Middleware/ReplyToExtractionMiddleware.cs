@@ -18,59 +18,60 @@ namespace RawRabbit.Operations.Respond.Middleware
 
 	public class ReplyToExtractionMiddleware : Pipe.Middleware.Middleware
 	{
-		protected Func<IPipeContext, BasicDeliverEventArgs> DeliveryArgsFunc;
-		protected Func<BasicDeliverEventArgs, PublicationAddress> ReplyToFunc;
-		protected Action<IPipeContext, PublicationAddress> ContextSaveAction;
+		protected readonly Func<IPipeContext, BasicDeliverEventArgs> _deliveryArgsFunc;
+		protected readonly Func<BasicDeliverEventArgs, PublicationAddress> _replyToFunc;
+		protected readonly Action<IPipeContext, PublicationAddress> _contextSaveAction;
 		private readonly ILog _logger = LogProvider.For<ReplyToExtractionMiddleware>();
 
 		public ReplyToExtractionMiddleware(ReplyToExtractionOptions options = null)
 		{
-			ContextSaveAction = options?.ContextSaveAction ?? ((ctx, addr) => ctx.Properties.Add(RespondKey.PublicationAddress, addr));
-			DeliveryArgsFunc = options?.DeliveryArgsFunc ?? (ctx => ctx.GetDeliveryEventArgs());
-			ReplyToFunc = options?.ReplyToFunc ?? (args =>
+			this._contextSaveAction = options?.ContextSaveAction ?? ((ctx, addr) => ctx.Properties.Add(RespondKey.PublicationAddress, addr));
+			this._deliveryArgsFunc = options?.DeliveryArgsFunc ?? (ctx => ctx.GetDeliveryEventArgs());
+			this._replyToFunc = options?.ReplyToFunc ?? (args =>
 				args.BasicProperties.ReplyToAddress ?? new PublicationAddress(ExchangeType.Direct, string.Empty, args.BasicProperties.ReplyTo));
 		}
 
-		public override Task InvokeAsync(IPipeContext context, CancellationToken token)
+		public override Task InvokeAsync(IPipeContext context, CancellationToken token = default(CancellationToken))
 		{
-			var args = GetDeliveryArgs(context);
-			var replyTo = GetReplyTo(args);
-			SaveInContext(context, replyTo);
-			return Next.InvokeAsync(context, token);
+			BasicDeliverEventArgs args = this.GetDeliveryArgs(context);
+			PublicationAddress replyTo = this.GetReplyTo(args);
+			this.SaveInContext(context, replyTo);
+			return this.Next.InvokeAsync(context, token);
 		}
 
 		protected virtual BasicDeliverEventArgs GetDeliveryArgs(IPipeContext context)
 		{
-			var args = DeliveryArgsFunc(context);
+			BasicDeliverEventArgs args = this._deliveryArgsFunc(context);
 			if (args == null)
 			{
-				_logger.Warn("Delivery args not found in Pipe context.");
+				this._logger.Warn("Delivery args not found in Pipe context.");
 			}
 			return args;
 		}
 
 		protected virtual PublicationAddress GetReplyTo(BasicDeliverEventArgs args)
 		{
-			var replyTo = ReplyToFunc(args);
+			PublicationAddress replyTo = this._replyToFunc(args);
 			if (replyTo == null)
 			{
-				_logger.Warn("Reply to address not found in Pipe context.");
+				this._logger.Warn("Reply to address not found in Pipe context.");
 			}
 			else
 			{
 				args.BasicProperties.ReplyTo = replyTo.RoutingKey;
-				_logger.Info("Using reply address with exchange {exchangeName} and routing key '{routingKey}'", replyTo.ExchangeName, replyTo.RoutingKey);
+				this._logger.Info("Using reply address with exchange {exchangeName} and routing key '{routingKey}'", replyTo.ExchangeName, replyTo.RoutingKey);
 			}
 			return replyTo;
 		}
 
 		protected virtual void SaveInContext(IPipeContext context, PublicationAddress replyTo)
 		{
-			if (ContextSaveAction == null)
+			if (this._contextSaveAction == null)
 			{
-				_logger.Warn("No context save action found. Reply to address will not be saved.");
+				this._logger.Warn("No context save action found. Reply to address will not be saved.");
 			}
-			ContextSaveAction?.Invoke(context, replyTo);
+
+			this._contextSaveAction?.Invoke(context, replyTo);
 		}
 	}
 }

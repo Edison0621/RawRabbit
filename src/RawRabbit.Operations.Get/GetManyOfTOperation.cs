@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
+using RabbitMQ.Client;
 using RawRabbit.Configuration.Get;
 using RawRabbit.Operations.Get.Model;
 using RawRabbit.Pipe;
@@ -13,12 +14,12 @@ namespace RawRabbit
 	{
 		public static async Task<Ackable<List<Ackable<TMessage>>>> GetManyAsync<TMessage>(this IBusClient busClient, int batchSize, Action<IGetConfigurationBuilder> config = null, CancellationToken token = default(CancellationToken))
 		{
-			var channel = await busClient.CreateChannelAsync(token:token);
-			var result = new List<Ackable<TMessage>>();
+			IModel channel = await busClient.CreateChannelAsync(token:token);
+			List<Ackable<TMessage>> result = new List<Ackable<TMessage>>();
 
 			while (result.Count < batchSize)
 			{
-				var ackableMessage = await busClient.GetAsync<TMessage>(config, c => c.Properties.TryAdd(PipeKey.Channel, channel), token);
+				Ackable<TMessage> ackableMessage = await busClient.GetAsync<TMessage>(config, c => c.Properties.TryAdd(PipeKey.Channel, channel), token);
 				if (ackableMessage.Content == null)
 				{
 					break;
@@ -28,7 +29,7 @@ namespace RawRabbit
 
 			return new Ackable<List<Ackable<TMessage>>>(
 				result,
-				result.FirstOrDefault()?.Channel,
+				result.FirstOrDefault()?._channel,
 				list => list.Where(a => !a.Acknowledged).SelectMany(a => a.DeliveryTags).ToArray()
 			);
 		}

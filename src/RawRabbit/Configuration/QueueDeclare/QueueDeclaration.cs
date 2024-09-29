@@ -12,16 +12,16 @@ namespace RawRabbit.Configuration.Queue
 
 		public QueueDeclaration()
 		{
-			Arguments = new Dictionary<string, object>();
+			this.Arguments = new Dictionary<string, object>();
 		}
 
 		public QueueDeclaration(GeneralQueueConfiguration cfg) : this()
 		{
-			Durable = cfg.Durable;
-			AutoDelete = cfg.AutoDelete;
-			Exclusive = cfg.Exclusive;
+			this.Durable = cfg.Durable;
+			this.AutoDelete = cfg.AutoDelete;
+			this.Exclusive = cfg.Exclusive;
 		}
 
-		public static QueueDeclaration Default => new QueueDeclaration { };
+		public static QueueDeclaration Default => new QueueDeclaration();
 	}
 }

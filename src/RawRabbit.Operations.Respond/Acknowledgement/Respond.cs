@@ -1,6 +1,4 @@
-﻿using System;
-
-namespace RawRabbit.Operations.Respond.Acknowledgement
+﻿namespace RawRabbit.Operations.Respond.Acknowledgement
 {
 	public static class Respond
 	{

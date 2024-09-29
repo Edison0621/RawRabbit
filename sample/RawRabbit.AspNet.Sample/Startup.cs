@@ -25,12 +25,12 @@ namespace RawRabbit.AspNet.Sample
 
 		public Startup(IHostingEnvironment env)
 		{
-			_rootPath = env.ContentRootPath;
-			var builder = new ConfigurationBuilder()
-				.SetBasePath(_rootPath)
+			this._rootPath = env.ContentRootPath;
+			IConfigurationBuilder builder = new ConfigurationBuilder()
+				.SetBasePath(this._rootPath)
 				.AddJsonFile("appsettings.json")
 				.AddEnvironmentVariables();
-			Configuration = builder.Build();
+			this.Configuration = builder.Build();
 		}
 
 		public IConfigurationRoot Configuration { get; }
@@ -40,17 +40,14 @@ namespace RawRabbit.AspNet.Sample
 			services
 				.AddRawRabbit(new RawRabbitOptions
 					{
-						ClientConfiguration = GetRawRabbitConfiguration(),
+						ClientConfiguration = this.GetRawRabbitConfiguration(),
 						Plugins = p => p
 							.UseStateMachine()
 							.UseGlobalExecutionId()
 							.UseHttpContext()
-							.UseMessageContext(c =>
+							.UseMessageContext(c => new MessageContext
 							{
-								return new MessageContext
-								{
-									Source = c.GetHttpContext().Request.GetDisplayUrl()
-								};
+								Source = c.GetHttpContext().Request.GetDisplayUrl()
 							})
 					})
 				.AddMvc();
@@ -58,10 +55,10 @@ namespace RawRabbit.AspNet.Sample
 
 		public void Configure(IApplicationBuilder app, IHostingEnvironment env, ILoggerFactory loggerFactory)
 		{
-			Log.Logger = GetConfiguredSerilogger();
+			Log.Logger = this.GetConfiguredSerilogger();
 			loggerFactory
 				.AddSerilog()
-				.AddConsole(Configuration.GetSection("Logging"));
+				.AddConsole(this.Configuration.GetSection("Logging"));
 
 			app.UseMvc();
 		}
@@ -69,17 +66,17 @@ namespace RawRabbit.AspNet.Sample
 		private ILogger GetConfiguredSerilogger()
 		{
 			return new LoggerConfiguration()
-				.WriteTo.File($"{_rootPath}/Logs/serilog.log", LogEventLevel.Debug)
+				.WriteTo.File($"{this._rootPath}/Logs/serilog.log", LogEventLevel.Debug)
 				.WriteTo.LiterateConsole()
 				.CreateLogger();
 		}
 
 		private RawRabbitConfiguration GetRawRabbitConfiguration()
 		{
-			var section = Configuration.GetSection("RawRabbit");
+			IConfigurationSection section = this.Configuration.GetSection("RawRabbit");
 			if (!section.GetChildren().Any())
 			{
-				throw new ArgumentException($"Unable to configuration section 'RawRabbit'. Make sure it exists in the provided configuration");
+				throw new ArgumentException("Unable to configuration section 'RawRabbit'. Make sure it exists in the provided configuration");
 			}
 			return section.Get<RawRabbitConfiguration>();
 		}

@@ -14,16 +14,11 @@ namespace RawRabbit.Enrichers.MessagePack
 
 		public MessagePackSerializerWorker(MessagePackFormat format)
 		{
-			Type tp;
+			Type tp = format == MessagePackFormat.Lz4Compression ? typeof(LZ4MessagePackSerializer) : typeof(MessagePackSerializer);
 
-			if (format == MessagePackFormat.LZ4Compression)
-				tp = typeof(LZ4MessagePackSerializer);
-			else
-				tp = typeof(MessagePackSerializer);
-
-			_deserializeType = tp
+			this._deserializeType = tp
 				.GetMethod(nameof(MessagePackSerializer.Deserialize), new[] { typeof(byte[]) });
-			_serializeType = tp
+			this._serializeType = tp
 				.GetMethods()
 				.FirstOrDefault(s => s.Name == nameof(MessagePackSerializer.Serialize) && s.ReturnType == typeof(byte[]));
 		}
@@ -33,14 +28,14 @@ namespace RawRabbit.Enrichers.MessagePack
 			if (obj == null)
 				throw new ArgumentNullException();
 
-			return (byte[])_serializeType
+			return (byte[])this._serializeType
 				.MakeGenericMethod(obj.GetType())
 				.Invoke(null, new[] { obj });
 		}
 
 		public object Deserialize(Type type, byte[] bytes)
 		{
-			return _deserializeType.MakeGenericMethod(type)
+			return this._deserializeType.MakeGenericMethod(type)
 				.Invoke(null, new object[] { bytes });
 		}
 

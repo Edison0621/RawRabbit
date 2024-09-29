@@ -9,48 +9,48 @@ namespace RawRabbit.DependencyInjection.ServiceCollection
 
 		public ServiceCollectionAdapter(IServiceCollection collection)
 		{
-			Collection = collection;
+			this.Collection = collection;
 		}
 
 		public IDependencyRegister AddTransient<TService, TImplementation>() where TImplementation : class, TService where TService : class
 		{
-			Collection.AddTransient<TService, TImplementation>();
+			this.Collection.AddTransient<TService, TImplementation>();
 			return this;
 		}
 
 		public IDependencyRegister AddTransient<TService>(Func<IDependencyResolver, TService> instanceCreator) where TService : class
 		{
-			Collection.AddTransient(c => instanceCreator(new ServiceProviderAdapter(c)));
+			this.Collection.AddTransient(c => instanceCreator(new ServiceProviderAdapter(c)));
 			return this;
 		}
 
 		public IDependencyRegister AddTransient<TService, TImplementation>(Func<IDependencyResolver, TImplementation> instanceCreator) where TService : class where TImplementation : class, TService
 		{
-			Collection.AddTransient<TService, TImplementation>(c => instanceCreator(new ServiceProviderAdapter(c)));
+			this.Collection.AddTransient<TService, TImplementation>(c => instanceCreator(new ServiceProviderAdapter(c)));
 			return this;
 		}
 
 		public IDependencyRegister AddSingleton<TService>(TService instance) where TService : class
 		{
-			Collection.AddSingleton(instance);
+			this.Collection.AddSingleton(instance);
 			return this;
 		}
 
 		public IDependencyRegister AddSingleton<TService, TImplementation>(Func<IDependencyResolver, TService> instanceCreator) where TImplementation : class, TService where TService : class
 		{
-			Collection.AddSingleton(c => instanceCreator(new ServiceProviderAdapter(c)));
+			this.Collection.AddSingleton(c => instanceCreator(new ServiceProviderAdapter(c)));
 			return this;
 		}
 
 		public IDependencyRegister AddSingleton<TService>(Func<IDependencyResolver, TService> instanceCreator) where TService : class
 		{
-			Collection.AddSingleton<TService>(c => instanceCreator(new ServiceProviderAdapter(c)));
+			this.Collection.AddSingleton<TService>(c => instanceCreator(new ServiceProviderAdapter(c)));
 			return this;
 		}
 
 		public IDependencyRegister AddSingleton<TService, TImplementation>() where TImplementation : class, TService where TService : class
 		{
-			Collection.AddSingleton<TService, TImplementation>();
+			this.Collection.AddSingleton<TService, TImplementation>();
 			return this;
 		}
 	}

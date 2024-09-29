@@ -10,14 +10,14 @@ namespace RawRabbit.IntegrationTests.PublishAndSubscribe
 		[Fact]
 		public async Task Should_Be_Able_To_Perform_Multiple_Concurrent_Publishes()
 		{
-			using (var publisher = RawRabbitFactory.CreateTestClient())
-			using (var subscriber = RawRabbitFactory.CreateTestClient())
+			using (Instantiation.Disposable.BusClient publisher = RawRabbitFactory.CreateTestClient())
+			using (Instantiation.Disposable.BusClient subscriber = RawRabbitFactory.CreateTestClient())
 			{
 				/* Setup */
-				var receivedCount = 0;
+				int receivedCount = 0;
 				const int sendCount = 2000;
-				var publishTasks = new Task[sendCount];
-				var receivedTcs = new TaskCompletionSource<int>();
+				Task[] publishTasks = new Task[sendCount];
+				TaskCompletionSource<int> receivedTcs = new TaskCompletionSource<int>();
 				await subscriber.SubscribeAsync<BasicMessage>(received =>
 				{
 					Interlocked.Increment(ref receivedCount);
@@ -29,7 +29,7 @@ namespace RawRabbit.IntegrationTests.PublishAndSubscribe
 				});
 
 				/* Test */
-				for (var i = 0; i < sendCount; i++)
+				for (int i = 0; i < sendCount; i++)
 				{
 					publishTasks[i] = publisher.PublishAsync(new BasicMessage());
 				}
@@ -43,18 +43,18 @@ namespace RawRabbit.IntegrationTests.PublishAndSubscribe
 		[Fact]
 		public async Task Should_Be_Able_To_Perform_Multiple_Concurrent_Rpc()
 		{
-			using (var requester = RawRabbitFactory.CreateTestClient())
-			using (var responder = RawRabbitFactory.CreateTestClient())
+			using (Instantiation.Disposable.BusClient requester = RawRabbitFactory.CreateTestClient())
+			using (Instantiation.Disposable.BusClient responder = RawRabbitFactory.CreateTestClient())
 			{
 				/* Setup */
 				const int sendCount = 2000;
-				var publishTasks = new Task[sendCount];
+				Task[] publishTasks = new Task[sendCount];
 				await responder.RespondAsync<BasicRequest, BasicResponse>(received =>
 					Task.FromResult(new BasicResponse())
 				);
 
 				/* Test */
-				for (var i = 0; i < sendCount; i++)
+				for (int i = 0; i < sendCount; i++)
 				{
 					publishTasks[i] = requester.RequestAsync<BasicRequest, BasicResponse>();
 				}

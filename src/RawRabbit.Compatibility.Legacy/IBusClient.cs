@@ -1,7 +1,5 @@
 ﻿using System;
-using System.Threading;
 using System.Threading.Tasks;
-using RawRabbit.Common;
 using RawRabbit.Compatibility.Legacy.Configuration.Publish;
 using RawRabbit.Compatibility.Legacy.Configuration.Request;
 using RawRabbit.Compatibility.Legacy.Configuration.Respond;

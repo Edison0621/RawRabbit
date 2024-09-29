@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Threading.Tasks;
+using RawRabbit.Configuration.Queue;
 using RawRabbit.Operations.Tools.Middleware;
 using RawRabbit.Pipe;
 using RawRabbit.Pipe.Middleware;
@@ -14,7 +15,7 @@ namespace RawRabbit
 			.Use<QueueDeclarationMiddleware>()
 			.Use((context, func) =>
 			{
-				var consumeCfg = context.GetQueueDeclaration();
+				QueueDeclaration consumeCfg = context.GetQueueDeclaration();
 				if (consumeCfg != null)
 				{
 					context.Properties.TryAdd(QueueName, consumeCfg.Name);

@@ -1,5 +1,4 @@
 ﻿using System;
-using System.Text;
 using RabbitMQ.Client;
 using RabbitMQ.Client.Framing;
 
@@ -11,31 +10,31 @@ namespace RawRabbit.Configuration.BasicPublish
 
 		public BasicPublishConfigurationBuilder(BasicPublishConfiguration initial)
 		{
-			Configuration = initial;
+			this.Configuration = initial;
 		}
 
 		public IBasicPublishConfigurationBuilder OnExchange(string exchange)
 		{
-			Configuration.ExchangeName = exchange;
+			this.Configuration.ExchangeName = exchange;
 			return this;
 		}
 
 		public IBasicPublishConfigurationBuilder WithRoutingKey(string routingKey)
 		{
-			Configuration.RoutingKey = routingKey;
+			this.Configuration.RoutingKey = routingKey;
 			return this;
 		}
 
 		public IBasicPublishConfigurationBuilder AsMandatory(bool mandatory = true)
 		{
-			Configuration.Mandatory = mandatory;
+			this.Configuration.Mandatory = mandatory;
 			return this;
 		}
 
 		public IBasicPublishConfigurationBuilder WithProperties(Action<IBasicProperties> propAction)
 		{
-			Configuration.BasicProperties = Configuration.BasicProperties ?? new BasicProperties();
-			propAction?.Invoke(Configuration.BasicProperties);
+			this.Configuration.BasicProperties = this.Configuration.BasicProperties ?? new BasicProperties();
+			propAction?.Invoke(this.Configuration.BasicProperties);
 			return this;
 		}
 	}

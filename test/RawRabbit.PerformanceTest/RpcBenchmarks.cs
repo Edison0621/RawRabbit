@@ -2,8 +2,8 @@
 using System.Threading.Tasks;
 using BenchmarkDotNet.Attributes;
 using RawRabbit.Instantiation;
-using RawRabbit.Operations.Request.Core;
-using RawRabbit.Operations.Respond.Core;
+// ReSharper disable All
+#pragma warning disable CS0067 // Event is never used
 
 namespace RawRabbit.PerformanceTest
 {
@@ -18,14 +18,14 @@ namespace RawRabbit.PerformanceTest
 		[Setup]
 		public void Setup()
 		{
-			_busClient = RawRabbitFactory.CreateSingleton();
-			_request = new Request();
-			_respond = new Respond();
-			_busClient.RespondAsync<Request,Respond>(message =>
-				Task.FromResult(_respond)
+			this._busClient = RawRabbitFactory.CreateSingleton();
+			this._request = new Request();
+			this._respond = new Respond();
+			this._busClient.RespondAsync<Request,Respond>(message =>
+				Task.FromResult(this._respond)
 			);
-			_busClient.RespondAsync<Request, Respond>(message =>
-				Task.FromResult(_respond),
+			this._busClient.RespondAsync<Request, Respond>(message =>
+				Task.FromResult(this._respond),
 				ctx => ctx.UseRespondConfiguration(cfg => cfg
 					.Consume(c => c
 						.WithRoutingKey("custom_key"))
@@ -41,14 +41,14 @@ namespace RawRabbit.PerformanceTest
 		[Cleanup]
 		public void Cleanup()
 		{
-			_busClient.DeleteQueueAsync<Request>();
-			(_busClient as IDisposable).Dispose();
+			this._busClient.DeleteQueueAsync<Request>();
+			(this._busClient as IDisposable).Dispose();
 		}
 
 		[Benchmark]
 		public async Task DirectRpc()
 		{
-			await _busClient.RequestAsync<Request, Respond>(_request, ctx => ctx
+			await this._busClient.RequestAsync<Request, Respond>(this._request, ctx => ctx
 				.UseRequestConfiguration(cfg => cfg
 					.PublishRequest(p => p
 						.WithProperties(prop => prop.DeliveryMode = 1)))
@@ -58,7 +58,7 @@ namespace RawRabbit.PerformanceTest
 		[Benchmark]
 		public async Task NormalRpc()
 		{
-			await _busClient.RequestAsync<Request, Respond>(_request, ctx => ctx
+			await this._busClient.RequestAsync<Request, Respond>(this._request, ctx => ctx
 				.UseRequestConfiguration(cfg => cfg
 					.PublishRequest(p => p
 						.OnDeclaredExchange(e => e

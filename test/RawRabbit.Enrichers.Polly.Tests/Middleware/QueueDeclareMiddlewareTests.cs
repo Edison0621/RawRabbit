@@ -1,9 +1,7 @@
-﻿using System.Collections.Concurrent;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using System.Threading.Tasks;
 using Moq;
 using Polly;
-using RabbitMQ.Client;
 using RabbitMQ.Client.Exceptions;
 using RawRabbit.Common;
 using RawRabbit.Configuration.Queue;
@@ -19,9 +17,9 @@ namespace RawRabbit.Enrichers.Polly.Tests.Middleware
 		[Fact]
 		public async Task Should_Invoke_Queue_Declare_Policy_With_Correct_Context()
 		{
-			var topology = new Mock<ITopologyProvider>();
-			var queueDeclaration = new QueueDeclaration();
-			var policyCalled = false;
+			Mock<ITopologyProvider> topology = new Mock<ITopologyProvider>();
+			QueueDeclaration queueDeclaration = new QueueDeclaration();
+			bool policyCalled = false;
 			Context capturedContext = null;
 
 			topology
@@ -29,7 +27,7 @@ namespace RawRabbit.Enrichers.Polly.Tests.Middleware
 				.Throws(new OperationInterruptedException(null))
 				.Returns(Task.CompletedTask);
 
-			var context = new PipeContext
+			PipeContext context = new PipeContext
 			{
 				Properties = new Dictionary<string, object>
 				{
@@ -44,7 +42,7 @@ namespace RawRabbit.Enrichers.Polly.Tests.Middleware
 					policyCalled = true;
 					capturedContext = pollyContext;
 				}), PolicyKeys.QueueDeclare);
-			var middleware = new QueueDeclareMiddleware(topology.Object) {Next = new NoOpMiddleware()};
+			QueueDeclareMiddleware middleware = new QueueDeclareMiddleware(topology.Object) {Next = new NoOpMiddleware()};
 
 			/* Test */
 			await middleware.InvokeAsync(context);

@@ -25,33 +25,33 @@ namespace RawRabbit.Operations.Get.Middleware
 
 	public class AckableResultMiddleware<TResult> : Pipe.Middleware.Middleware
 	{
-		protected Func<IPipeContext, TResult> GetResultFunc;
-		protected Func<IPipeContext, IModel> ChannelFunc;
-		protected Action<IPipeContext, Ackable<TResult>> PostExecutionAction;
-		protected Func<IPipeContext, ulong> DeliveryTagFunc;
+		protected readonly Func<IPipeContext, TResult> _getResultFunc;
+		protected readonly Func<IPipeContext, IModel> _channelFunc;
+		protected readonly Action<IPipeContext, Ackable<TResult>> _postExecutionAction;
+		protected readonly Func<IPipeContext, ulong> _deliveryTagFunc;
 
 		public AckableResultMiddleware(AckableResultOptions<TResult> options = null)
 		{
-			GetResultFunc = options?.ContentFunc;
-			ChannelFunc = options?.ChannelFunc ?? (context => context.GetChannel());
-			PostExecutionAction = options?.PostExecutionAction;
-			DeliveryTagFunc = options?.DeliveryTagFunc;
+			this._getResultFunc = options?.ContentFunc;
+			this._channelFunc = options?.ChannelFunc ?? (context => context.GetChannel());
+			this._postExecutionAction = options?.PostExecutionAction;
+			this._deliveryTagFunc = options?.DeliveryTagFunc;
 		}
 
-		public override Task InvokeAsync(IPipeContext context, CancellationToken token)
+		public override Task InvokeAsync(IPipeContext context, CancellationToken token = default(CancellationToken))
 		{
-			var channel = GetChannel(context);
-			var getResult = GetResult(context);
-			var deliveryTag = GetDeliveryTag(context);
-			var ackableResult = CreateAckableResult(channel, getResult, deliveryTag);
+			IModel channel = this.GetChannel(context);
+			TResult getResult = this.GetResult(context);
+			ulong deliveryTag = this.GetDeliveryTag(context);
+			Ackable<TResult> ackableResult = this.CreateAckableResult(channel, getResult, deliveryTag);
 			context.Properties.TryAdd(GetKey.AckableResult, ackableResult);
-			PostExecutionAction?.Invoke(context, ackableResult);
-			return Next.InvokeAsync(context, token);
+			this._postExecutionAction?.Invoke(context, ackableResult);
+			return this.Next.InvokeAsync(context, token);
 		}
 
 		protected virtual ulong GetDeliveryTag(IPipeContext context)
 		{
-			return DeliveryTagFunc(context);
+			return this._deliveryTagFunc(context);
 		}
 
 		protected virtual Ackable<TResult> CreateAckableResult(IModel channel, TResult result, ulong deliveryTag)
@@ -61,12 +61,12 @@ namespace RawRabbit.Operations.Get.Middleware
 
 		protected virtual IModel GetChannel(IPipeContext context)
 		{
-			return ChannelFunc(context);
+			return this._channelFunc(context);
 		}
 
 		protected virtual TResult GetResult(IPipeContext context)
 		{
-			return GetResultFunc(context);
+			return this._getResultFunc(context);
 		}
 	}
 }

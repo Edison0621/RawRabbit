@@ -7,7 +7,7 @@ namespace RawRabbit.Enrichers.Polly
 	{
 		public static Policy GetPolicy(this IPipeContext context, string policyName = null)
 		{
-			var fallback = context.Get<Policy>(PolicyKeys.DefaultPolicy);
+			Policy fallback = context.Get<Policy>(PolicyKeys.DefaultPolicy);
 			return context.Get(policyName, fallback);
 		}
 

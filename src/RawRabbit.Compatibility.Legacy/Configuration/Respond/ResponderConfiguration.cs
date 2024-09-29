@@ -13,9 +13,9 @@ namespace RawRabbit.Compatibility.Legacy.Configuration.Respond
 
 		public ResponderConfiguration()
 		{
-			Exchange = new ExchangeConfiguration();
-			Queue = new QueueConfiguration();
-			AutoAck = true;
+			this.Exchange = new ExchangeConfiguration();
+			this.Queue = new QueueConfiguration();
+			this.AutoAck = true;
 		}
 	}
 

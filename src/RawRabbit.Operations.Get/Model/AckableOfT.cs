@@ -8,50 +8,53 @@ namespace RawRabbit.Operations.Get.Model
 	{
 		public TType Content { get; set; }
 		public bool Acknowledged { get; private set; }
-		public IEnumerable<ulong> DeliveryTags => DeliveryTagFunc(Content);
-		internal readonly IModel Channel;
-		internal readonly Func<TType, ulong[]> DeliveryTagFunc;
+		public IEnumerable<ulong> DeliveryTags => this._deliveryTagFunc(this.Content);
+		internal readonly IModel _channel;
+		internal readonly Func<TType, ulong[]> _deliveryTagFunc;
 
 		public Ackable(TType content, IModel channel, params ulong[] deliveryTag) : this(content, channel, type => deliveryTag)
 		{ }
 
 		public Ackable(TType content, IModel channel, Func<TType, ulong[]> deliveryTagFunc)
 		{
-			Content = content;
-			Channel = channel;
-			DeliveryTagFunc = deliveryTagFunc;
+			this.Content = content;
+			this._channel = channel;
+			this._deliveryTagFunc = deliveryTagFunc;
 		}
 
 		public void Ack()
 		{
-			foreach (var deliveryTag in DeliveryTagFunc(Content))
+			foreach (ulong deliveryTag in this._deliveryTagFunc(this.Content))
 			{
-				Channel.BasicAck(deliveryTag, false);
+				this._channel.BasicAck(deliveryTag, false);
 			}
-			Acknowledged = true;
+
+			this.Acknowledged = true;
 		}
 
 		public void Nack(bool requeue = true)
 		{
-			foreach (var deliveryTag in DeliveryTagFunc(Content))
+			foreach (ulong deliveryTag in this._deliveryTagFunc(this.Content))
 			{
-				Channel.BasicNack(deliveryTag, false, requeue);
+				this._channel.BasicNack(deliveryTag, false, requeue);
 			}
-			Acknowledged = true;
+
+			this.Acknowledged = true;
 		}
 
 		public void Reject(bool requeue = true)
 		{
-			foreach (var deliveryTag in DeliveryTagFunc(Content))
+			foreach (ulong deliveryTag in this._deliveryTagFunc(this.Content))
 			{
-				Channel.BasicReject(deliveryTag, requeue);
+				this._channel.BasicReject(deliveryTag, requeue);
 			}
-			Acknowledged = true;
+
+			this.Acknowledged = true;
 		}
 
 		public void Dispose()
 		{
-			Channel?.Dispose();
+			this._channel?.Dispose();
 		}
 	}
 }

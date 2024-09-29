@@ -14,42 +14,43 @@ namespace RawRabbit.Pipe.Middleware
 	public class BasicPublishConfigurationMiddleware : Middleware
 	{
 		private readonly IBasicPublishConfigurationFactory _factory;
-		protected Func<IPipeContext, Action<IBasicPublishConfigurationBuilder>> ConfigurationActionFunc;
-		protected Action<IPipeContext, BasicPublishConfiguration> PostInvokeAction;
+		protected readonly Func<IPipeContext, Action<IBasicPublishConfigurationBuilder>> _configurationActionFunc;
+		protected readonly Action<IPipeContext, BasicPublishConfiguration> _postInvokeAction;
 
 		public BasicPublishConfigurationMiddleware(IBasicPublishConfigurationFactory factory, BasicPublishConfigurationOptions options = null)
 		{
-			_factory = factory;
-			ConfigurationActionFunc = options?.ConfigurationActionFunc ?? (context => context.Get<Action<IBasicPublishConfigurationBuilder>>(PipeKey.ConfigurationAction));
-			PostInvokeAction = options?.PostInvokeAction;
+			this._factory = factory;
+			this._configurationActionFunc = options?.ConfigurationActionFunc ?? (context => context.Get<Action<IBasicPublishConfigurationBuilder>>(PipeKey.ConfigurationAction));
+			this._postInvokeAction = options?.PostInvokeAction;
 		}
 
-		public override async Task InvokeAsync(IPipeContext context, CancellationToken token)
+		public override async Task InvokeAsync(IPipeContext context, CancellationToken token = default(CancellationToken))
 		{
-			var config = GetInitialConfig(context);
-			var configAction = GetConfigurationAction(context);
+			BasicPublishConfiguration config = this.GetInitialConfig(context);
+			Action<IBasicPublishConfigurationBuilder> configAction = this.GetConfigurationAction(context);
 			if (configAction != null)
 			{
-				var builder = new BasicPublishConfigurationBuilder(config);
+				BasicPublishConfigurationBuilder builder = new BasicPublishConfigurationBuilder(config);
 				configAction.Invoke(builder);
 				config = builder.Configuration;
 			}
-			PostInvokeAction?.Invoke(context, config);
+
+			this._postInvokeAction?.Invoke(context, config);
 			context.Properties.TryAdd(PipeKey.BasicPublishConfiguration, config);
-			await Next.InvokeAsync(context, token);
+			await this.Next.InvokeAsync(context, token);
 		}
 
 		protected virtual BasicPublishConfiguration GetInitialConfig(IPipeContext context)
 		{
-			var message = context.GetMessage();
+			object message = context.GetMessage();
 			return message != null
-					? _factory.Create(message)
-					: _factory.Create();
+					? this._factory.Create(message)
+					: this._factory.Create();
 		}
 
 		protected virtual Action<IBasicPublishConfigurationBuilder> GetConfigurationAction(IPipeContext context)
 		{
-			return ConfigurationActionFunc.Invoke(context);
+			return this._configurationActionFunc.Invoke(context);
 		}
 	}
 }

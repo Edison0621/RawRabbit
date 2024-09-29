@@ -16,34 +16,34 @@ namespace RawRabbit.Operations.Publish.Middleware
 
 	public class PublishConfigurationMiddleware : Pipe.Middleware.Middleware
 	{
-		protected readonly IPublisherConfigurationFactory PublisherFactory;
-		protected readonly Func<IPipeContext, string> ExchangeFunc;
-		protected readonly Func<IPipeContext, string> RoutingKeyFunc;
-		protected readonly Func<IPipeContext, Type> MessageTypeFunc;
+		protected readonly IPublisherConfigurationFactory _publisherFactory;
+		protected readonly Func<IPipeContext, string> _exchangeFunc;
+		protected readonly Func<IPipeContext, string> _routingKeyFunc;
+		protected readonly Func<IPipeContext, Type> _messageTypeFunc;
 		private readonly ILog _logger = LogProvider.For<PublishConfigurationMiddleware>();
 
 		public PublishConfigurationMiddleware(IPublisherConfigurationFactory publisherFactory, PublishConfigurationOptions options = null)
 		{
-			PublisherFactory = publisherFactory;
-			ExchangeFunc = options?.ExchangeFunc ?? (context => context.GetPublishConfiguration()?.Exchange.Name);
-			RoutingKeyFunc = options?.RoutingKeyFunc ?? (context => context.GetPublishConfiguration()?.RoutingKey);
-			MessageTypeFunc = options?.MessageTypeFunc ?? (context => context.GetMessageType());
+			this._publisherFactory = publisherFactory;
+			this._exchangeFunc = options?.ExchangeFunc ?? (context => context.GetPublishConfiguration()?.Exchange.Name);
+			this._routingKeyFunc = options?.RoutingKeyFunc ?? (context => context.GetPublishConfiguration()?.RoutingKey);
+			this._messageTypeFunc = options?.MessageTypeFunc ?? (context => context.GetMessageType());
 		}
 
-		public override Task InvokeAsync(IPipeContext context, CancellationToken token)
+		public override Task InvokeAsync(IPipeContext context, CancellationToken token = default(CancellationToken))
 		{
-			var config = ExtractConfigFromMessageType(context) ?? ExtractConfigFromStrings(context);
+			PublisherConfiguration config = this.ExtractConfigFromMessageType(context) ?? this.ExtractConfigFromStrings(context);
 			if (config == null)
 			{
-				_logger.Warn("Unable to find PublisherConfiguration from message type or parameters.");
+				this._logger.Warn("Unable to find PublisherConfiguration from message type or parameters.");
 				throw new ArgumentNullException(nameof(config));
 			}
 
-			var action = context.Get<Action<IPublisherConfigurationBuilder>>(PipeKey.ConfigurationAction);
+			Action<IPublisherConfigurationBuilder> action = context.Get<Action<IPublisherConfigurationBuilder>>(PipeKey.ConfigurationAction);
 			if (action != null)
 			{
-				_logger.Debug($"Custom configuration supplied. Applying.");
-				var builder = new PublisherConfigurationBuilder(config);
+				this._logger.Debug("Custom configuration supplied. Applying.");
+				PublisherConfigurationBuilder builder = new PublisherConfigurationBuilder(config);
 				action(builder);
 				config = builder.Config;
 			}
@@ -54,27 +54,27 @@ namespace RawRabbit.Operations.Publish.Middleware
 			context.Properties.TryAdd(PipeKey.BasicProperties, config.BasicProperties);
 			context.Properties.TryAdd(PipeKey.ReturnCallback, config.ReturnCallback);
 
-			return Next.InvokeAsync(context, token);
+			return this.Next.InvokeAsync(context, token);
 		}
 
 		protected virtual Type GetMessageType(IPipeContext context)
 		{
-			return MessageTypeFunc(context);
+			return this._messageTypeFunc(context);
 		}
 
 		protected virtual PublisherConfiguration ExtractConfigFromStrings(IPipeContext context)
 		{
-			var routingKey = RoutingKeyFunc(context);
-			var exchange = ExchangeFunc(context);
-			return PublisherFactory.Create(exchange, routingKey);
+			string routingKey = this._routingKeyFunc(context);
+			string exchange = this._exchangeFunc(context);
+			return this._publisherFactory.Create(exchange, routingKey);
 		}
 
 		protected virtual PublisherConfiguration ExtractConfigFromMessageType(IPipeContext context)
 		{
-			var messageType = GetMessageType(context);
+			Type messageType = this.GetMessageType(context);
 			return messageType == null
 				? null
-				: PublisherFactory.Create(messageType);
+				: this._publisherFactory.Create(messageType);
 		}
 	}
 }

@@ -6,48 +6,48 @@
 
 		public QueueConfigurationBuilder(QueueConfiguration initialQueue = null)
 		{
-			Configuration = initialQueue ?? QueueConfiguration.Default;
+			this.Configuration = initialQueue ?? QueueConfiguration.Default;
 		}
 
 		public IQueueConfigurationBuilder WithName(string queueName)
 		{
-			Configuration.QueueName = queueName;
+			this.Configuration.QueueName = queueName;
 			return this;
 		}
 
 		public IQueueConfigurationBuilder WithNameSuffix(string suffix)
 		{
-			Configuration.NameSuffix = suffix;
+			this.Configuration.NameSuffix = suffix;
 			return this;
 		}
 
 		public IQueueConfigurationBuilder WithAutoDelete(bool autoDelete = true)
 		{
-			Configuration.AutoDelete = autoDelete;
+			this.Configuration.AutoDelete = autoDelete;
 			return this;
 		}
 
 		public IQueueConfigurationBuilder WithDurability(bool durable = true)
 		{
-			Configuration.Durable = durable;
+			this.Configuration.Durable = durable;
 			return this;
 		}
 
 		public IQueueConfigurationBuilder WithExclusivity(bool exclusive = true)
 		{
-			Configuration.Exclusive = exclusive;
+			this.Configuration.Exclusive = exclusive;
 			return this;
 		}
 
 		public IQueueConfigurationBuilder WithArgument(string key, object value)
 		{
-			Configuration.Arguments.Add(key, value);
+			this.Configuration.Arguments.Add(key, value);
 			return this;
 		}
 
 		public IQueueConfigurationBuilder AssumeInitialized(bool asumption = true)
 		{
-			Configuration.AssumeInitialized = asumption;
+			this.Configuration.AssumeInitialized = asumption;
 			return this;
 		}
 	}

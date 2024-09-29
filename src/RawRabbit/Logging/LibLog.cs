@@ -66,7 +66,7 @@ namespace RawRabbit.Logging
 #if LIBLOG_PROVIDERS_ONLY
     using RawRabbit.LibLog.LogProviders;
 #else
-	using RawRabbit.Logging.LogProviders;
+	using LogProviders;
 #endif
 	using System;
 #if !LIBLOG_PROVIDERS_ONLY
@@ -139,6 +139,7 @@ namespace RawRabbit.Logging
 #else
 	internal
 #endif
+		// ReSharper disable once PartialTypeWithSinglePart
 		static partial class LogExtensions
 	{
 		public static bool IsDebugEnabled(this ILog logger)
@@ -429,7 +430,7 @@ namespace RawRabbit.Logging
 		{
 			if (logger == null)
 			{
-				throw new ArgumentNullException("logger");
+				throw new ArgumentNullException(nameof(logger));
 			}
 		}
 
@@ -500,8 +501,8 @@ namespace RawRabbit.Logging
 #if !LIBLOG_PROVIDERS_ONLY
 		private const string NullLogProvider = "Current Log Provider is not set. Call SetCurrentLogProvider " +
 											   "with a non-null value first.";
-		private static dynamic s_currentLogProvider;
-		private static Action<ILogProvider> s_onCurrentLogProviderSet;
+		private static dynamic _sCurrentLogProvider;
+		private static Action<ILogProvider> _sOnCurrentLogProviderSet;
 
 		[SuppressMessage("Microsoft.Performance", "CA1810:InitializeReferenceTypeStaticFieldsInline")]
 		static LogProvider()
@@ -515,7 +516,7 @@ namespace RawRabbit.Logging
 		/// <param name="logProvider">The log provider.</param>
 		public static void SetCurrentLogProvider(ILogProvider logProvider)
 		{
-			s_currentLogProvider = logProvider;
+			_sCurrentLogProvider = logProvider;
 
 			RaiseOnCurrentLogProviderSet();
 		}
@@ -538,7 +539,7 @@ namespace RawRabbit.Logging
 		{
 			set
 			{
-				s_onCurrentLogProviderSet = value;
+				_sOnCurrentLogProviderSet = value;
 				RaiseOnCurrentLogProviderSet();
 			}
 		}
@@ -547,7 +548,7 @@ namespace RawRabbit.Logging
 		{
 			get
 			{
-				return s_currentLogProvider;
+				return _sCurrentLogProvider;
 			}
 		}
 
@@ -693,9 +694,9 @@ namespace RawRabbit.Logging
 #if !LIBLOG_PROVIDERS_ONLY
 		private static void RaiseOnCurrentLogProviderSet()
 		{
-			if (s_onCurrentLogProviderSet != null)
+			if (_sOnCurrentLogProviderSet != null)
 			{
-				s_onCurrentLogProviderSet(s_currentLogProvider);
+				_sOnCurrentLogProviderSet(_sCurrentLogProvider);
 			}
 		}
 #endif
@@ -706,7 +707,7 @@ namespace RawRabbit.Logging
 		{
 			try
 			{
-				foreach (var providerResolver in LogProviderResolvers)
+				foreach (Tuple<IsLoggerAvailable, CreateLogProvider> providerResolver in LogProviderResolvers)
 				{
 					if (providerResolver.Item1())
 					{
@@ -717,7 +718,7 @@ namespace RawRabbit.Logging
 			catch (Exception ex)
 			{
 #if LIBLOG_PORTABLE
-                Debug.WriteLine(
+				Debug.WriteLine(
 #else
 				Console.WriteLine(
 #endif
@@ -750,31 +751,27 @@ namespace RawRabbit.Logging
 #endif
 	internal class LoggerExecutionWrapper : ILog
 	{
-		private readonly Logger _logger;
 		private readonly Func<bool> _getIsDisabled;
 		internal const string FailedToGenerateLogMessage = "Failed to generate log message";
 
 		internal LoggerExecutionWrapper(Logger logger, Func<bool> getIsDisabled = null)
 		{
-			_logger = logger;
-			_getIsDisabled = getIsDisabled ?? (() => false);
+			this.WrappedLogger = logger;
+			this._getIsDisabled = getIsDisabled ?? (() => false);
 		}
 
-		internal Logger WrappedLogger
-		{
-			get { return _logger; }
-		}
+		internal Logger WrappedLogger { get; }
 
 		[SuppressMessage("Microsoft.Design", "CA1031:DoNotCatchGeneralExceptionTypes")]
 		public bool Log(LogLevel logLevel, Func<string> messageFunc, Exception exception = null, params object[] formatParameters)
 		{
-			if (_getIsDisabled())
+			if (this._getIsDisabled())
 			{
 				return false;
 			}
 			if (messageFunc == null)
 			{
-				return _logger(logLevel, null);
+				return this.WrappedLogger(logLevel, null);
 			}
 
 			Func<string> wrappedMessageFunc = () =>
@@ -785,11 +782,11 @@ namespace RawRabbit.Logging
 				}
 				catch (Exception ex)
 				{
-					Log(LogLevel.Error, () => FailedToGenerateLogMessage, ex);
+					this.Log(LogLevel.Error, () => FailedToGenerateLogMessage, ex);
 				}
 				return null;
 			};
-			return _logger(logLevel, wrappedMessageFunc, exception, formatParameters);
+			return this.WrappedLogger(logLevel, wrappedMessageFunc, exception, formatParameters);
 		}
 	}
 #endif
@@ -826,36 +823,36 @@ namespace RawRabbit.Logging.LogProviders
 
 		private readonly Lazy<OpenNdc> _lazyOpenNdcMethod;
 		private readonly Lazy<OpenMdc> _lazyOpenMdcMethod;
-		private static readonly IDisposable NoopDisposableInstance = new DisposableAction();
+		private static readonly IDisposable _noopDisposableInstance = new DisposableAction();
 
 		protected LogProviderBase()
 		{
-			_lazyOpenNdcMethod
-				= new Lazy<OpenNdc>(GetOpenNdcMethod);
-			_lazyOpenMdcMethod
-				= new Lazy<OpenMdc>(GetOpenMdcMethod);
+			this._lazyOpenNdcMethod
+				= new Lazy<OpenNdc>(this.GetOpenNdcMethod);
+			this._lazyOpenMdcMethod
+				= new Lazy<OpenMdc>(this.GetOpenMdcMethod);
 		}
 
 		public abstract Logger GetLogger(string name);
 
 		public IDisposable OpenNestedContext(string message)
 		{
-			return _lazyOpenNdcMethod.Value(message);
+			return this._lazyOpenNdcMethod.Value(message);
 		}
 
 		public IDisposable OpenMappedContext(string key, string value)
 		{
-			return _lazyOpenMdcMethod.Value(key, value);
+			return this._lazyOpenMdcMethod.Value(key, value);
 		}
 
 		protected virtual OpenNdc GetOpenNdcMethod()
 		{
-			return _ => NoopDisposableInstance;
+			return _ => _noopDisposableInstance;
 		}
 
 		protected virtual OpenMdc GetOpenMdcMethod()
 		{
-			return (_, __) => NoopDisposableInstance;
+			return (_, __) => _noopDisposableInstance;
 		}
 	}
 
@@ -865,7 +862,6 @@ namespace RawRabbit.Logging.LogProviders
 	internal class NLogLogProvider : LogProviderBase
 	{
 		private readonly Func<string, object> _getLoggerByNameDelegate;
-		private static bool s_providerIsAvailableOverride = true;
 
 		[SuppressMessage("Microsoft.Naming", "CA2204:Literals should be spelled correctly", MessageId = "LogManager")]
 		[SuppressMessage("Microsoft.Naming", "CA2204:Literals should be spelled correctly", MessageId = "NLog")]
@@ -875,18 +871,15 @@ namespace RawRabbit.Logging.LogProviders
 			{
 				throw new InvalidOperationException("NLog.LogManager not found");
 			}
-			_getLoggerByNameDelegate = GetGetLoggerMethodCall();
+
+			this._getLoggerByNameDelegate = GetGetLoggerMethodCall();
 		}
 
-		public static bool ProviderIsAvailableOverride
-		{
-			get { return s_providerIsAvailableOverride; }
-			set { s_providerIsAvailableOverride = value; }
-		}
+		public static bool ProviderIsAvailableOverride { get; set; } = true;
 
 		public override Logger GetLogger(string name)
 		{
-			return new NLogLogger(_getLoggerByNameDelegate(name)).Log;
+			return new NLogLogger(this._getLoggerByNameDelegate(name)).Log;
 		}
 
 		public static bool IsLoggerAvailable()
@@ -963,13 +956,13 @@ namespace RawRabbit.Logging.LogProviders
 			{
 				try
 				{
-					var logEventLevelType = Type.GetType("NLog.LogLevel, NLog");
+					Type logEventLevelType = Type.GetType("NLog.LogLevel, NLog");
 					if (logEventLevelType == null)
 					{
 						throw new InvalidOperationException("Type NLog.LogLevel was not found.");
 					}
 
-					var levelFields = logEventLevelType.GetFieldsPortable().ToList();
+					List<FieldInfo> levelFields = logEventLevelType.GetFieldsPortable().ToList();
 					_levelTrace = levelFields.First(x => x.Name == "Trace").GetValue(null);
 					_levelDebug = levelFields.First(x => x.Name == "Debug").GetValue(null);
 					_levelInfo = levelFields.First(x => x.Name == "Info").GetValue(null);
@@ -977,7 +970,7 @@ namespace RawRabbit.Logging.LogProviders
 					_levelError = levelFields.First(x => x.Name == "Error").GetValue(null);
 					_levelFatal = levelFields.First(x => x.Name == "Fatal").GetValue(null);
 
-					var logEventInfoType = Type.GetType("NLog.LogEventInfo, NLog");
+					Type logEventInfoType = Type.GetType("NLog.LogEventInfo, NLog");
 					if (logEventInfoType == null)
 					{
 						throw new InvalidOperationException("Type NLog.LogEventInfo was not found.");
@@ -996,29 +989,33 @@ namespace RawRabbit.Logging.LogProviders
 					_logEventInfoFact = Expression.Lambda<Func<string, object, string, Exception, object>>(createLogEventInfoMethodCall,
 						loggerNameParam, levelParam, messageParam, exceptionParam).Compile();
 				}
-				catch { }
+				catch
+				{
+					// ignored
+				}
 			}
 
 			internal NLogLogger(dynamic logger)
 			{
-				_logger = logger;
+				this._logger = logger;
 			}
 
 			[SuppressMessage("Microsoft.Maintainability", "CA1502:AvoidExcessiveComplexity")]
+			[SuppressMessage("ReSharper", "ConditionIsAlwaysTrueOrFalse")]
+			[SuppressMessage("ReSharper", "HeuristicUnreachableCode")]
 			public bool Log(LogLevel logLevel, Func<string> messageFunc, Exception exception, params object[] formatParameters)
 			{
 				if (messageFunc == null)
 				{
-					return IsLogLevelEnable(logLevel);
+					return this.IsLogLevelEnable(logLevel);
 				}
 				messageFunc = LogMessageFormatter.SimulateStructuredLogging(messageFunc, formatParameters);
 
 				if (_logEventInfoFact != null)
 				{
-					if (IsLogLevelEnable(logLevel))
+					if (this.IsLogLevelEnable(logLevel))
 					{
-						var nlogLevel = this.TranslateLevel(logLevel);
-						Type s_callerStackBoundaryType;
+						object nlogLevel = this.TranslateLevel(logLevel);
 #if !LIBLOG_PORTABLE
 						StackTrace stack = new StackTrace();
 						Type thisType = GetType();
@@ -1039,12 +1036,13 @@ namespace RawRabbit.Logging.LogProviders
 							}
 						}
 #else
-                        s_callerStackBoundaryType = null;
+						Type sCallerStackBoundaryType = null;
 #endif
-						if (s_callerStackBoundaryType != null)
-							_logger.Log(s_callerStackBoundaryType, _logEventInfoFact(_logger.Name, nlogLevel, messageFunc(), exception));
+						//TODO NULL Object
+						if (sCallerStackBoundaryType != null)
+							this._logger.Log(sCallerStackBoundaryType, _logEventInfoFact(this._logger.Name, nlogLevel, messageFunc(), exception));
 						else
-							_logger.Log(_logEventInfoFact(_logger.Name, nlogLevel, messageFunc(), exception));
+							this._logger.Log(_logEventInfoFact(this._logger.Name, nlogLevel, messageFunc(), exception));
 						return true;
 					}
 					return false;
@@ -1052,49 +1050,49 @@ namespace RawRabbit.Logging.LogProviders
 
 				if (exception != null)
 				{
-					return LogException(logLevel, messageFunc, exception);
+					return this.LogException(logLevel, messageFunc, exception);
 				}
 				switch (logLevel)
 				{
 					case LogLevel.Debug:
-						if (_logger.IsDebugEnabled)
+						if (this._logger.IsDebugEnabled)
 						{
-							_logger.Debug(messageFunc());
+							this._logger.Debug(messageFunc());
 							return true;
 						}
 						break;
 					case LogLevel.Info:
-						if (_logger.IsInfoEnabled)
+						if (this._logger.IsInfoEnabled)
 						{
-							_logger.Info(messageFunc());
+							this._logger.Info(messageFunc());
 							return true;
 						}
 						break;
 					case LogLevel.Warn:
-						if (_logger.IsWarnEnabled)
+						if (this._logger.IsWarnEnabled)
 						{
-							_logger.Warn(messageFunc());
+							this._logger.Warn(messageFunc());
 							return true;
 						}
 						break;
 					case LogLevel.Error:
-						if (_logger.IsErrorEnabled)
+						if (this._logger.IsErrorEnabled)
 						{
-							_logger.Error(messageFunc());
+							this._logger.Error(messageFunc());
 							return true;
 						}
 						break;
 					case LogLevel.Fatal:
-						if (_logger.IsFatalEnabled)
+						if (this._logger.IsFatalEnabled)
 						{
-							_logger.Fatal(messageFunc());
+							this._logger.Fatal(messageFunc());
 							return true;
 						}
 						break;
 					default:
-						if (_logger.IsTraceEnabled)
+						if (this._logger.IsTraceEnabled)
 						{
-							_logger.Trace(messageFunc());
+							this._logger.Trace(messageFunc());
 							return true;
 						}
 						break;
@@ -1121,44 +1119,44 @@ namespace RawRabbit.Logging.LogProviders
 				switch (logLevel)
 				{
 					case LogLevel.Debug:
-						if (_logger.IsDebugEnabled)
+						if (this._logger.IsDebugEnabled)
 						{
-							_logger.DebugException(messageFunc(), exception);
+							this._logger.DebugException(messageFunc(), exception);
 							return true;
 						}
 						break;
 					case LogLevel.Info:
-						if (_logger.IsInfoEnabled)
+						if (this._logger.IsInfoEnabled)
 						{
-							_logger.InfoException(messageFunc(), exception);
+							this._logger.InfoException(messageFunc(), exception);
 							return true;
 						}
 						break;
 					case LogLevel.Warn:
-						if (_logger.IsWarnEnabled)
+						if (this._logger.IsWarnEnabled)
 						{
-							_logger.WarnException(messageFunc(), exception);
+							this._logger.WarnException(messageFunc(), exception);
 							return true;
 						}
 						break;
 					case LogLevel.Error:
-						if (_logger.IsErrorEnabled)
+						if (this._logger.IsErrorEnabled)
 						{
-							_logger.ErrorException(messageFunc(), exception);
+							this._logger.ErrorException(messageFunc(), exception);
 							return true;
 						}
 						break;
 					case LogLevel.Fatal:
-						if (_logger.IsFatalEnabled)
+						if (this._logger.IsFatalEnabled)
 						{
-							_logger.FatalException(messageFunc(), exception);
+							this._logger.FatalException(messageFunc(), exception);
 							return true;
 						}
 						break;
 					default:
-						if (_logger.IsTraceEnabled)
+						if (this._logger.IsTraceEnabled)
 						{
-							_logger.TraceException(messageFunc(), exception);
+							this._logger.TraceException(messageFunc(), exception);
 							return true;
 						}
 						break;
@@ -1171,17 +1169,17 @@ namespace RawRabbit.Logging.LogProviders
 				switch (logLevel)
 				{
 					case LogLevel.Debug:
-						return _logger.IsDebugEnabled;
+						return this._logger.IsDebugEnabled;
 					case LogLevel.Info:
-						return _logger.IsInfoEnabled;
+						return this._logger.IsInfoEnabled;
 					case LogLevel.Warn:
-						return _logger.IsWarnEnabled;
+						return this._logger.IsWarnEnabled;
 					case LogLevel.Error:
-						return _logger.IsErrorEnabled;
+						return this._logger.IsErrorEnabled;
 					case LogLevel.Fatal:
-						return _logger.IsFatalEnabled;
+						return this._logger.IsFatalEnabled;
 					default:
-						return _logger.IsTraceEnabled;
+						return this._logger.IsTraceEnabled;
 				}
 			}
 
@@ -1202,7 +1200,7 @@ namespace RawRabbit.Logging.LogProviders
 					case LogLevel.Fatal:
 						return _levelFatal;
 					default:
-						throw new ArgumentOutOfRangeException("logLevel", logLevel, null);
+						throw new ArgumentOutOfRangeException(nameof(logLevel), logLevel, null);
 				}
 			}
 		}
@@ -1214,7 +1212,6 @@ namespace RawRabbit.Logging.LogProviders
 	internal class Log4NetLogProvider : LogProviderBase
 	{
 		private readonly Func<string, object> _getLoggerByNameDelegate;
-		private static bool s_providerIsAvailableOverride = true;
 
 		[SuppressMessage("Microsoft.Naming", "CA2204:Literals should be spelled correctly", MessageId = "LogManager")]
 		public Log4NetLogProvider()
@@ -1223,18 +1220,15 @@ namespace RawRabbit.Logging.LogProviders
 			{
 				throw new InvalidOperationException("log4net.LogManager not found");
 			}
-			_getLoggerByNameDelegate = GetGetLoggerMethodCall();
+
+			this._getLoggerByNameDelegate = GetGetLoggerMethodCall();
 		}
 
-		public static bool ProviderIsAvailableOverride
-		{
-			get { return s_providerIsAvailableOverride; }
-			set { s_providerIsAvailableOverride = value; }
-		}
+		public static bool ProviderIsAvailableOverride { get; set; } = true;
 
 		public override Logger GetLogger(string name)
 		{
-			return new Log4NetLogger(_getLoggerByNameDelegate(name)).Log;
+			return new Log4NetLogger(this._getLoggerByNameDelegate(name)).Log;
 		}
 
 		internal static bool IsLoggerAvailable()
@@ -1325,8 +1319,8 @@ namespace RawRabbit.Logging.LogProviders
 		internal class Log4NetLogger
 		{
 			private readonly dynamic _logger;
-			private static Type s_callerStackBoundaryType;
-			private static readonly object CallerStackBoundaryTypeSync = new object();
+			private static Type _sCallerStackBoundaryType;
+			private static readonly object _callerStackBoundaryTypeSync = new object();
 
 			private readonly object _levelDebug;
 			private readonly object _levelInfo;
@@ -1341,23 +1335,23 @@ namespace RawRabbit.Logging.LogProviders
 			[SuppressMessage("Microsoft.Naming", "CA2204:Literals should be spelled correctly", MessageId = "ILogger")]
 			internal Log4NetLogger(dynamic logger)
 			{
-				_logger = logger.Logger;
+				this._logger = logger.Logger;
 
-				var logEventLevelType = Type.GetType("log4net.Core.Level, log4net");
+				Type logEventLevelType = Type.GetType("log4net.Core.Level, log4net");
 				if (logEventLevelType == null)
 				{
 					throw new InvalidOperationException("Type log4net.Core.Level was not found.");
 				}
 
-				var levelFields = logEventLevelType.GetFieldsPortable().ToList();
-				_levelDebug = levelFields.First(x => x.Name == "Debug").GetValue(null);
-				_levelInfo = levelFields.First(x => x.Name == "Info").GetValue(null);
-				_levelWarn = levelFields.First(x => x.Name == "Warn").GetValue(null);
-				_levelError = levelFields.First(x => x.Name == "Error").GetValue(null);
-				_levelFatal = levelFields.First(x => x.Name == "Fatal").GetValue(null);
+				List<FieldInfo> levelFields = logEventLevelType.GetFieldsPortable().ToList();
+				this._levelDebug = levelFields.First(x => x.Name == "Debug").GetValue(null);
+				this._levelInfo = levelFields.First(x => x.Name == "Info").GetValue(null);
+				this._levelWarn = levelFields.First(x => x.Name == "Warn").GetValue(null);
+				this._levelError = levelFields.First(x => x.Name == "Error").GetValue(null);
+				this._levelFatal = levelFields.First(x => x.Name == "Fatal").GetValue(null);
 
 				// Func<object, object, bool> isEnabledFor = (logger, level) => { return ((log4net.Core.ILogger)logger).IsEnabled(level); }
-				var loggerType = Type.GetType("log4net.Core.ILogger, log4net");
+				Type loggerType = Type.GetType("log4net.Core.ILogger, log4net");
 				if (loggerType == null)
 				{
 					throw new InvalidOperationException("Type log4net.Core.ILogger, was not found.");
@@ -1366,15 +1360,15 @@ namespace RawRabbit.Logging.LogProviders
 				UnaryExpression instanceCast = Expression.Convert(instanceParam, loggerType);
 				ParameterExpression levelParam = Expression.Parameter(typeof(object));
 				UnaryExpression levelCast = Expression.Convert(levelParam, logEventLevelType);
-				_isEnabledForDelegate = GetIsEnabledFor(loggerType, logEventLevelType, instanceCast, levelCast, instanceParam, levelParam);
+				this._isEnabledForDelegate = GetIsEnabledFor(loggerType, logEventLevelType, instanceCast, levelCast, instanceParam, levelParam);
 
 				Type loggingEventType = Type.GetType("log4net.Core.LoggingEvent, log4net");
 
-				_createLoggingEvent = GetCreateLoggingEvent(instanceParam, instanceCast, levelParam, levelCast, loggingEventType);
+				this._createLoggingEvent = GetCreateLoggingEvent(instanceParam, instanceCast, levelParam, levelCast, loggingEventType);
 
-				_logDelegate = GetLogDelegate(loggerType, loggingEventType, instanceCast, instanceParam);
+				this._logDelegate = GetLogDelegate(loggerType, loggingEventType, instanceCast, instanceParam);
 
-				_loggingEventPropertySetter = GetLoggingEventPropertySetter(loggingEventType);
+				this._loggingEventPropertySetter = GetLoggingEventPropertySetter(loggingEventType);
 			}
 
 			private static Action<object, object> GetLogDelegate(Type loggerType, Type loggingEventType, UnaryExpression instanceCast,
@@ -1391,12 +1385,12 @@ namespace RawRabbit.Logging.LogProviders
 				UnaryExpression loggingEventCasted =
 					Expression.Convert(loggingEventParameter, loggingEventType);
 
-				var writeMethodExp = Expression.Call(
+				MethodCallExpression writeMethodExp = Expression.Call(
 					instanceCast,
 					writeExceptionMethodInfo,
 					loggingEventCasted);
 
-				var logDelegate = Expression.Lambda<Action<object, object>>(
+				Action<object, object> logDelegate = Expression.Lambda<Action<object, object>>(
 					writeMethodExp,
 					instanceParam,
 					loggingEventParameter).Compile();
@@ -1427,7 +1421,7 @@ namespace RawRabbit.Logging.LogProviders
 						messageParam,
 						exceptionParam);
 
-				var createLoggingEvent =
+				Func<object, Type, object, string, Exception, object> createLoggingEvent =
 					Expression.Lambda<Func<object, Type, object, string, Exception, object>>(
 							newLoggingEventExpression,
 							instanceParam,
@@ -1466,7 +1460,7 @@ namespace RawRabbit.Logging.LogProviders
 				PropertyInfo item = propertiesProperty.PropertyType.GetPropertyPortable("Item");
 
 				// ((LoggingEvent)loggingEvent).Properties[key] = value;
-				var body =
+				BinaryExpression body =
 					Expression.Assign(
 						Expression.Property(
 							Expression.Property(Expression.Convert(loggingEventParameter, loggingEventType),
@@ -1485,10 +1479,10 @@ namespace RawRabbit.Logging.LogProviders
 			{
 				if (messageFunc == null)
 				{
-					return IsLogLevelEnable(logLevel);
+					return this.IsLogLevelEnable(logLevel);
 				}
 
-				if (!IsLogLevelEnable(logLevel))
+				if (!this.IsLogLevelEnable(logLevel))
 				{
 					return false;
 				}
@@ -1503,9 +1497,9 @@ namespace RawRabbit.Logging.LogProviders
 						out patternMatches);
 
 				// determine correct caller - this might change due to jit optimizations with method inlining
-				if (s_callerStackBoundaryType == null)
+				if (_sCallerStackBoundaryType == null)
 				{
-					lock (CallerStackBoundaryTypeSync)
+					lock (_callerStackBoundaryTypeSync)
 					{
 #if !LIBLOG_PORTABLE
 						StackTrace stack = new StackTrace();
@@ -1520,23 +1514,23 @@ namespace RawRabbit.Logging.LogProviders
 							}
 						}
 #else
-                        s_callerStackBoundaryType = typeof (LoggerExecutionWrapper);
+						_sCallerStackBoundaryType = typeof(LoggerExecutionWrapper);
 #endif
 					}
 				}
 
-				var translatedLevel = TranslateLevel(logLevel);
+				object translatedLevel = this.TranslateLevel(logLevel);
 
-				object loggingEvent = _createLoggingEvent(_logger, s_callerStackBoundaryType, translatedLevel, formattedMessage, exception);
+				object loggingEvent = this._createLoggingEvent(this._logger, _sCallerStackBoundaryType, translatedLevel, formattedMessage, exception);
 
-				PopulateProperties(loggingEvent, patternMatches, formatParameters);
+				this.PopulateProperties(loggingEvent, patternMatches, formatParameters);
 
-				_logDelegate(_logger, loggingEvent);
+				this._logDelegate(this._logger, loggingEvent);
 
 				return true;
 			}
 
-			private void PopulateProperties(object loggingEvent, IEnumerable<string> patternMatches, object[] formatParameters)
+			private void PopulateProperties(object loggingEvent, IEnumerable<string> patternMatches, IEnumerable<object> formatParameters)
 			{
 				IEnumerable<KeyValuePair<string, object>> keyToValue =
 					patternMatches.Zip(formatParameters,
@@ -1544,7 +1538,7 @@ namespace RawRabbit.Logging.LogProviders
 
 				foreach (KeyValuePair<string, object> keyValuePair in keyToValue)
 				{
-					_loggingEventPropertySetter(loggingEvent, keyValuePair.Key, keyValuePair.Value);
+					this._loggingEventPropertySetter(loggingEvent, keyValuePair.Key, keyValuePair.Value);
 				}
 			}
 
@@ -1563,8 +1557,8 @@ namespace RawRabbit.Logging.LogProviders
 
 			private bool IsLogLevelEnable(LogLevel logLevel)
 			{
-				var level = TranslateLevel(logLevel);
-				return _isEnabledForDelegate(_logger, level);
+				object level = this.TranslateLevel(logLevel);
+				return this._isEnabledForDelegate(this._logger, level);
 			}
 
 			private object TranslateLevel(LogLevel logLevel)
@@ -1573,17 +1567,17 @@ namespace RawRabbit.Logging.LogProviders
 				{
 					case LogLevel.Trace:
 					case LogLevel.Debug:
-						return _levelDebug;
+						return this._levelDebug;
 					case LogLevel.Info:
-						return _levelInfo;
+						return this._levelInfo;
 					case LogLevel.Warn:
-						return _levelWarn;
+						return this._levelWarn;
 					case LogLevel.Error:
-						return _levelError;
+						return this._levelError;
 					case LogLevel.Fatal:
-						return _levelFatal;
+						return this._levelFatal;
 					default:
-						throw new ArgumentOutOfRangeException("logLevel", logLevel, null);
+						throw new ArgumentOutOfRangeException(nameof(logLevel), logLevel, null);
 				}
 			}
 		}
@@ -1595,27 +1589,26 @@ namespace RawRabbit.Logging.LogProviders
 	internal class EntLibLogProvider : LogProviderBase
 	{
 		private const string TypeTemplate = "Microsoft.Practices.EnterpriseLibrary.Logging.{0}, Microsoft.Practices.EnterpriseLibrary.Logging";
-		private static bool s_providerIsAvailableOverride = true;
-		private static readonly Type LogEntryType;
-		private static readonly Type LoggerType;
-		private static readonly Type TraceEventTypeType;
-		private static readonly Action<string, string, int> WriteLogEntry;
-		private static readonly Func<string, int, bool> ShouldLogEntry;
+		private static readonly Type _logEntryType;
+		private static readonly Type _loggerType;
+		private static readonly Type _traceEventTypeType;
+		private static readonly Action<string, string, int> _writeLogEntry;
+		private static readonly Func<string, int, bool> _shouldLogEntry;
 
 		[SuppressMessage("Microsoft.Performance", "CA1810:InitializeReferenceTypeStaticFieldsInline")]
 		static EntLibLogProvider()
 		{
-			LogEntryType = Type.GetType(string.Format(CultureInfo.InvariantCulture, TypeTemplate, "LogEntry"));
-			LoggerType = Type.GetType(string.Format(CultureInfo.InvariantCulture, TypeTemplate, "Logger"));
-			TraceEventTypeType = TraceEventTypeValues.Type;
-			if (LogEntryType == null
-				|| TraceEventTypeType == null
-				|| LoggerType == null)
+			_logEntryType = Type.GetType(string.Format(CultureInfo.InvariantCulture, TypeTemplate, "LogEntry"));
+			_loggerType = Type.GetType(string.Format(CultureInfo.InvariantCulture, TypeTemplate, "Logger"));
+			_traceEventTypeType = TraceEventTypeValues.Type;
+			if (_logEntryType == null
+				|| _traceEventTypeType == null
+				|| _loggerType == null)
 			{
 				return;
 			}
-			WriteLogEntry = GetWriteLogEntry();
-			ShouldLogEntry = GetShouldLogEntry();
+			_writeLogEntry = GetWriteLogEntry();
+			_shouldLogEntry = GetShouldLogEntry();
 		}
 
 		[SuppressMessage("Microsoft.Naming", "CA2204:Literals should be spelled correctly", MessageId = "EnterpriseLibrary")]
@@ -1627,39 +1620,35 @@ namespace RawRabbit.Logging.LogProviders
 			}
 		}
 
-		public static bool ProviderIsAvailableOverride
-		{
-			get { return s_providerIsAvailableOverride; }
-			set { s_providerIsAvailableOverride = value; }
-		}
+		public static bool ProviderIsAvailableOverride { get; set; } = true;
 
 		public override Logger GetLogger(string name)
 		{
-			return new EntLibLogger(name, WriteLogEntry, ShouldLogEntry).Log;
+			return new EntLibLogger(name, _writeLogEntry, _shouldLogEntry).Log;
 		}
 
 		internal static bool IsLoggerAvailable()
 		{
 			return ProviderIsAvailableOverride
-				   && TraceEventTypeType != null
-				   && LogEntryType != null;
+				   && _traceEventTypeType != null
+				   && _logEntryType != null;
 		}
 
 		private static Action<string, string, int> GetWriteLogEntry()
 		{
 			// new LogEntry(...)
-			var logNameParameter = Expression.Parameter(typeof(string), "logName");
-			var messageParameter = Expression.Parameter(typeof(string), "message");
-			var severityParameter = Expression.Parameter(typeof(int), "severity");
+			ParameterExpression logNameParameter = Expression.Parameter(typeof(string), "logName");
+			ParameterExpression messageParameter = Expression.Parameter(typeof(string), "message");
+			ParameterExpression severityParameter = Expression.Parameter(typeof(int), "severity");
 
 			MemberInitExpression memberInit = GetWriteLogExpression(
 				messageParameter,
-				Expression.Convert(severityParameter, TraceEventTypeType),
+				Expression.Convert(severityParameter, _traceEventTypeType),
 				logNameParameter);
 
 			//Logger.Write(new LogEntry(....));
-			MethodInfo writeLogEntryMethod = LoggerType.GetMethodPortable("Write", LogEntryType);
-			var writeLogEntryExpression = Expression.Call(writeLogEntryMethod, memberInit);
+			MethodInfo writeLogEntryMethod = _loggerType.GetMethodPortable("Write", _logEntryType);
+			MethodCallExpression writeLogEntryExpression = Expression.Call(writeLogEntryMethod, memberInit);
 
 			return Expression.Lambda<Action<string, string, int>>(
 				writeLogEntryExpression,
@@ -1671,17 +1660,17 @@ namespace RawRabbit.Logging.LogProviders
 		private static Func<string, int, bool> GetShouldLogEntry()
 		{
 			// new LogEntry(...)
-			var logNameParameter = Expression.Parameter(typeof(string), "logName");
-			var severityParameter = Expression.Parameter(typeof(int), "severity");
+			ParameterExpression logNameParameter = Expression.Parameter(typeof(string), "logName");
+			ParameterExpression severityParameter = Expression.Parameter(typeof(int), "severity");
 
 			MemberInitExpression memberInit = GetWriteLogExpression(
 				Expression.Constant("***dummy***"),
-				Expression.Convert(severityParameter, TraceEventTypeType),
+				Expression.Convert(severityParameter, _traceEventTypeType),
 				logNameParameter);
 
 			//Logger.Write(new LogEntry(....));
-			MethodInfo writeLogEntryMethod = LoggerType.GetMethodPortable("ShouldLog", LogEntryType);
-			var writeLogEntryExpression = Expression.Call(writeLogEntryMethod, memberInit);
+			MethodInfo writeLogEntryMethod = _loggerType.GetMethodPortable("ShouldLog", _logEntryType);
+			MethodCallExpression writeLogEntryExpression = Expression.Call(writeLogEntryMethod, memberInit);
 
 			return Expression.Lambda<Func<string, int, bool>>(
 				writeLogEntryExpression,
@@ -1692,7 +1681,7 @@ namespace RawRabbit.Logging.LogProviders
 		private static MemberInitExpression GetWriteLogExpression(Expression message,
 			Expression severityParameter, ParameterExpression logNameParameter)
 		{
-			var entryType = LogEntryType;
+			Type entryType = _logEntryType;
 			MemberInitExpression memberInit = Expression.MemberInit(Expression.New(entryType),
 				Expression.Bind(entryType.GetPropertyPortable("Message"), message),
 				Expression.Bind(entryType.GetPropertyPortable("Severity"), severityParameter),
@@ -1719,34 +1708,35 @@ namespace RawRabbit.Logging.LogProviders
 
 			internal EntLibLogger(string loggerName, Action<string, string, int> writeLog, Func<string, int, bool> shouldLog)
 			{
-				_loggerName = loggerName;
-				_writeLog = writeLog;
-				_shouldLog = shouldLog;
+				this._loggerName = loggerName;
+				this._writeLog = writeLog;
+				this._shouldLog = shouldLog;
 			}
 
 			public bool Log(LogLevel logLevel, Func<string> messageFunc, Exception exception, params object[] formatParameters)
 			{
-				var severity = MapSeverity(logLevel);
+				int severity = MapSeverity(logLevel);
 				if (messageFunc == null)
 				{
-					return _shouldLog(_loggerName, severity);
+					return this._shouldLog(this._loggerName, severity);
 				}
 
 
 				messageFunc = LogMessageFormatter.SimulateStructuredLogging(messageFunc, formatParameters);
 				if (exception != null)
 				{
-					return LogException(logLevel, messageFunc, exception);
+					return this.LogException(logLevel, messageFunc, exception);
 				}
-				_writeLog(_loggerName, messageFunc(), severity);
+
+				this._writeLog(this._loggerName, messageFunc(), severity);
 				return true;
 			}
 
 			public bool LogException(LogLevel logLevel, Func<string> messageFunc, Exception exception)
 			{
-				var severity = MapSeverity(logLevel);
-				var message = messageFunc() + Environment.NewLine + exception;
-				_writeLog(_loggerName, message, severity);
+				int severity = MapSeverity(logLevel);
+				string message = messageFunc() + Environment.NewLine + exception;
+				this._writeLog(this._loggerName, message, severity);
 				return true;
 			}
 
@@ -1775,7 +1765,6 @@ namespace RawRabbit.Logging.LogProviders
 	internal class SerilogLogProvider : LogProviderBase
 	{
 		private readonly Func<string, object> _getLoggerByNameDelegate;
-		private static bool s_providerIsAvailableOverride = true;
 
 		[SuppressMessage("Microsoft.Naming", "CA2204:Literals should be spelled correctly", MessageId = "Serilog")]
 		public SerilogLogProvider()
@@ -1784,18 +1773,15 @@ namespace RawRabbit.Logging.LogProviders
 			{
 				throw new InvalidOperationException("Serilog.Log not found");
 			}
-			_getLoggerByNameDelegate = GetForContextMethodCall();
+
+			this._getLoggerByNameDelegate = GetForContextMethodCall();
 		}
 
-		public static bool ProviderIsAvailableOverride
-		{
-			get { return s_providerIsAvailableOverride; }
-			set { s_providerIsAvailableOverride = value; }
-		}
+		public static bool ProviderIsAvailableOverride { get; set; } = true;
 
 		public override Logger GetLogger(string name)
 		{
-			return new SerilogLogger(_getLoggerByNameDelegate(name)).Log;
+			return new SerilogLogger(this._getLoggerByNameDelegate(name)).Log;
 		}
 
 		internal static bool IsLoggerAvailable()
@@ -1829,7 +1815,7 @@ namespace RawRabbit.Logging.LogProviders
 			ParameterExpression destructureObjectParam = Expression.Parameter(typeof(bool), "destructureObjects");
 			MethodCallExpression pushPropertyMethodCall = Expression
 				.Call(null, pushPropertyMethod, nameParam, valueParam, destructureObjectParam);
-			var pushProperty = Expression
+			Func<string, object, bool, IDisposable> pushProperty = Expression
 				.Lambda<Func<string, object, bool, IDisposable>>(
 					pushPropertyMethodCall,
 					nameParam,
@@ -1858,7 +1844,7 @@ namespace RawRabbit.Logging.LogProviders
 				valueParam,
 				destructureObjectsParam
 			});
-			var func = Expression.Lambda<Func<string, object, bool, object>>(
+			Func<string, object, bool, object> func = Expression.Lambda<Func<string, object, bool, object>>(
 					methodCall,
 					propertyNameParam,
 					valueParam,
@@ -1873,15 +1859,15 @@ namespace RawRabbit.Logging.LogProviders
 		internal class SerilogLogger
 		{
 			private readonly object _logger;
-			private static readonly object DebugLevel;
-			private static readonly object ErrorLevel;
-			private static readonly object FatalLevel;
-			private static readonly object InformationLevel;
-			private static readonly object VerboseLevel;
-			private static readonly object WarningLevel;
-			private static readonly Func<object, object, bool> IsEnabled;
-			private static readonly Action<object, object, string, object[]> Write;
-			private static readonly Action<object, object, Exception, string, object[]> WriteException;
+			private static readonly object _debugLevel;
+			private static readonly object _errorLevel;
+			private static readonly object _fatalLevel;
+			private static readonly object _informationLevel;
+			private static readonly object _verboseLevel;
+			private static readonly object _warningLevel;
+			private static readonly Func<object, object, bool> _isEnabled;
+			private static readonly Action<object, object, string, object[]> _write;
+			private static readonly Action<object, object, Exception, string, object[]> _writeException;
 
 			[SuppressMessage("Microsoft.Design", "CA1065:DoNotRaiseExceptionsInUnexpectedLocations")]
 			[SuppressMessage("Microsoft.Performance", "CA1810:InitializeReferenceTypeStaticFieldsInline")]
@@ -1890,20 +1876,20 @@ namespace RawRabbit.Logging.LogProviders
 			[SuppressMessage("Microsoft.Naming", "CA2204:Literals should be spelled correctly", MessageId = "Serilog")]
 			static SerilogLogger()
 			{
-				var logEventLevelType = Type.GetType("Serilog.Events.LogEventLevel, Serilog");
+				Type logEventLevelType = Type.GetType("Serilog.Events.LogEventLevel, Serilog");
 				if (logEventLevelType == null)
 				{
 					throw new InvalidOperationException("Type Serilog.Events.LogEventLevel was not found.");
 				}
-				DebugLevel = Enum.Parse(logEventLevelType, "Debug", false);
-				ErrorLevel = Enum.Parse(logEventLevelType, "Error", false);
-				FatalLevel = Enum.Parse(logEventLevelType, "Fatal", false);
-				InformationLevel = Enum.Parse(logEventLevelType, "Information", false);
-				VerboseLevel = Enum.Parse(logEventLevelType, "Verbose", false);
-				WarningLevel = Enum.Parse(logEventLevelType, "Warning", false);
+				_debugLevel = Enum.Parse(logEventLevelType, "Debug", false);
+				_errorLevel = Enum.Parse(logEventLevelType, "Error", false);
+				_fatalLevel = Enum.Parse(logEventLevelType, "Fatal", false);
+				_informationLevel = Enum.Parse(logEventLevelType, "Information", false);
+				_verboseLevel = Enum.Parse(logEventLevelType, "Verbose", false);
+				_warningLevel = Enum.Parse(logEventLevelType, "Warning", false);
 
 				// Func<object, object, bool> isEnabled = (logger, level) => { return ((SeriLog.ILogger)logger).IsEnabled(level); }
-				var loggerType = Type.GetType("Serilog.ILogger, Serilog");
+				Type loggerType = Type.GetType("Serilog.ILogger, Serilog");
 				if (loggerType == null)
 				{
 					throw new InvalidOperationException("Type Serilog.ILogger was not found.");
@@ -1914,7 +1900,7 @@ namespace RawRabbit.Logging.LogProviders
 				ParameterExpression levelParam = Expression.Parameter(typeof(object));
 				UnaryExpression levelCast = Expression.Convert(levelParam, logEventLevelType);
 				MethodCallExpression isEnabledMethodCall = Expression.Call(instanceCast, isEnabledMethodInfo, levelCast);
-				IsEnabled = Expression.Lambda<Func<object, object, bool>>(isEnabledMethodCall, instanceParam, levelParam).Compile();
+				_isEnabled = Expression.Lambda<Func<object, object, bool>>(isEnabledMethodCall, instanceParam, levelParam).Compile();
 
 				// Action<object, object, string> Write =
 				// (logger, level, message, params) => { ((SeriLog.ILoggerILogger)logger).Write(level, message, params); }
@@ -1927,13 +1913,13 @@ namespace RawRabbit.Logging.LogProviders
 					levelCast,
 					messageParam,
 					propertyValuesParam);
-				var expression = Expression.Lambda<Action<object, object, string, object[]>>(
+				Expression<Action<object, object, string, object[]>> expression = Expression.Lambda<Action<object, object, string, object[]>>(
 					writeMethodExp,
 					instanceParam,
 					levelParam,
 					messageParam,
 					propertyValuesParam);
-				Write = expression.Compile();
+				_write = expression.Compile();
 
 				// Action<object, object, string, Exception> WriteException =
 				// (logger, level, exception, message) => { ((ILogger)logger).Write(level, exception, message, new object[]); }
@@ -1950,7 +1936,7 @@ namespace RawRabbit.Logging.LogProviders
 					exceptionParam,
 					messageParam,
 					propertyValuesParam);
-				WriteException = Expression.Lambda<Action<object, object, Exception, string, object[]>>(
+				_writeException = Expression.Lambda<Action<object, object, Exception, string, object[]>>(
 					writeMethodExp,
 					instanceParam,
 					levelParam,
@@ -1961,29 +1947,29 @@ namespace RawRabbit.Logging.LogProviders
 
 			internal SerilogLogger(object logger)
 			{
-				_logger = logger;
+				this._logger = logger;
 			}
 
 			public bool Log(LogLevel logLevel, Func<string> messageFunc, Exception exception, params object[] formatParameters)
 			{
-				var translatedLevel = TranslateLevel(logLevel);
+				object translatedLevel = TranslateLevel(logLevel);
 				if (messageFunc == null)
 				{
-					return IsEnabled(_logger, translatedLevel);
+					return _isEnabled(this._logger, translatedLevel);
 				}
 
-				if (!IsEnabled(_logger, translatedLevel))
+				if (!_isEnabled(this._logger, translatedLevel))
 				{
 					return false;
 				}
 
 				if (exception != null)
 				{
-					LogException(translatedLevel, messageFunc, exception, formatParameters);
+					this.LogException(translatedLevel, messageFunc, exception, formatParameters);
 				}
 				else
 				{
-					LogMessage(translatedLevel, messageFunc, formatParameters);
+					this.LogMessage(translatedLevel, messageFunc, formatParameters);
 				}
 
 				return true;
@@ -1991,12 +1977,12 @@ namespace RawRabbit.Logging.LogProviders
 
 			private void LogMessage(object translatedLevel, Func<string> messageFunc, object[] formatParameters)
 			{
-				Write(_logger, translatedLevel, messageFunc(), formatParameters);
+				_write(this._logger, translatedLevel, messageFunc(), formatParameters);
 			}
 
 			private void LogException(object logLevel, Func<string> messageFunc, Exception exception, object[] formatParams)
 			{
-				WriteException(_logger, logLevel, exception, messageFunc(), formatParams);
+				_writeException(this._logger, logLevel, exception, messageFunc(), formatParams);
 			}
 
 			private static object TranslateLevel(LogLevel logLevel)
@@ -2004,17 +1990,17 @@ namespace RawRabbit.Logging.LogProviders
 				switch (logLevel)
 				{
 					case LogLevel.Fatal:
-						return FatalLevel;
+						return _fatalLevel;
 					case LogLevel.Error:
-						return ErrorLevel;
+						return _errorLevel;
 					case LogLevel.Warn:
-						return WarningLevel;
+						return _warningLevel;
 					case LogLevel.Info:
-						return InformationLevel;
+						return _informationLevel;
 					case LogLevel.Trace:
-						return VerboseLevel;
+						return _verboseLevel;
 					default:
-						return DebugLevel;
+						return _debugLevel;
 				}
 			}
 		}
@@ -2042,7 +2028,6 @@ namespace RawRabbit.Logging.LogProviders
 			params object[] args
 		);
 
-		private static bool s_providerIsAvailableOverride = true;
 		private readonly WriteDelegate _logWriteDelegate;
 
 		public LoupeLogProvider()
@@ -2052,7 +2037,7 @@ namespace RawRabbit.Logging.LogProviders
 				throw new InvalidOperationException("Gibraltar.Agent.Log (Loupe) not found");
 			}
 
-			_logWriteDelegate = GetLogWriteDelegate();
+			this._logWriteDelegate = GetLogWriteDelegate();
 		}
 
 		/// <summary>
@@ -2061,15 +2046,11 @@ namespace RawRabbit.Logging.LogProviders
 		/// <value>
 		/// <c>true</c> if [provider is available override]; otherwise, <c>false</c>.
 		/// </value>
-		public static bool ProviderIsAvailableOverride
-		{
-			get { return s_providerIsAvailableOverride; }
-			set { s_providerIsAvailableOverride = value; }
-		}
+		public static bool ProviderIsAvailableOverride { get; set; } = true;
 
 		public override Logger GetLogger(string name)
 		{
-			return new LoupeLogger(name, _logWriteDelegate).Log;
+			return new LoupeLogger(name, this._logWriteDelegate).Log;
 		}
 
 		public static bool IsLoggerAvailable()
@@ -2093,7 +2074,7 @@ namespace RawRabbit.Logging.LogProviders
 				logMessageSeverityType, typeof(string), typeof(int), typeof(Exception), typeof(bool),
 				logWriteModeType, typeof(string), typeof(string), typeof(string), typeof(string), typeof(object[]));
 
-			var callDelegate = (WriteDelegate)method.CreateDelegate(typeof(WriteDelegate));
+			WriteDelegate callDelegate = (WriteDelegate)method.CreateDelegate(typeof(WriteDelegate));
 			return callDelegate;
 		}
 
@@ -2110,10 +2091,10 @@ namespace RawRabbit.Logging.LogProviders
 
 			internal LoupeLogger(string category, WriteDelegate logWriteDelegate)
 			{
-				_category = category;
-				_logWriteDelegate = logWriteDelegate;
+				this._category = category;
+				this._logWriteDelegate = logWriteDelegate;
 #if DEBUG
-				_skipLevel = 2;
+				this._skipLevel = 2;
 #else
                 _skipLevel = 1;
 #endif
@@ -2129,8 +2110,7 @@ namespace RawRabbit.Logging.LogProviders
 
 				messageFunc = LogMessageFormatter.SimulateStructuredLogging(messageFunc, formatParameters);
 
-				_logWriteDelegate(ToLogMessageSeverity(logLevel), LogSystem, _skipLevel, exception, true, 0, null,
-					_category, null, messageFunc.Invoke());
+				this._logWriteDelegate(ToLogMessageSeverity(logLevel), LogSystem, this._skipLevel, exception, true, 0, null, this._category, null, messageFunc.Invoke());
 
 				return true;
 			}
@@ -2152,7 +2132,7 @@ namespace RawRabbit.Logging.LogProviders
 					case LogLevel.Fatal:
 						return TraceEventTypeValues.Critical;
 					default:
-						throw new ArgumentOutOfRangeException("logLevel");
+						throw new ArgumentOutOfRangeException(nameof(logLevel));
 				}
 			}
 		}
@@ -2173,7 +2153,7 @@ namespace RawRabbit.Logging.LogProviders
 		[SuppressMessage("Microsoft.Performance", "CA1810:InitializeReferenceTypeStaticFieldsInline")]
 		static TraceEventTypeValues()
 		{
-			var assembly = typeof(Uri).GetAssemblyPortable(); // This is to get to the System.dll assembly in a PCL compatible way.
+			Assembly assembly = typeof(Uri).GetAssemblyPortable(); // This is to get to the System.dll assembly in a PCL compatible way.
 			if (assembly == null)
 			{
 				return;
@@ -2195,7 +2175,7 @@ namespace RawRabbit.Logging.LogProviders
 	{
 		//private static readonly Regex Pattern = new Regex(@"\{@?\w{1,}\}");
 #if LIBLOG_PORTABLE
-        private static readonly Regex Pattern = new Regex(@"(?<!{){@?(?<arg>[^\d{][^ }]*)}");
+		private static readonly Regex _pattern = new Regex(@"(?<!{){@?(?<arg>[^\d{][^ }]*)}");
 #else
 		private static readonly Regex Pattern = new Regex(@"(?<!{){@?(?<arg>[^ :{}]+)(?<format>:[^}]+)?}", RegexOptions.Compiled);
 #endif
@@ -2246,9 +2226,9 @@ namespace RawRabbit.Logging.LogProviders
 			List<string> processedArguments = new List<string>();
 			patternMatches = processedArguments;
 
-			foreach (Match match in Pattern.Matches(targetMessage))
+			foreach (Match match in _pattern.Matches(targetMessage))
 			{
-				var arg = match.Groups["arg"].Value;
+				string arg = match.Groups["arg"].Value;
 
 				int notUsed;
 				if (!int.TryParse(arg, out notUsed))
@@ -2283,11 +2263,11 @@ namespace RawRabbit.Logging.LogProviders
 		internal static ConstructorInfo GetConstructorPortable(this Type type, params Type[] types)
 		{
 #if LIBLOG_PORTABLE
-            return type.GetTypeInfo().DeclaredConstructors.FirstOrDefault
-                       (constructor =>
-                            constructor.GetParameters()
-                                       .Select(parameter => parameter.ParameterType)
-                                       .SequenceEqual(types));
+			return type.GetTypeInfo().DeclaredConstructors.FirstOrDefault
+					   (constructor =>
+							constructor.GetParameters()
+									   .Select(parameter => parameter.ParameterType)
+									   .SequenceEqual(types));
 #else
 			return type.GetConstructor(types);
 #endif
@@ -2296,7 +2276,7 @@ namespace RawRabbit.Logging.LogProviders
 		internal static MethodInfo GetMethodPortable(this Type type, string name)
 		{
 #if LIBLOG_PORTABLE
-            return type.GetRuntimeMethods().SingleOrDefault(m => m.Name == name);
+			return type.GetRuntimeMethods().SingleOrDefault(m => m.Name == name);
 #else
 			return type.GetMethod(name);
 #endif
@@ -2305,7 +2285,7 @@ namespace RawRabbit.Logging.LogProviders
 		internal static MethodInfo GetMethodPortable(this Type type, string name, params Type[] types)
 		{
 #if LIBLOG_PORTABLE
-            return type.GetRuntimeMethod(name, types);
+			return type.GetRuntimeMethod(name, types);
 #else
 			return type.GetMethod(name, types);
 #endif
@@ -2314,7 +2294,7 @@ namespace RawRabbit.Logging.LogProviders
 		internal static PropertyInfo GetPropertyPortable(this Type type, string name)
 		{
 #if LIBLOG_PORTABLE
-            return type.GetRuntimeProperty(name);
+			return type.GetRuntimeProperty(name);
 #else
 			return type.GetProperty(name);
 #endif
@@ -2323,7 +2303,7 @@ namespace RawRabbit.Logging.LogProviders
 		internal static IEnumerable<FieldInfo> GetFieldsPortable(this Type type)
 		{
 #if LIBLOG_PORTABLE
-            return type.GetRuntimeFields();
+			return type.GetRuntimeFields();
 #else
 			return type.GetFields();
 #endif
@@ -2332,22 +2312,22 @@ namespace RawRabbit.Logging.LogProviders
 		internal static Type GetBaseTypePortable(this Type type)
 		{
 #if LIBLOG_PORTABLE
-            return type.GetTypeInfo().BaseType;
+			return type.GetTypeInfo().BaseType;
 #else
 			return type.BaseType;
 #endif
 		}
 
 #if LIBLOG_PORTABLE
-        internal static MethodInfo GetGetMethod(this PropertyInfo propertyInfo)
-        {
-            return propertyInfo.GetMethod;
-        }
+		internal static MethodInfo GetGetMethod(this PropertyInfo propertyInfo)
+		{
+			return propertyInfo.GetMethod;
+		}
 
-        internal static MethodInfo GetSetMethod(this PropertyInfo propertyInfo)
-        {
-            return propertyInfo.SetMethod;
-        }
+		internal static MethodInfo GetSetMethod(this PropertyInfo propertyInfo)
+		{
+			return propertyInfo.SetMethod;
+		}
 #endif
 
 #if !LIBLOG_PORTABLE
@@ -2360,7 +2340,7 @@ namespace RawRabbit.Logging.LogProviders
 		internal static Assembly GetAssemblyPortable(this Type type)
 		{
 #if LIBLOG_PORTABLE
-            return type.GetTypeInfo().Assembly;
+			return type.GetTypeInfo().Assembly;
 #else
 			return type.Assembly;
 #endif
@@ -2376,15 +2356,12 @@ namespace RawRabbit.Logging.LogProviders
 
 		public DisposableAction(Action onDispose = null)
 		{
-			_onDispose = onDispose;
+			this._onDispose = onDispose;
 		}
 
 		public void Dispose()
 		{
-			if (_onDispose != null)
-			{
-				_onDispose();
-			}
+			this._onDispose?.Invoke();
 		}
 	}
 }

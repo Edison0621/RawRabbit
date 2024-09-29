@@ -8,7 +8,7 @@ namespace RawRabbit.Operations.Request.Context
 	{
 		public RequestContext(IPipeContext context)
 		{
-			Properties = context?.Properties;
+			this.Properties = context?.Properties;
 		}
 	}
 }

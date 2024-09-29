@@ -3,7 +3,6 @@ using System.Threading;
 using System.Threading.Tasks;
 using RawRabbit.Operations.StateMachine.Core;
 using RawRabbit.Pipe;
-using RawRabbit.Pipe.Middleware;
 
 namespace RawRabbit.Operations.StateMachine.Middleware
 {
@@ -18,46 +17,46 @@ namespace RawRabbit.Operations.StateMachine.Middleware
 	public class RetrieveStateMachineMiddleware : Pipe.Middleware.Middleware
 	{
 		private readonly IStateMachineActivator _stateMachineRepo;
-		protected Func<IPipeContext, Guid> ModelIdFunc;
-		protected Func<IPipeContext, Type> StateMachineTypeFunc;
-		protected Action<StateMachineBase, IPipeContext> PostExecuteAction;
-		protected Func<IPipeContext, StateMachineBase> StateMachineFunc;
+		protected readonly Func<IPipeContext, Guid> _modelIdFunc;
+		protected readonly Func<IPipeContext, Type> _stateMachineTypeFunc;
+		protected readonly Action<StateMachineBase, IPipeContext> _postExecuteAction;
+		protected readonly Func<IPipeContext, StateMachineBase> _stateMachineFunc;
 
 		public RetrieveStateMachineMiddleware(IStateMachineActivator stateMachineRepo, RetrieveStateMachineOptions options = null)
 		{
-			_stateMachineRepo = stateMachineRepo;
-			ModelIdFunc = options?.ModelIdFunc ?? (context => context.Get(StateMachineKey.ModelId, Guid.NewGuid()));
-			StateMachineTypeFunc = options?.StateMachineTypeFunc ?? (context => context.Get<Type>(StateMachineKey.Type));
-			StateMachineFunc = options?.StateMachineFunc;
-			PostExecuteAction = options?.PostExecuteAction;
+			this._stateMachineRepo = stateMachineRepo;
+			this._modelIdFunc = options?.ModelIdFunc ?? (context => context.Get(StateMachineKey.ModelId, Guid.NewGuid()));
+			this._stateMachineTypeFunc = options?.StateMachineTypeFunc ?? (context => context.Get<Type>(StateMachineKey.Type));
+			this._stateMachineFunc = options?.StateMachineFunc;
+			this._postExecuteAction = options?.PostExecuteAction;
 		}
 
-		public override async Task InvokeAsync(IPipeContext context, CancellationToken token)
+		public override async Task InvokeAsync(IPipeContext context, CancellationToken token = default(CancellationToken))
 		{
-			var id = GetModelId(context);
-			var stateMachineType = GetStateMachineType(context);
-			var stateMachine = await GetStateMachineAsync(context, id, stateMachineType);
+			Guid id = this.GetModelId(context);
+			Type stateMachineType = this.GetStateMachineType(context);
+			StateMachineBase stateMachine = await this.GetStateMachineAsync(context, id, stateMachineType);
 			context.Properties.TryAdd(StateMachineKey.Machine, stateMachine);
-			PostExecuteAction?.Invoke(stateMachine, context);
-			await Next.InvokeAsync(context, token);
+			this._postExecuteAction?.Invoke(stateMachine, context);
+			await this.Next.InvokeAsync(context, token);
 		}
 
 		protected virtual Task<StateMachineBase> GetStateMachineAsync(IPipeContext context, Guid id, Type type)
 		{
-			var fromContext = StateMachineFunc?.Invoke(context);
+			StateMachineBase fromContext = this._stateMachineFunc?.Invoke(context);
 			return fromContext != null
 				? Task.FromResult(fromContext)
-				: _stateMachineRepo.ActivateAsync(id, type);
+				: this._stateMachineRepo.ActivateAsync(id, type);
 		}
 
 		protected virtual Type GetStateMachineType(IPipeContext context)
 		{
-			return StateMachineTypeFunc(context);
+			return this._stateMachineTypeFunc(context);
 		}
 
 		protected virtual Guid GetModelId(IPipeContext context)
 		{
-			return ModelIdFunc(context);
+			return this._modelIdFunc(context);
 		}
 	}
 }

@@ -14,7 +14,7 @@ namespace RawRabbit.Common
 	{
 		public IDictionary<string, object> GetClientProperties(RawRabbitConfiguration cfg = null)
 		{
-			var props = new Dictionary<string, object>
+			Dictionary<string, object> props = new Dictionary<string, object>
 			{
 				{ "product", "RawRabbit" },
 				{ "version", typeof(IBusClient).GetTypeInfo().Assembly.GetName().Version.ToString() },

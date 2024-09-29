@@ -10,12 +10,12 @@ namespace RawRabbit.Operations.StateMachine.Trigger
 		
 		public TriggerConfigurer()
 		{
-			TriggerConfiguration = new List<TriggerConfiguration>();
+			this.TriggerConfiguration = new List<TriggerConfiguration>();
 		}
 
 		public TriggerConfigurer From(Action<IPipeBuilder> pipe, Action<IPipeContext> context)
 		{
-			TriggerConfiguration.Add(new TriggerConfiguration
+			this.TriggerConfiguration.Add(new TriggerConfiguration
 			{
 				Pipe = pipe,
 				Context = context

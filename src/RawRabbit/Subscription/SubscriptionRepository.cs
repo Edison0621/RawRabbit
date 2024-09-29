@@ -16,17 +16,17 @@ namespace RawRabbit.Subscription
 
 		public SubscriptionRepository()
 		{
-			_subscriptions = new ConcurrentBag<ISubscription>();
+			this._subscriptions = new ConcurrentBag<ISubscription>();
 		}
 
 		public void Add(ISubscription subscription)
 		{
-			_subscriptions.Add(subscription);
+			this._subscriptions.Add(subscription);
 		}
 
 		public List<ISubscription> GetAll()
 		{
-			return _subscriptions.ToList();
+			return this._subscriptions.ToList();
 		}
 	}
 }

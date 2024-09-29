@@ -18,17 +18,17 @@ namespace RawRabbit.Configuration.Queue
 
 		public QueueDeclarationFactory(RawRabbitConfiguration config, INamingConventions conventions)
 		{
-			_config = config;
-			_conventions = conventions;
+			this._config = config;
+			this._conventions = conventions;
 		}
 
 		public QueueDeclaration Create(string queueName)
 		{
 			return new QueueDeclaration
 			{
-				AutoDelete = _config.Queue.AutoDelete,
-				Durable = _config.Queue.Durable,
-				Exclusive = _config.Queue.Exclusive,
+				AutoDelete = this._config.Queue.AutoDelete,
+				Durable = this._config.Queue.Durable,
+				Exclusive = this._config.Queue.Exclusive,
 				Name = queueName,
 				Arguments = new Dictionary<string, object>()
 			};
@@ -36,13 +36,13 @@ namespace RawRabbit.Configuration.Queue
 
 		public QueueDeclaration Create<TMessageType>()
 		{
-			return Create(typeof(TMessageType));
+			return this.Create(typeof(TMessageType));
 		}
 
 		public QueueDeclaration Create(Type messageType)
 		{
-			var queueName = _conventions.QueueNamingConvention(messageType);
-			return Create(queueName);
+			string queueName = this._conventions.QueueNamingConvention(messageType);
+			return this.Create(queueName);
 		}
 	}
 }

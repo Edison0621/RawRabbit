@@ -2,8 +2,8 @@
 using System.Threading.Tasks;
 using BenchmarkDotNet.Attributes;
 using RawRabbit.Instantiation;
-using RawRabbit.Pipe;
-using RawRabbit.Pipe.Middleware;
+// ReSharper disable All
+#pragma warning disable CS4014 // Because this call is not awaited, execution of the current method continues before the call is completed
 
 namespace RawRabbit.PerformanceTest
 {
@@ -18,79 +18,79 @@ namespace RawRabbit.PerformanceTest
 		[Setup]
 		public void Setup()
 		{
-			_busClient = RawRabbitFactory.CreateSingleton();
-			_completedTask = Task.FromResult(0);
-			_message = new Message();
-			_busClient.SubscribeAsync<Message>(message =>
+			this._busClient = RawRabbitFactory.CreateSingleton();
+			this._completedTask = Task.FromResult(0);
+			this._message = new Message();
+			this._busClient.SubscribeAsync<Message>(message =>
 			{
-				MessageReceived(message, EventArgs.Empty);
-				return _completedTask;
+				this.MessageReceived(message, EventArgs.Empty);
+				return this._completedTask;
 			});
 		}
 
 		[Cleanup]
 		public void Cleanup()
 		{
-			_busClient.DeleteQueueAsync<Message>();
-			(_busClient as IDisposable).Dispose();
+			this._busClient.DeleteQueueAsync<Message>();
+			(this._busClient as IDisposable).Dispose();
 		}
 
 		[Benchmark]
 		public async Task ConsumerAcknowledgements_Off()
 		{
-			var msgTsc = new TaskCompletionSource<Message>();
+			TaskCompletionSource<Message> msgTsc = new TaskCompletionSource<Message>();
 
 			EventHandler onMessageReceived = (sender, args) => { msgTsc.TrySetResult(sender as Message); };
-			MessageReceived += onMessageReceived;
+			this.MessageReceived += onMessageReceived;
 
-			_busClient.PublishAsync(_message, ctx => ctx.UsePublishAcknowledge(false));
+			this._busClient.PublishAsync(this._message, ctx => ctx.UsePublishAcknowledge(false));
 			await msgTsc.Task;
- 			MessageReceived -= onMessageReceived;
+			this.MessageReceived -= onMessageReceived;
 		}
 
 		[Benchmark]
 		public async Task ConsumerAcknowledgements_On()
 		{
-			var msgTsc = new TaskCompletionSource<Message>();
+			TaskCompletionSource<Message> msgTsc = new TaskCompletionSource<Message>();
 
 			EventHandler onMessageReceived = (sender, args) => { msgTsc.TrySetResult(sender as Message); };
-			MessageReceived += onMessageReceived;
+			this.MessageReceived += onMessageReceived;
 
-			_busClient.PublishAsync(_message);
+			this._busClient.PublishAsync(this._message);
 			await msgTsc.Task;
-			MessageReceived -= onMessageReceived;
+			this.MessageReceived -= onMessageReceived;
 		}
 
 		[Benchmark]
 		public async Task DeliveryMode_NonPersistant()
 		{
-			var msgTsc = new TaskCompletionSource<Message>();
+			TaskCompletionSource<Message> msgTsc = new TaskCompletionSource<Message>();
 
 			EventHandler onMessageReceived = (sender, args) => { msgTsc.TrySetResult(sender as Message); };
-			MessageReceived += onMessageReceived;
+			this.MessageReceived += onMessageReceived;
 
-			_busClient.PublishAsync(_message, ctx => ctx
+			this._busClient.PublishAsync(this._message, ctx => ctx
 				.UsePublishConfiguration(cfg => cfg
 					.WithProperties(p => p.DeliveryMode = 1))
 			);
 			await msgTsc.Task;
-			MessageReceived -= onMessageReceived;
+			this.MessageReceived -= onMessageReceived;
 		}
 
 		[Benchmark]
 		public async Task DeliveryMode_Persistant()
 		{
-			var msgTsc = new TaskCompletionSource<Message>();
+			TaskCompletionSource<Message> msgTsc = new TaskCompletionSource<Message>();
 
 			EventHandler onMessageReceived = (sender, args) => { msgTsc.TrySetResult(sender as Message); };
-			MessageReceived += onMessageReceived;
+			this.MessageReceived += onMessageReceived;
 
-			_busClient.PublishAsync(_message, ctx => ctx
+			this._busClient.PublishAsync(this._message, ctx => ctx
 				.UsePublishConfiguration(cfg => cfg
 					.WithProperties(p => p.DeliveryMode = 2))
 			);
 			await msgTsc.Task;
-			MessageReceived -= onMessageReceived;
+			this.MessageReceived -= onMessageReceived;
 		}
 	}
 

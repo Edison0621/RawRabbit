@@ -11,22 +11,22 @@ namespace RawRabbit.Operations.Request.Configuration
 
 		public RequestConfigurationBuilder(RequestConfiguration initial)
 		{
-			Config = initial;
+			this.Config = initial;
 		}
 
 		public IRequestConfigurationBuilder PublishRequest(Action<IPublisherConfigurationBuilder> publish)
 		{
-			var builder = new PublisherConfigurationBuilder(Config.Request);
+			PublisherConfigurationBuilder builder = new PublisherConfigurationBuilder(this.Config.Request);
 			publish(builder);
-			Config.Request = builder.Config;
+			this.Config.Request = builder.Config;
 			return this;
 		}
 
 		public IRequestConfigurationBuilder ConsumeResponse(Action<IConsumerConfigurationBuilder> consume)
 		{
-			var builder = new ConsumerConfigurationBuilder(Config.Response);
+			ConsumerConfigurationBuilder builder = new ConsumerConfigurationBuilder(this.Config.Response);
 			consume(builder);
-			Config.Response = builder.Config;
+			this.Config.Response = builder.Config;
 			return this;
 		}
 	}

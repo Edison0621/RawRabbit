@@ -11,7 +11,7 @@ namespace RawRabbit.Enrichers.Protobuf
 
 		public byte[] Serialize(object obj)
 		{
-			using (var memoryStream = new MemoryStream())
+			using (MemoryStream memoryStream = new MemoryStream())
 			{
 				Serializer.Serialize(memoryStream, obj);
 				return memoryStream.ToArray();
@@ -20,7 +20,7 @@ namespace RawRabbit.Enrichers.Protobuf
 
 		public object Deserialize(Type type, byte[] bytes)
 		{
-			using (var memoryStream = new MemoryStream(bytes))
+			using (MemoryStream memoryStream = new MemoryStream(bytes))
 			{
 				return Serializer.Deserialize(type, memoryStream);
 			}
@@ -28,7 +28,7 @@ namespace RawRabbit.Enrichers.Protobuf
 
 		public TType Deserialize<TType>(byte[] bytes)
 		{
-			using (var memoryStream = new MemoryStream(bytes))
+			using (MemoryStream memoryStream = new MemoryStream(bytes))
 			{
 				return Serializer.Deserialize<TType>(memoryStream);
 			}

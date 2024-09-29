@@ -4,6 +4,7 @@ using RawRabbit.Common;
 using RawRabbit.Enrichers.MessageContext.Subscribe;
 using RawRabbit.IntegrationTests.TestMessages;
 using Xunit;
+#pragma warning disable CS1998 // Async method lacks 'await' operators and will run synchronously
 
 namespace RawRabbit.IntegrationTests.Enrichers
 {
@@ -12,13 +13,13 @@ namespace RawRabbit.IntegrationTests.Enrichers
 		[Fact]
 		public async Task Should_Update_Retry_Information_Correctly()
 		{
-			using (var publisher = RawRabbitFactory.CreateTestClient())
-			using (var subscriber = RawRabbitFactory.CreateTestClient(p => p.UseRetryLater()))
+			using (Instantiation.Disposable.BusClient publisher = RawRabbitFactory.CreateTestClient())
+			using (Instantiation.Disposable.BusClient subscriber = RawRabbitFactory.CreateTestClient(p => p.UseRetryLater()))
 			{
 				/* Setup */
-				var firstTcs = new TaskCompletionSource<RetryMessageContext>();
-				var secondTcs = new TaskCompletionSource<RetryMessageContext>();
-				var thirdTcs = new TaskCompletionSource<RetryMessageContext>();
+				TaskCompletionSource<RetryMessageContext> firstTcs = new TaskCompletionSource<RetryMessageContext>();
+				TaskCompletionSource<RetryMessageContext> secondTcs = new TaskCompletionSource<RetryMessageContext>();
+				TaskCompletionSource<RetryMessageContext> thirdTcs = new TaskCompletionSource<RetryMessageContext>();
 				await subscriber.SubscribeAsync<BasicMessage, RetryMessageContext>(async (message, context) =>
 				{
 					if (!firstTcs.Task.IsCompleted)

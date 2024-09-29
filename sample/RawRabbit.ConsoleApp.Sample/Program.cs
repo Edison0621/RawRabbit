@@ -53,8 +53,8 @@ namespace RawRabbit.ConsoleApp.Sample
 
 		private static Task ServerValuesAsync(ValuesRequested message, MessageContext ctx)
 		{
-			var values = new List<string>();
-			for (var i = 0; i < message.NumberOfValues; i++)
+			List<string> values = new List<string>();
+			for (int i = 0; i < message.NumberOfValues; i++)
 			{
 				values.Add($"value{i}");
 			}

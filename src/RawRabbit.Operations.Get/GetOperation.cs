@@ -25,7 +25,7 @@ namespace RawRabbit
 
 		public static async Task<Ackable<BasicGetResult>> GetAsync(this IBusClient busClient, Action<IGetConfigurationBuilder> config = null, CancellationToken token = default(CancellationToken))
 		{
-			var result = await busClient
+			IPipeContext result = await busClient
 				.InvokeAsync(UntypedGetPipe, context => context.Properties.Add(PipeKey.ConfigurationAction, config), token);
 			return result.Get<Ackable<object>>(GetKey.AckableResult).AsAckable<BasicGetResult>();
 		}

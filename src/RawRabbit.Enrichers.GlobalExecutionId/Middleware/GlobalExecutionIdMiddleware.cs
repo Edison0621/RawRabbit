@@ -20,8 +20,8 @@ namespace RawRabbit.Enrichers.GlobalExecutionId.Middleware
 	public class GlobalExecutionIdMiddleware : StagedMiddleware
 	{
 		public override string StageMarker => Pipe.StageMarker.Initialized;
-		protected Func<IPipeContext, string> IdFunc;
-		protected Action<IPipeContext, string> PersistAction;
+		protected readonly Func<IPipeContext, string> _idFunc;
+		protected readonly Action<IPipeContext, string> _persistAction;
 
 #if NETSTANDARD1_5
 		protected static readonly AsyncLocal<string> ExecutionId = new AsyncLocal<string>();
@@ -32,55 +32,54 @@ namespace RawRabbit.Enrichers.GlobalExecutionId.Middleware
 
 		public GlobalExecutionIdMiddleware(GlobalExecutionOptions options = null)
 		{
-			IdFunc = options?.IdFunc ?? (context => context.GetGlobalExecutionId());
-			PersistAction = options?.PersistAction ?? ((context, id) => context.Properties.TryAdd(PipeKey.GlobalExecutionId, id));
+			this._idFunc = options?.IdFunc ?? (context => context.GetGlobalExecutionId());
+			this._persistAction = options?.PersistAction ?? ((context, id) => context.Properties.TryAdd(PipeKey.GlobalExecutionId, id));
 		}
 
-		public override Task InvokeAsync(IPipeContext context, CancellationToken token)
+		public override Task InvokeAsync(IPipeContext context, CancellationToken token = default(CancellationToken))
 		{
-			var fromContext = GetExecutionIdFromContext(context);
+			string fromContext = this.GetExecutionIdFromContext(context);
 			if (!string.IsNullOrWhiteSpace(fromContext))
 			{
-				_logger.Info("GlobalExecutionId {globalExecutionId} was allready found in PipeContext.", fromContext);
-				return Next.InvokeAsync(context, token);
+				this._logger.Info("GlobalExecutionId {globalExecutionId} was allready found in PipeContext.", fromContext);
+				return this.Next.InvokeAsync(context, token);
 			}
-			var fromProcess = GetExecutionIdFromProcess();
+			string fromProcess = this.GetExecutionIdFromProcess();
 			if (!string.IsNullOrWhiteSpace(fromProcess))
 			{
-				_logger.Info("Using GlobalExecutionId {globalExecutionId} that was found in the execution process.", fromProcess);
-				PersistAction(context, fromProcess);
-				return Next.InvokeAsync(context, token);
+				this._logger.Info("Using GlobalExecutionId {globalExecutionId} that was found in the execution process.", fromProcess);
+				this._persistAction(context, fromProcess);
+				return this.Next.InvokeAsync(context, token);
 			}
-			var created = CreateExecutionId(context);
-			_logger.Info("Creating new GlobalExecutionId {globalExecutionId} for this execution.", created);
-			PersistAction(context, created);
-			return Next.InvokeAsync(context, token);
+			string created = this.CreateExecutionId(context);
+			this._logger.Info("Creating new GlobalExecutionId {globalExecutionId} for this execution.", created);
+			this._persistAction(context, created);
+			return this.Next.InvokeAsync(context, token);
 		}
 
 		protected virtual string CreateExecutionId(IPipeContext context)
 		{
-			var executionId = Guid.NewGuid().ToString();
-			SaveIdInProcess(executionId);
+			string executionId = Guid.NewGuid().ToString();
+			this.SaveIdInProcess(executionId);
 			return executionId;
 		}
 
 		protected virtual string GetExecutionIdFromProcess()
 		{
-			string executionId = null;
 #if NETSTANDARD1_5
-			executionId = ExecutionId?.Value;
+			string executionId = ExecutionId?.Value;
 #elif NET451
-			executionId = CallContext.LogicalGetData(GlobalExecutionId) as string;
+			string executionId = CallContext.LogicalGetData(GlobalExecutionId) as string;
 #endif
 			return executionId;
 		}
 
 		protected virtual string GetExecutionIdFromContext(IPipeContext context)
 		{
-			var id = IdFunc(context);
+			string id = this._idFunc(context);
 			if (!string.IsNullOrWhiteSpace(id))
 			{
-				SaveIdInProcess(id);
+				this.SaveIdInProcess(id);
 			}
 			return id;
 		}

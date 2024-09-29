@@ -14,53 +14,53 @@ namespace RawRabbit.Configuration.Publisher
 
 		public PublisherConfigurationBuilder(PublisherConfiguration initial)
 		{
-			Config = initial;
+			this.Config = initial;
 		}
 
 		public IPublisherConfigurationBuilder OnDeclaredExchange(Action<IExchangeDeclarationBuilder> exchange)
 		{
-			var builder = new ExchangeDeclarationBuilder(Config.Exchange);
+			ExchangeDeclarationBuilder builder = new ExchangeDeclarationBuilder(this.Config.Exchange);
 			exchange(builder);
-			Config.Exchange = builder.Declaration;
-			Config.ExchangeName = builder.Declaration.Name;
+			this.Config.Exchange = builder.Declaration;
+			this.Config.ExchangeName = builder.Declaration.Name;
 			return this;
 		}
 
 		public IPublisherConfigurationBuilder WithReturnCallback(Action<BasicReturnEventArgs> callback)
 		{
-			Config.ReturnCallback = Config.ReturnCallback ?? ((sender, args) =>{}) ;
-			Config.ReturnCallback += (sender, args) => callback(args);
-			Config.Mandatory = true;
+			this.Config.ReturnCallback = this.Config.ReturnCallback ?? ((sender, args) =>{}) ;
+			this.Config.ReturnCallback += (sender, args) => callback(args);
+			this.Config.Mandatory = true;
 			return this;
 		}
 
 		public IBasicPublishConfigurationBuilder OnExchange(string exchange)
 		{
-			Config.Exchange = null;
+			this.Config.Exchange = null;
 			Truncator.Truncate(ref exchange);
-			Config.ExchangeName = exchange;
+			this.Config.ExchangeName = exchange;
 			return this;
 		}
 
 		public IBasicPublishConfigurationBuilder WithRoutingKey(string routingKey)
 		{
-			Config.RoutingKey = routingKey;
+			this.Config.RoutingKey = routingKey;
 			return this;
 		}
 
 		public IBasicPublishConfigurationBuilder AsMandatory(bool mandatory = true)
 		{
-			Config.Mandatory = mandatory;
+			this.Config.Mandatory = mandatory;
 			return this;
 		}
 
 		public IBasicPublishConfigurationBuilder WithProperties(Action<IBasicProperties> propAction)
 		{
-			if (Config.BasicProperties == null)
+			if (this.Config.BasicProperties == null)
 			{
-				Config.BasicProperties = new BasicProperties();
+				this.Config.BasicProperties = new BasicProperties();
 			}
-			propAction?.Invoke(Config.BasicProperties);
+			propAction?.Invoke(this.Config.BasicProperties);
 			return this;
 		}
 	}

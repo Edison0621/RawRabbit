@@ -24,60 +24,61 @@ namespace RawRabbit.Operations.Publish.Middleware
 	{
 		private readonly IExclusiveLock _exclusive;
 		private readonly ILog _logger = LogProvider.For<PublishAcknowledgeMiddleware>();
-		protected Func<IPipeContext, TimeSpan> TimeOutFunc;
-		protected Func<IPipeContext, IModel> ChannelFunc;
-		protected Func<IPipeContext, bool> EnabledFunc;
+		protected readonly Func<IPipeContext, TimeSpan> _timeOutFunc;
+		protected readonly Func<IPipeContext, IModel> _channelFunc;
+		protected readonly Func<IPipeContext, bool> _enabledFunc;
 
-		protected static Dictionary<IModel, ConcurrentDictionary<ulong, TaskCompletionSource<ulong>>> ConfirmsDictionary =
+		protected static readonly Dictionary<IModel, ConcurrentDictionary<ulong, TaskCompletionSource<ulong>>> ConfirmsDictionary =
 			new Dictionary<IModel, ConcurrentDictionary<ulong, TaskCompletionSource<ulong>>>();
-		protected static ConcurrentDictionary<IModel, object> ChannelLocks = new ConcurrentDictionary<IModel, object>();
+		protected static readonly ConcurrentDictionary<IModel, object> ChannelLocks = new ConcurrentDictionary<IModel, object>();
 		protected static Dictionary<IModel, ulong> ChannelSequences = new Dictionary<IModel, ulong>();
 
 		public PublishAcknowledgeMiddleware(IExclusiveLock exclusive, PublishAcknowledgeOptions options = null)
 		{
-			_exclusive = exclusive;
-			TimeOutFunc = options?.TimeOutFunc ?? (context => context.GetPublishAcknowledgeTimeout());
-			ChannelFunc = options?.ChannelFunc ?? (context => context.GetTransientChannel());
-			EnabledFunc = options?.EnabledFunc ?? (context => context.GetPublishAcknowledgeTimeout() != TimeSpan.MaxValue);
+			this._exclusive = exclusive;
+			this._timeOutFunc = options?.TimeOutFunc ?? (context => context.GetPublishAcknowledgeTimeout());
+			this._channelFunc = options?.ChannelFunc ?? (context => context.GetTransientChannel());
+			this._enabledFunc = options?.EnabledFunc ?? (context => context.GetPublishAcknowledgeTimeout() != TimeSpan.MaxValue);
 		}
 
-		public override async Task InvokeAsync(IPipeContext context, CancellationToken token)
+		public override async Task InvokeAsync(IPipeContext context, CancellationToken token = default(CancellationToken))
 		{
-			var enabled = GetEnabled(context);
+			bool enabled = this.GetEnabled(context);
 			if (!enabled)
 			{
-				_logger.Debug("Publish Acknowledgement is disabled.");
-				await Next.InvokeAsync(context, token);
+				this._logger.Debug("Publish Acknowledgement is disabled.");
+				await this.Next.InvokeAsync(context, token);
 				return;
 			}
-			var channel = GetChannel(context);
+			IModel channel = this.GetChannel(context);
 
-			if (!PublishAcknowledgeEnabled(channel))
+			if (!this.PublishAcknowledgeEnabled(channel))
 			{
-				EnableAcknowledgement(channel, token);
+				this.EnableAcknowledgement(channel, token);
 			}
 
-			var channelLock = ChannelLocks.GetOrAdd(channel, c => new object());
-			var ackTcs = new TaskCompletionSource<ulong>();
+			object channelLock = ChannelLocks.GetOrAdd(channel, c => new object());
+			TaskCompletionSource<ulong> ackTcs = new TaskCompletionSource<ulong>();
 
-			await _exclusive.ExecuteAsync(channelLock, o =>
+			await this._exclusive.ExecuteAsync(channelLock, o =>
 			{
-				var sequence = channel.NextPublishSeqNo;
-				SetupTimeout(context, sequence, ackTcs);
-				if (!GetChannelDictionary(channel).TryAdd(sequence, ackTcs))
+				ulong sequence = channel.NextPublishSeqNo;
+				this.SetupTimeout(context, sequence, ackTcs);
+				if (!this.GetChannelDictionary(channel).TryAdd(sequence, ackTcs))
 				{
-					_logger.Info("Unable to add ack '{publishSequence}' on channel {channelNumber}", sequence, channel.ChannelNumber);
+					this._logger.Info("Unable to add ack '{publishSequence}' on channel {channelNumber}", sequence, channel.ChannelNumber);
 				}
-				_logger.Info("Sequence {sequence} added to dictionary", sequence);
 
-				return Next.InvokeAsync(context, token);
+				this._logger.Info("Sequence {sequence} added to dictionary", sequence);
+
+				return this.Next.InvokeAsync(context, token);
 			}, token);
 			await ackTcs.Task;
 		}
 
 		protected virtual TimeSpan GetAcknowledgeTimeOut(IPipeContext context)
 		{
-			return TimeOutFunc(context);
+			return this._timeOutFunc(context);
 		}
 
 		protected virtual bool PublishAcknowledgeEnabled(IModel channel)
@@ -87,12 +88,12 @@ namespace RawRabbit.Operations.Publish.Middleware
 
 		protected virtual IModel GetChannel(IPipeContext context)
 		{
-			return ChannelFunc(context);
+			return this._channelFunc(context);
 		}
 
 		protected virtual bool GetEnabled(IPipeContext context)
 		{
-			return EnabledFunc(context);
+			return this._enabledFunc(context);
 		}
 
 		protected virtual ConcurrentDictionary<ulong, TaskCompletionSource<ulong>> GetChannelDictionary(IModel channel)
@@ -106,39 +107,40 @@ namespace RawRabbit.Operations.Publish.Middleware
 
 		protected virtual void EnableAcknowledgement(IModel channel, CancellationToken token)
 		{
-			_logger.Info("Setting 'Publish Acknowledge' for channel '{channelNumber}'", channel.ChannelNumber);
-			_exclusive.Execute(channel, c =>
+			this._logger.Info("Setting 'Publish Acknowledge' for channel '{channelNumber}'", channel.ChannelNumber);
+			this._exclusive.Execute(channel, c =>
 			{
-				if (PublishAcknowledgeEnabled(c))
+				if (this.PublishAcknowledgeEnabled(c))
 				{
 					return;
 				}
 				c.ConfirmSelect();
-				var dictionary = GetChannelDictionary(c);
+				ConcurrentDictionary<ulong, TaskCompletionSource<ulong>> dictionary = this.GetChannelDictionary(c);
 				c.BasicAcks += (sender, args) =>
 				{
 					Task.Run(() =>
 					{
 						if (args.Multiple)
 						{
-							foreach (var deliveryTag in dictionary.Keys.Where(k => k <= args.DeliveryTag).ToList())
+							foreach (ulong deliveryTag in dictionary.Keys.Where(k => k <= args.DeliveryTag).ToList())
 							{
-								if (!dictionary.TryRemove(deliveryTag, out var tcs))
+								if (!dictionary.TryRemove(deliveryTag, out TaskCompletionSource<ulong> tcs))
 								{
 									continue;
 								}
 								if (!tcs.TrySetResult(deliveryTag))
 								{
+									// ReSharper disable once RedundantJumpStatement
 									continue;
 								}
 							}
 						}
 						else
 						{
-							_logger.Info("Received ack for {deliveryTag}", args.DeliveryTag);
-							if (!dictionary.TryRemove(args.DeliveryTag, out var tcs))
+							this._logger.Info("Received ack for {deliveryTag}", args.DeliveryTag);
+							if (!dictionary.TryRemove(args.DeliveryTag, out TaskCompletionSource<ulong> tcs))
 							{
-								_logger.Warn("Unable to find ack tcs for {deliveryTag}", args.DeliveryTag);
+								this._logger.Warn("Unable to find ack tcs for {deliveryTag}", args.DeliveryTag);
 							}
 							tcs?.TrySetResult(args.DeliveryTag);
 						}
@@ -149,12 +151,13 @@ namespace RawRabbit.Operations.Publish.Middleware
 
 		protected virtual void SetupTimeout(IPipeContext context, ulong sequence, TaskCompletionSource<ulong> ackTcs)
 		{
-			var timeout = GetAcknowledgeTimeOut(context);
+			TimeSpan timeout = this.GetAcknowledgeTimeOut(context);
 			Timer ackTimer = null;
-			_logger.Info("Setting up publish acknowledgement for {publishSequence} with timeout {timeout:g}", sequence, timeout);
+			this._logger.Info("Setting up publish acknowledgement for {publishSequence} with timeout {timeout:g}", sequence, timeout);
 			ackTimer = new Timer(state =>
 			{
 				ackTcs.TrySetException(new PublishConfirmException($"The broker did not send a publish acknowledgement for message {sequence} within {timeout:g}."));
+				// ReSharper disable once AccessToModifiedClosure
 				ackTimer?.Dispose();
 			}, null, timeout, new TimeSpan(-1));
 		}
@@ -164,7 +167,7 @@ namespace RawRabbit.Operations.Publish.Middleware
 	{
 		public static TimeSpan GetPublishAcknowledgeTimeout(this IPipeContext context)
 		{
-			var fallback = context.GetClientConfiguration().PublishConfirmTimeout;
+			TimeSpan fallback = context.GetClientConfiguration().PublishConfirmTimeout;
 			return context.Get(PublishKey.PublishAcknowledgeTimeout, fallback);
 		}
 	}

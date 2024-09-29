@@ -15,17 +15,17 @@ namespace RawRabbit.Operations.Respond.Configuration
 
 		public RespondConfigurationFactory(IConsumerConfigurationFactory consumerFactory)
 		{
-			_consumerFactory = consumerFactory;
+			this._consumerFactory = consumerFactory;
 		}
 
 		public RespondConfiguration Create<TRequest, TResponse>()
 		{
-			return Create(typeof(TRequest), typeof(TResponse));
+			return this.Create(typeof(TRequest), typeof(TResponse));
 		}
 
 		public RespondConfiguration Create(Type requestType, Type respondType)
 		{
-			var consumerCfg = _consumerFactory.Create(requestType);
+			ConsumerConfiguration consumerCfg = this._consumerFactory.Create(requestType);
 			return new RespondConfiguration
 			{
 				Queue = consumerCfg.Queue,

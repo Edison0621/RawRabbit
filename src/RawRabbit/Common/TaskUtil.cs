@@ -7,7 +7,7 @@ namespace RawRabbit.Common
 	{
 		public static Task<T> FromCancelled<T>()
 		{
-			var tsc = new TaskCompletionSource<T>();
+			TaskCompletionSource<T> tsc = new TaskCompletionSource<T>();
 			tsc.TrySetCanceled();
 			return tsc.Task;
 		}
@@ -24,7 +24,7 @@ namespace RawRabbit.Common
 
 		public static Task<T> FromException<T>(Exception exception)
 		{
-			var tsc = new TaskCompletionSource<T>();
+			TaskCompletionSource<T> tsc = new TaskCompletionSource<T>();
 			tsc.TrySetException(exception);
 			return tsc.Task;
 		}

@@ -12,7 +12,7 @@ namespace RawRabbit.Enrichers.HttpContext
 
 		public AspNetCoreHttpContextMiddleware(Microsoft.AspNetCore.Http.IHttpContextAccessor httpAccessor)
 		{
-			_httpAccessor = httpAccessor;
+			this._httpAccessor = httpAccessor;
 		}
 #endif
 		public override string StageMarker => Pipe.StageMarker.Initialized;
@@ -20,9 +20,9 @@ namespace RawRabbit.Enrichers.HttpContext
 		public override Task InvokeAsync(IPipeContext context, CancellationToken token = new CancellationToken())
 		{
 #if NETSTANDARD1_6
-			context.UseHttpContext(_httpAccessor.HttpContext);
+			context.UseHttpContext(this._httpAccessor.HttpContext);
 #endif
-			return Next.InvokeAsync(context, token);
+			return this.Next.InvokeAsync(context, token);
 		}
 
 	}

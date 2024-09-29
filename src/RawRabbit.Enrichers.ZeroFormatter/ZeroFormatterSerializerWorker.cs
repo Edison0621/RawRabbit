@@ -14,9 +14,9 @@ namespace RawRabbit.Enrichers.ZeroFormatter
 
 		public ZeroFormatterSerializerWorker()
 		{
-			_deserializeType = typeof(ZeroFormatterSerializer)
+			this._deserializeType = typeof(ZeroFormatterSerializer)
 				.GetMethod(nameof(ZeroFormatterSerializer.Deserialize), new[] { typeof(byte[]) });
-			_serializeType = typeof(ZeroFormatterSerializer)
+			this._serializeType = typeof(ZeroFormatterSerializer)
 				.GetMethods()
 				.FirstOrDefault(s => s.Name == nameof(ZeroFormatterSerializer.Serialize) && s.ReturnType == typeof(byte[]));
 		}
@@ -26,14 +26,14 @@ namespace RawRabbit.Enrichers.ZeroFormatter
 			if (obj == null)
 				throw new ArgumentNullException();
 
-			return (byte[])_serializeType
+			return (byte[])this._serializeType
 				.MakeGenericMethod(obj.GetType())
 				.Invoke(null, new[] { obj });
 		}
 
 		public object Deserialize(Type type, byte[] bytes)
 		{
-			return _deserializeType.MakeGenericMethod(type)
+			return this._deserializeType.MakeGenericMethod(type)
 				.Invoke(null, new object[] { bytes });
 		}
 

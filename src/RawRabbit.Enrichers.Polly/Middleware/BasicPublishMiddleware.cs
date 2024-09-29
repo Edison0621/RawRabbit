@@ -4,6 +4,7 @@ using RawRabbit.Common;
 using RawRabbit.Pipe;
 using RawRabbit.Pipe.Middleware;
 using System.Threading.Tasks;
+using Polly;
 
 namespace RawRabbit.Enrichers.Polly.Middleware
 {
@@ -21,8 +22,8 @@ namespace RawRabbit.Enrichers.Polly.Middleware
 				byte[] body,
 				IPipeContext context)
 		{
-			var policy = context.GetPolicy(PolicyKeys.BasicPublish);
-			var policyTask = policy.ExecuteAsync(
+			Policy policy = context.GetPolicy(PolicyKeys.BasicPublish);
+			Task<bool> policyTask = policy.ExecuteAsync(
 				action: () =>
 				{
 					base.BasicPublish(channel, exchange, routingKey, mandatory, basicProps, body, context);

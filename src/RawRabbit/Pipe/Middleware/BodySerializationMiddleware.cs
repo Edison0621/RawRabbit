@@ -13,38 +13,38 @@ namespace RawRabbit.Pipe.Middleware
 
 	public class BodySerializationMiddleware : Middleware
 	{
-		protected readonly Func<IPipeContext, object> MsgFunc;
-		protected Action<IPipeContext, byte[]> PersistAction;
+		protected readonly Func<IPipeContext, object> _msgFunc;
+		protected readonly Action<IPipeContext, byte[]> _persistAction;
 		private readonly ISerializer _serializer;
 
 		public BodySerializationMiddleware(ISerializer serializer, MessageSerializationOptions options = null)
 		{
-			_serializer = serializer;
-			MsgFunc = options?.MessageFunc ?? (context => context.GetMessage());
-			PersistAction = options?.PersistAction ?? ((c, s) => c.Properties.TryAdd(PipeKey.SerializedMessage, s));
+			this._serializer = serializer;
+			this._msgFunc = options?.MessageFunc ?? (context => context.GetMessage());
+			this._persistAction = options?.PersistAction ?? ((c, s) => c.Properties.TryAdd(PipeKey.SerializedMessage, s));
 		}
 
-		public override Task InvokeAsync(IPipeContext context, CancellationToken token)
+		public override Task InvokeAsync(IPipeContext context, CancellationToken token = default(CancellationToken))
 		{
-			var message = GetMessage(context);
-			var serialized = SerializeMessage(message);
-			AddSerializedMessageToContext(context, serialized);
-			return Next.InvokeAsync(context, token);
+			object message = this.GetMessage(context);
+			byte[] serialized = this.SerializeMessage(message);
+			this.AddSerializedMessageToContext(context, serialized);
+			return this.Next.InvokeAsync(context, token);
 		}
 
 		protected virtual object GetMessage(IPipeContext context)
 		{
-			return MsgFunc(context);
+			return this._msgFunc(context);
 		}
 
 		protected virtual byte[] SerializeMessage(object message)
 		{
-			return _serializer.Serialize(message);
+			return this._serializer.Serialize(message);
 		}
 
 		protected virtual void AddSerializedMessageToContext(IPipeContext context, byte[] serialized)
 		{
-			PersistAction?.Invoke(context, serialized);
+			this._persistAction?.Invoke(context, serialized);
 		}
 	}
 }

@@ -3,6 +3,7 @@ using RawRabbit.Common;
 using RawRabbit.Pipe;
 using RawRabbit.Pipe.Middleware;
 using System.Threading.Tasks;
+using Polly;
 using RawRabbit.Channel.Abstraction;
 
 namespace RawRabbit.Enrichers.Polly.Middleware
@@ -14,8 +15,8 @@ namespace RawRabbit.Enrichers.Polly.Middleware
 
 		protected override async Task<Acknowledgement> AcknowledgeMessageAsync(IPipeContext context)
 		{
-			var policy = context.GetPolicy(PolicyKeys.MessageAcknowledge);
-			var result = await policy.ExecuteAsync(
+			Policy policy = context.GetPolicy(PolicyKeys.MessageAcknowledge);
+			Task<Acknowledgement> result = await policy.ExecuteAsync(
 				action: () => Task.FromResult(base.AcknowledgeMessageAsync(context)),
 				contextData: new Dictionary<string, object>
 				{

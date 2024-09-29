@@ -11,11 +11,11 @@ namespace RawRabbit.IntegrationTests.Enrichers
 		[Fact]
 		public async Task Should_Work_For_Publish()
 		{
-			using (var publisher = RawRabbitFactory.CreateTestClient(new RawRabbitOptions { Plugins = plugin => plugin.UseAttributeRouting() }))
-			using (var subscriber = RawRabbitFactory.CreateTestClient())
+			using (Instantiation.Disposable.BusClient publisher = RawRabbitFactory.CreateTestClient(new RawRabbitOptions { Plugins = plugin => plugin.UseAttributeRouting() }))
+			using (Instantiation.Disposable.BusClient subscriber = RawRabbitFactory.CreateTestClient())
 			{
 				/* Setup */
-				var receivedTcs = new TaskCompletionSource<AttributedMessage>();
+				TaskCompletionSource<AttributedMessage> receivedTcs = new TaskCompletionSource<AttributedMessage>();
 				await subscriber.SubscribeAsync<AttributedMessage>(received =>
 				{
 					receivedTcs.TrySetResult(received);
@@ -41,11 +41,11 @@ namespace RawRabbit.IntegrationTests.Enrichers
 		[Fact]
 		public async Task Should_Work_For_Subscribe()
 		{
-			using (var subscriber = RawRabbitFactory.CreateTestClient(new RawRabbitOptions { Plugins = plugin => plugin.UseAttributeRouting() }))
-			using (var publisher = RawRabbitFactory.CreateTestClient())
+			using (Instantiation.Disposable.BusClient subscriber = RawRabbitFactory.CreateTestClient(new RawRabbitOptions { Plugins = plugin => plugin.UseAttributeRouting() }))
+			using (Instantiation.Disposable.BusClient publisher = RawRabbitFactory.CreateTestClient())
 			{
 				/* Setup */
-				var receivedTcs = new TaskCompletionSource<AttributedMessage>();
+				TaskCompletionSource<AttributedMessage> receivedTcs = new TaskCompletionSource<AttributedMessage>();
 				await subscriber.SubscribeAsync<AttributedMessage>(received =>
 				{
 					receivedTcs.TrySetResult(received);
@@ -70,15 +70,15 @@ namespace RawRabbit.IntegrationTests.Enrichers
 		[Fact]
 		public async Task Should_Work_For_Request()
 		{
-			using (var requester = RawRabbitFactory.CreateTestClient(new RawRabbitOptions
+			using (Instantiation.Disposable.BusClient requester = RawRabbitFactory.CreateTestClient(new RawRabbitOptions
 				{
 					Plugins = plugin => plugin.UseAttributeRouting()
 				}
 			))
-			using (var responder = RawRabbitFactory.CreateTestClient())
+			using (Instantiation.Disposable.BusClient responder = RawRabbitFactory.CreateTestClient())
 			{
 				/* Setup */
-				var receivedTcs = new TaskCompletionSource<AttributedRequest>();
+				TaskCompletionSource<AttributedRequest> receivedTcs = new TaskCompletionSource<AttributedRequest>();
 				await responder.RespondAsync<AttributedRequest, AttributedResponse>(received =>
 				{
 					receivedTcs.TrySetResult(received);
@@ -103,11 +103,11 @@ namespace RawRabbit.IntegrationTests.Enrichers
 		[Fact]
 		public async Task Should_Work_For_Responder()
 		{
-			using (var responder = RawRabbitFactory.CreateTestClient(new RawRabbitOptions { Plugins = plugin => plugin.UseAttributeRouting() }))
-			using (var requester = RawRabbitFactory.CreateTestClient())
+			using (Instantiation.Disposable.BusClient responder = RawRabbitFactory.CreateTestClient(new RawRabbitOptions { Plugins = plugin => plugin.UseAttributeRouting() }))
+			using (Instantiation.Disposable.BusClient requester = RawRabbitFactory.CreateTestClient())
 			{
 				/* Setup */
-				var receivedTcs = new TaskCompletionSource<AttributedRequest>();
+				TaskCompletionSource<AttributedRequest> receivedTcs = new TaskCompletionSource<AttributedRequest>();
 				await responder.RespondAsync<AttributedRequest, AttributedResponse>(received =>
 				{
 					receivedTcs.TrySetResult(received);
@@ -134,11 +134,11 @@ namespace RawRabbit.IntegrationTests.Enrichers
 		[Fact]
 		public async Task Should_Work_For_Full_Rpc()
 		{
-			using (var responder = RawRabbitFactory.CreateTestClient(new RawRabbitOptions { Plugins = plugin => plugin.UseAttributeRouting() }))
-			using (var requester = RawRabbitFactory.CreateTestClient(new RawRabbitOptions { Plugins = plugin => plugin.UseAttributeRouting() }))
+			using (Instantiation.Disposable.BusClient responder = RawRabbitFactory.CreateTestClient(new RawRabbitOptions { Plugins = plugin => plugin.UseAttributeRouting() }))
+			using (Instantiation.Disposable.BusClient requester = RawRabbitFactory.CreateTestClient(new RawRabbitOptions { Plugins = plugin => plugin.UseAttributeRouting() }))
 			{
 				/* Setup */
-				var receivedTcs = new TaskCompletionSource<AttributedRequest>();
+				TaskCompletionSource<AttributedRequest> receivedTcs = new TaskCompletionSource<AttributedRequest>();
 				await responder.RespondAsync<AttributedRequest, AttributedResponse>(received =>
 				{
 					receivedTcs.TrySetResult(received);
@@ -157,11 +157,11 @@ namespace RawRabbit.IntegrationTests.Enrichers
 		[Fact]
 		public async Task Should_Work_For_Pub_Sub()
 		{
-			using (var publisher = RawRabbitFactory.CreateTestClient(new RawRabbitOptions { Plugins = plugin => plugin.UseAttributeRouting() }))
-			using (var subscriber = RawRabbitFactory.CreateTestClient(new RawRabbitOptions { Plugins = plugin => plugin.UseAttributeRouting() }))
+			using (Instantiation.Disposable.BusClient publisher = RawRabbitFactory.CreateTestClient(new RawRabbitOptions { Plugins = plugin => plugin.UseAttributeRouting() }))
+			using (Instantiation.Disposable.BusClient subscriber = RawRabbitFactory.CreateTestClient(new RawRabbitOptions { Plugins = plugin => plugin.UseAttributeRouting() }))
 			{
 				/* Setup */
-				var receivedTcs = new TaskCompletionSource<AttributedMessage>();
+				TaskCompletionSource<AttributedMessage> receivedTcs = new TaskCompletionSource<AttributedMessage>();
 				await subscriber.SubscribeAsync<AttributedMessage>(received =>
 				{
 					receivedTcs.TrySetResult(received);
@@ -180,16 +180,16 @@ namespace RawRabbit.IntegrationTests.Enrichers
 		[Queue(Name = "my_queue", MessageTtl = 300, DeadLeterExchange = "dlx", Durable = false)]
 		[Exchange(Name = "my_topic", Type = ExchangeType.Topic)]
 		[Routing(RoutingKey = "my_key", AutoAck = true, PrefetchCount = 50)]
-		private class AttributedMessage { }
+		private sealed class AttributedMessage { }
 
 		[Queue(Name = "attributed_request", MessageTtl = 300, DeadLeterExchange = "dlx", Durable = false)]
 		[Exchange(Name = "rpc_exchange", Type = ExchangeType.Topic)]
 		[Routing(RoutingKey = "my_request_key", AutoAck = true, PrefetchCount = 50)]
-		private class AttributedRequest { }
+		private sealed class AttributedRequest { }
 
 		[Queue(Name = "attributed_response", MessageTtl = 300, DeadLeterExchange = "dlx", Durable = false)]
 		[Exchange(Name = "rpc_exchange", Type = ExchangeType.Topic)]
 		[Routing(RoutingKey = "my_response_key", AutoAck = true, PrefetchCount = 50)]
-		private class AttributedResponse { }
+		private sealed class AttributedResponse { }
 	}
 }

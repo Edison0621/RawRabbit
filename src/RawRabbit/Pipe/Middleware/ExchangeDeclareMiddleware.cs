@@ -16,51 +16,51 @@ namespace RawRabbit.Pipe.Middleware
 
 	public class ExchangeDeclareMiddleware : Middleware
 	{
-		protected readonly ITopologyProvider TopologyProvider;
-		protected readonly Func<IPipeContext, ExchangeDeclaration> ExchangeFunc;
-		protected Func<IPipeContext, bool> ThrowOnFailFunc;
+		protected readonly ITopologyProvider _topologyProvider;
+		protected readonly Func<IPipeContext, ExchangeDeclaration> _exchangeFunc;
+		protected readonly Func<IPipeContext, bool> _throwOnFailFunc;
 		private readonly ILog _logger = LogProvider.For<ExchangeDeclareMiddleware>();
 
 		public ExchangeDeclareMiddleware(ITopologyProvider topologyProvider, ExchangeDeclareOptions options = null)
 		{
-			TopologyProvider = topologyProvider;
-			ExchangeFunc = options?.ExchangeFunc ?? (context => context.GetExchangeDeclaration());
-			ThrowOnFailFunc = options?.ThrowOnFailFunc ?? (context => false);
+			this._topologyProvider = topologyProvider;
+			this._exchangeFunc = options?.ExchangeFunc ?? (context => context.GetExchangeDeclaration());
+			this._throwOnFailFunc = options?.ThrowOnFailFunc ?? (context => false);
 		}
 
-		public override async Task InvokeAsync(IPipeContext context, CancellationToken token)
+		public override async Task InvokeAsync(IPipeContext context, CancellationToken token = default(CancellationToken))
 		{
-			var exchangeCfg = GetExchangeDeclaration(context);
+			ExchangeDeclaration exchangeCfg = this.GetExchangeDeclaration(context);
 
 			if (exchangeCfg != null)
 			{
-				_logger.Debug($"Exchange configuration found. Declaring '{exchangeCfg.Name}'.");
-				await DeclareExchangeAsync(exchangeCfg, context, token);
+				this._logger.Debug($"Exchange configuration found. Declaring '{exchangeCfg.Name}'.");
+				await this.DeclareExchangeAsync(exchangeCfg, context, token);
 			}
 			else
 			{
-				if (GetThrowOnFail(context))
+				if (this.GetThrowOnFail(context))
 				{
 					throw new ArgumentNullException(nameof(exchangeCfg));
 				}
 			}
 
-			await Next.InvokeAsync(context, token);
+			await this.Next.InvokeAsync(context, token);
 		}
 
 		protected virtual ExchangeDeclaration GetExchangeDeclaration(IPipeContext context)
 		{
-			return ExchangeFunc?.Invoke(context);
+			return this._exchangeFunc?.Invoke(context);
 		}
 
 		protected virtual bool GetThrowOnFail(IPipeContext context)
 		{
-			return ThrowOnFailFunc(context);
+			return this._throwOnFailFunc(context);
 		}
 
 		protected virtual Task DeclareExchangeAsync(ExchangeDeclaration exchange, IPipeContext context, CancellationToken token)
 		{
-			return TopologyProvider.DeclareExchangeAsync(exchange);
+			return this._topologyProvider.DeclareExchangeAsync(exchange);
 		}
 	}
 }

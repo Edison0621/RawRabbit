@@ -1,6 +1,7 @@
 ﻿using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
+using Polly;
 using RawRabbit.Pipe;
 using RawRabbit.Pipe.Middleware;
 
@@ -13,7 +14,7 @@ namespace RawRabbit.Enrichers.Polly.Middleware
 
 		protected override Task InvokeMessageHandler(IPipeContext context, CancellationToken token)
 		{
-			var policy = context.GetPolicy(PolicyKeys.HandlerInvocation);
+			Policy policy = context.GetPolicy(PolicyKeys.HandlerInvocation);
 			return policy.ExecuteAsync(
 				action: ct => base.InvokeMessageHandler(context, ct),
 				cancellationToken: token,

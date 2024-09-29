@@ -12,17 +12,17 @@ namespace RawRabbit.Enrichers.MessageContext.Middleware
 
 		public ConsumeForwardingMiddleware(IMessageContextRepository repo)
 		{
-			_repo = repo;
+			this._repo = repo;
 		}
 
-		public override Task InvokeAsync(IPipeContext context, CancellationToken token)
+		public override Task InvokeAsync(IPipeContext context, CancellationToken token = default(CancellationToken))
 		{
-			var messageContext = context.GetMessageContext();
+			object messageContext = context.GetMessageContext();
 			if (messageContext != null)
 			{
-				_repo.Set(messageContext);
+				this._repo.Set(messageContext);
 			}
-			return Next.InvokeAsync(context, token);
+			return this.Next.InvokeAsync(context, token);
 		}
 
 		public override string StageMarker => "MessageContextDeserialized";

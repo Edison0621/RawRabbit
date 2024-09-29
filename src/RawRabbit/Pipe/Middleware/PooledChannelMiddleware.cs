@@ -14,44 +14,44 @@ namespace RawRabbit.Pipe.Middleware
 
 	public class PooledChannelMiddleware : Middleware
 	{
-		protected readonly IChannelPoolFactory PoolFactory;
-		protected readonly Func<IPipeContext, string> PoolNameFunc;
-		protected readonly Action<IPipeContext, IModel> SaveInContextAction;
+		protected readonly IChannelPoolFactory _poolFactory;
+		protected readonly Func<IPipeContext, string> _poolNameFunc;
+		protected readonly Action<IPipeContext, IModel> _saveInContextAction;
 
 		public PooledChannelMiddleware(IChannelPoolFactory poolFactory, PooledChannelOptions options = null)
 		{
-			PoolFactory = poolFactory;
-			PoolNameFunc = options?.PoolNameFunc;
-			SaveInContextAction = options?.SaveInContextAction ?? ((ctx, value) =>ctx.Properties.TryAdd(PipeKey.TransientChannel, value));
+			this._poolFactory = poolFactory;
+			this._poolNameFunc = options?.PoolNameFunc;
+			this._saveInContextAction = options?.SaveInContextAction ?? ((ctx, value) =>ctx.Properties.TryAdd(PipeKey.TransientChannel, value));
 		}
 
 		public override async Task InvokeAsync(IPipeContext context, CancellationToken token = default(CancellationToken))
 		{
-			var channel = await GetChannelAsync(context, token);
-			SaveInContext(context, channel);
-			await Next.InvokeAsync(context, token);
+			IModel channel = await this.GetChannelAsync(context, token);
+			this.SaveInContext(context, channel);
+			await this.Next.InvokeAsync(context, token);
 		}
 
 		protected virtual string GetChannelPoolName(IPipeContext context)
 		{
-			return PoolNameFunc?.Invoke(context);
+			return this._poolNameFunc?.Invoke(context);
 		}
 
 		protected virtual IChannelPool GetChannelPool(IPipeContext context)
 		{
-			var poolName = GetChannelPoolName(context);
-			return PoolFactory.GetChannelPool(poolName);
+			string poolName = this.GetChannelPoolName(context);
+			return this._poolFactory.GetChannelPool(poolName);
 		}
 
 		protected virtual Task<IModel> GetChannelAsync(IPipeContext context, CancellationToken ct)
 		{
-			var channelPool = GetChannelPool(context);
+			IChannelPool channelPool = this.GetChannelPool(context);
 			return channelPool.GetAsync(ct);
 		}
 
 		protected virtual void SaveInContext(IPipeContext context, IModel channel)
 		{
-			SaveInContextAction?.Invoke(context, channel);
+			this._saveInContextAction?.Invoke(context, channel);
 		}
 	}
 }

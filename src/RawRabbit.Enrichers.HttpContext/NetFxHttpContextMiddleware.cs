@@ -1,7 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading;
+﻿using System.Threading;
 using System.Threading.Tasks;
 using RawRabbit.Pipe;
 using RawRabbit.Pipe.Middleware;
@@ -17,7 +14,7 @@ namespace RawRabbit.Enrichers.HttpContext
 #if NET451
 			context.UseHttpContext(System.Web.HttpContext.Current);
 #endif
-			return Next.InvokeAsync(context, token);
+			return this.Next.InvokeAsync(context, token);
 		}
 	}
 }

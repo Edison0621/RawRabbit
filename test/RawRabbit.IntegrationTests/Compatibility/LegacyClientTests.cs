@@ -1,14 +1,15 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Linq;
 using System.Threading.Tasks;
+using RawRabbit.Compatibility.Legacy;
 using RawRabbit.Compatibility.Legacy.Configuration.Exchange;
 using RawRabbit.Configuration;
 using RawRabbit.Enrichers.MessageContext;
 using RawRabbit.Enrichers.MessageContext.Context;
 using RawRabbit.Instantiation;
 using RawRabbit.IntegrationTests.TestMessages;
+using RawRabbit.Subscription;
 using Xunit;
+// ReSharper disable All
 
 namespace RawRabbit.IntegrationTests.Compatibility
 {
@@ -18,10 +19,10 @@ namespace RawRabbit.IntegrationTests.Compatibility
 
 		public LegacyClientTests()
 		{
-			var clientCfg = RawRabbitConfiguration.Local;
+			RawRabbitConfiguration clientCfg = RawRabbitConfiguration.Local;
 			clientCfg.Exchange.AutoDelete = true;
 			clientCfg.Queue.AutoDelete = true;
-			_legacyConfig = new RawRabbitOptions
+			this._legacyConfig = new RawRabbitOptions
 			{
 				ClientConfiguration = clientCfg
 			};
@@ -31,12 +32,12 @@ namespace RawRabbit.IntegrationTests.Compatibility
 		public async Task Should_Pub_Sub_Without_Config()
 		{
 			/* Setup */
-			var publisher = RawRabbit.Compatibility.Legacy.RawRabbitFactory.CreateClient(_legacyConfig);
-			var subscriber = RawRabbit.Compatibility.Legacy.RawRabbitFactory.CreateClient(_legacyConfig);
-			var message = new BasicMessage { Prop = "Hello, world!" };
-			var tsc = new TaskCompletionSource<BasicMessage>();
+			RawRabbit.Compatibility.Legacy.IBusClient publisher = RawRabbit.Compatibility.Legacy.RawRabbitFactory.CreateClient(this._legacyConfig);
+			RawRabbit.Compatibility.Legacy.IBusClient subscriber = RawRabbit.Compatibility.Legacy.RawRabbitFactory.CreateClient(this._legacyConfig);
+			BasicMessage message = new BasicMessage { Prop = "Hello, world!" };
+			TaskCompletionSource<BasicMessage> tsc = new TaskCompletionSource<BasicMessage>();
 			MessageContext receivedContext = null;
-			var subscription = subscriber.SubscribeAsync<BasicMessage>((msg, context) =>
+			ISubscription subscription = subscriber.SubscribeAsync<BasicMessage>((msg, context) =>
 			{
 				receivedContext = context;
 				tsc.TrySetResult(msg);
@@ -51,8 +52,8 @@ namespace RawRabbit.IntegrationTests.Compatibility
 			Assert.Equal(message.Prop, tsc.Task.Result.Prop);
 			Assert.NotNull(receivedContext);
 
-			TestChannel.QueueDelete(subscription.QueueName, false, false);
-			TestChannel.ExchangeDelete("rawrabbit.integrationtests.testmessages", false);
+			this.TestChannel.QueueDelete(subscription.QueueName, false, false);
+			this.TestChannel.ExchangeDelete("rawrabbit.integrationtests.testmessages", false);
 			(publisher as IDisposable)?.Dispose();
 			(subscriber as IDisposable)?.Dispose();
 		}
@@ -61,10 +62,10 @@ namespace RawRabbit.IntegrationTests.Compatibility
 		public async Task Should_Pub_Sub_With_Custom_Config()
 		{
 			/* Setup */
-			var publisher = RawRabbit.Compatibility.Legacy.RawRabbitFactory.CreateClient(_legacyConfig);
-			var subscriber = RawRabbit.Compatibility.Legacy.RawRabbitFactory.CreateClient(_legacyConfig);
-			var message = new BasicMessage { Prop = "Hello, world!" };
-			var tsc = new TaskCompletionSource<BasicMessage>();
+			RawRabbit.Compatibility.Legacy.IBusClient publisher = RawRabbit.Compatibility.Legacy.RawRabbitFactory.CreateClient(this._legacyConfig);
+			RawRabbit.Compatibility.Legacy.IBusClient subscriber = RawRabbit.Compatibility.Legacy.RawRabbitFactory.CreateClient(this._legacyConfig);
+			BasicMessage message = new BasicMessage { Prop = "Hello, world!" };
+			TaskCompletionSource<BasicMessage> tsc = new TaskCompletionSource<BasicMessage>();
 			MessageContext receivedContext = null;
 			subscriber.SubscribeAsync<BasicMessage>((msg, context) =>
 			{
@@ -106,15 +107,15 @@ namespace RawRabbit.IntegrationTests.Compatibility
 		{
 			/* Setup */
 			const string propValue = "This is test message prop";
-			_legacyConfig.Plugins = p => p.UseMessageContext(c =>
+			this._legacyConfig.Plugins = p => p.UseMessageContext(c =>
 				new TestMessageContext
 				{
 					Prop = propValue
 				});
-			var publisher = RawRabbit.Compatibility.Legacy.RawRabbitFactory.CreateClient(_legacyConfig);
-			var subscriber = RawRabbit.Compatibility.Legacy.RawRabbitFactory.CreateClient<TestMessageContext>(_legacyConfig);
-			var message = new BasicMessage { Prop = "Hello, world!" };
-			var tsc = new TaskCompletionSource<BasicMessage>();
+			RawRabbit.Compatibility.Legacy.IBusClient publisher = RawRabbit.Compatibility.Legacy.RawRabbitFactory.CreateClient(this._legacyConfig);
+			IBusClient<TestMessageContext> subscriber = RawRabbit.Compatibility.Legacy.RawRabbitFactory.CreateClient<TestMessageContext>(this._legacyConfig);
+			BasicMessage message = new BasicMessage { Prop = "Hello, world!" };
+			TaskCompletionSource<BasicMessage> tsc = new TaskCompletionSource<BasicMessage>();
 			TestMessageContext receivedContext = null;
 			subscriber.SubscribeAsync<BasicMessage>((msg, context) =>
 			{
@@ -155,12 +156,12 @@ namespace RawRabbit.IntegrationTests.Compatibility
 		public async Task Should_Rpc_Without_Config()
 		{
 			/* Setup */
-			var requester = RawRabbit.Compatibility.Legacy.RawRabbitFactory.CreateClient(_legacyConfig);
-			var responder = RawRabbit.Compatibility.Legacy.RawRabbitFactory.CreateClient(_legacyConfig);
+			RawRabbit.Compatibility.Legacy.IBusClient requester = RawRabbit.Compatibility.Legacy.RawRabbitFactory.CreateClient(this._legacyConfig);
+			RawRabbit.Compatibility.Legacy.IBusClient responder = RawRabbit.Compatibility.Legacy.RawRabbitFactory.CreateClient(this._legacyConfig);
 			MessageContext receivedContext = null;
 			BasicRequest receivedRequest = null;
-			var request = new BasicRequest {Number = 3};
-			var subscription = responder.RespondAsync<BasicRequest, BasicResponse>((req, context) =>
+			BasicRequest request = new BasicRequest {Number = 3};
+			ISubscription subscription = responder.RespondAsync<BasicRequest, BasicResponse>((req, context) =>
 			{
 				receivedRequest = req;
 				receivedContext = context;
@@ -168,14 +169,14 @@ namespace RawRabbit.IntegrationTests.Compatibility
 			});
 
 			/* Test */
-			var response = await requester.RequestAsync<BasicRequest, BasicResponse>(request);
+			BasicResponse response = await requester.RequestAsync<BasicRequest, BasicResponse>(request);
 
 			/* Assert */
 			Assert.Equal(receivedRequest.Number, request.Number);
 			Assert.NotNull(receivedContext);
 
-			TestChannel.QueueDelete(subscription.QueueName, false, false);
-			TestChannel.ExchangeDelete("rawrabbit.integrationtests.testmessages", false);
+			this.TestChannel.QueueDelete(subscription.QueueName, false, false);
+			this.TestChannel.ExchangeDelete("rawrabbit.integrationtests.testmessages", false);
 
 			(requester as IDisposable)?.Dispose();
 			(responder as IDisposable)?.Dispose();
@@ -185,12 +186,12 @@ namespace RawRabbit.IntegrationTests.Compatibility
 		public async Task Should_Rpc_With_Config()
 		{
 			/* Setup */
-			var requester = RawRabbit.Compatibility.Legacy.RawRabbitFactory.CreateClient(_legacyConfig);
-			var responder = RawRabbit.Compatibility.Legacy.RawRabbitFactory.CreateClient(_legacyConfig);
+			RawRabbit.Compatibility.Legacy.IBusClient requester = RawRabbit.Compatibility.Legacy.RawRabbitFactory.CreateClient(this._legacyConfig);
+			RawRabbit.Compatibility.Legacy.IBusClient responder = RawRabbit.Compatibility.Legacy.RawRabbitFactory.CreateClient(this._legacyConfig);
 			MessageContext receivedContext = null;
 			BasicRequest receivedRequest = null;
-			var request = new BasicRequest { Number = 3 };
-			var subscription = responder.RespondAsync<BasicRequest, BasicResponse>((req, context) =>
+			BasicRequest request = new BasicRequest { Number = 3 };
+			ISubscription subscription = responder.RespondAsync<BasicRequest, BasicResponse>((req, context) =>
 			{
 				receivedRequest = req;
 				receivedContext = context;
@@ -208,7 +209,7 @@ namespace RawRabbit.IntegrationTests.Compatibility
 			);
 
 			/* Test */
-			var response = await requester.RequestAsync<BasicRequest, BasicResponse>(request, configuration: cfg => cfg
+			BasicResponse response = await requester.RequestAsync<BasicRequest, BasicResponse>(request, configuration: cfg => cfg
 				.WithExchange(e => e
 					.WithName("custom_rpc")
 					.AssumeInitialized()
@@ -234,17 +235,17 @@ namespace RawRabbit.IntegrationTests.Compatibility
 		{
 			/* Setup */
 			const string propValue = "This is test message prop";
-			_legacyConfig.Plugins = p => p.UseMessageContext(c =>
+			this._legacyConfig.Plugins = p => p.UseMessageContext(c =>
 				new TestMessageContext
 				{
 					Prop = propValue
 				}
 			);
-			var requester = RawRabbit.Compatibility.Legacy.RawRabbitFactory.CreateClient(_legacyConfig);
-			var responder = RawRabbit.Compatibility.Legacy.RawRabbitFactory.CreateClient<TestMessageContext>(_legacyConfig);
+			RawRabbit.Compatibility.Legacy.IBusClient requester = RawRabbit.Compatibility.Legacy.RawRabbitFactory.CreateClient(this._legacyConfig);
+			IBusClient<TestMessageContext> responder = RawRabbit.Compatibility.Legacy.RawRabbitFactory.CreateClient<TestMessageContext>(this._legacyConfig);
 			TestMessageContext receivedContext = null;
 			BasicRequest receivedRequest = null;
-			var sub = responder.RespondAsync<BasicRequest, BasicResponse>((req, context) =>
+			ISubscription sub = responder.RespondAsync<BasicRequest, BasicResponse>((req, context) =>
 			{
 				receivedContext = context;
 				receivedRequest = req;
@@ -252,14 +253,14 @@ namespace RawRabbit.IntegrationTests.Compatibility
 			});
 
 			/* Test */
-			var response = await requester.RequestAsync<BasicRequest, BasicResponse>(new BasicRequest());
+			BasicResponse response = await requester.RequestAsync<BasicRequest, BasicResponse>(new BasicRequest());
 
 			/* Assert */
 			Assert.Equal(receivedContext.Prop, propValue);
 			Assert.NotNull(receivedRequest);
 			Assert.NotNull(response);
 
-			TestChannel.QueueDelete(sub.QueueName, false, false);
+			this.TestChannel.QueueDelete(sub.QueueName, false, false);
 			(requester as IDisposable)?.Dispose();
 			(responder as IDisposable)?.Dispose();
 		}

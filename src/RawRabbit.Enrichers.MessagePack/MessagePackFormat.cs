@@ -3,6 +3,6 @@
 	public enum MessagePackFormat
 	{
 		Normal,
-		LZ4Compression
+		Lz4Compression
 	}
 }

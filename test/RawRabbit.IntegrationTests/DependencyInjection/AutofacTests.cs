@@ -6,8 +6,9 @@ using RawRabbit.Configuration;
 using RawRabbit.DependencyInjection.Autofac;
 using RawRabbit.Instantiation;
 using RawRabbit.IntegrationTests.TestMessages;
-using RawRabbit.Logging;
 using Xunit;
+// ReSharper disable All
+#pragma warning disable CS1998 // Async method lacks 'await' operators and will run synchronously
 
 namespace RawRabbit.IntegrationTests.DependencyInjection
 {
@@ -17,13 +18,13 @@ namespace RawRabbit.IntegrationTests.DependencyInjection
 		public async Task Should_Be_Able_To_Resolve_Client_From_Autofac()
 		{
 			/* Setup */
-			var builder = new ContainerBuilder();
+			ContainerBuilder builder = new ContainerBuilder();
 			builder.RegisterRawRabbit();
-			var container = builder.Build();
+			IContainer container = builder.Build();
 
 			/* Test */
-			var client = container.Resolve<IBusClient>();
-			var disposer = container.Resolve<IResourceDisposer>();
+			IBusClient client = container.Resolve<IBusClient>();
+			IResourceDisposer disposer = container.Resolve<IResourceDisposer>();
 
 			/* Assert */
 			disposer.Dispose();
@@ -34,15 +35,15 @@ namespace RawRabbit.IntegrationTests.DependencyInjection
 		public async Task Should_Be_Able_To_Publish_Message_From_Resolved_Client()
 		{
 			/* Setup */
-			var builder = new ContainerBuilder();
+			ContainerBuilder builder = new ContainerBuilder();
 			builder.RegisterRawRabbit();
-			var container = builder.Build();
+			IContainer container = builder.Build();
 
 			/* Test */
-			var client = container.Resolve<IBusClient>();
+			IBusClient client = container.Resolve<IBusClient>();
 			await client.PublishAsync(new BasicMessage());
 			await client.DeleteExchangeAsync<BasicMessage>();
-			var disposer = container.Resolve<IResourceDisposer>();
+			IResourceDisposer disposer = container.Resolve<IResourceDisposer>();
 
 			/* Assert */
 			disposer.Dispose();
@@ -53,8 +54,8 @@ namespace RawRabbit.IntegrationTests.DependencyInjection
 		public async Task Should_Honor_Client_Configuration()
 		{
 			/* Setup */
-			var builder = new ContainerBuilder();
-			var config = RawRabbitConfiguration.Local;
+			ContainerBuilder builder = new ContainerBuilder();
+			RawRabbitConfiguration config = RawRabbitConfiguration.Local;
 			config.VirtualHost = "/foo";
 
 			/* Test */
@@ -64,8 +65,8 @@ namespace RawRabbit.IntegrationTests.DependencyInjection
 				{
 					ClientConfiguration = config
 				});
-				var container = builder.Build();
-				var client = container.Resolve<IBusClient>();
+				IContainer container = builder.Build();
+				IBusClient client = container.Resolve<IBusClient>();
 				await client.CreateChannelAsync();
 			});
 			
@@ -78,16 +79,16 @@ namespace RawRabbit.IntegrationTests.DependencyInjection
 		public async Task Should_Be_Able_To_Resolve_Client_With_Plugins_From_Autofac()
 		{
 			/* Setup */
-			var builder = new ContainerBuilder();
+			ContainerBuilder builder = new ContainerBuilder();
 			builder.RegisterRawRabbit(new RawRabbitOptions
 			{
 				Plugins = p => p.UseStateMachine()
 			});
-			var container = builder.Build();
+			IContainer container = builder.Build();
 
 			/* Test */
-			var client = container.Resolve<IBusClient>();
-			var disposer = container.Resolve<IResourceDisposer>();
+			IBusClient client = container.Resolve<IBusClient>();
+			IResourceDisposer disposer = container.Resolve<IResourceDisposer>();
 
 			/* Assert */
 			disposer.Dispose();

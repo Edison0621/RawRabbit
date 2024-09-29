@@ -15,30 +15,30 @@ namespace RawRabbit.Pipe.Middleware
 
 	public class ConsumerCreationMiddleware : Middleware
 	{
-		protected IConsumerFactory ConsumerFactory;
-		protected Func<IPipeContext, ConsumeConfiguration> ConfigFunc;
-		protected Func<IConsumerFactory, CancellationToken, IPipeContext, Task<IBasicConsumer>> ConsumerFunc;
+		protected readonly IConsumerFactory _consumerFactory;
+		protected Func<IPipeContext, ConsumeConfiguration> _configFunc;
+		protected readonly Func<IConsumerFactory, CancellationToken, IPipeContext, Task<IBasicConsumer>> _consumerFunc;
 		private readonly ILog _logger = LogProvider.For<ConsumerCreationMiddleware>();
 
 		public ConsumerCreationMiddleware(IConsumerFactory consumerFactory, ConsumerCreationOptions options = null)
 		{
-			ConsumerFactory = consumerFactory;
-			ConsumerFunc = options?.ConsumerFunc ?? ((factory, token, context) => factory.CreateConsumerAsync(context.GetChannel(), token));
+			this._consumerFactory = consumerFactory;
+			this._consumerFunc = options?.ConsumerFunc ?? ((factory, token, context) => factory.CreateConsumerAsync(context.GetChannel(), token));
 		}
 
 		public override async Task InvokeAsync(IPipeContext context, CancellationToken token = default(CancellationToken))
 		{
-			var consumer = await GetOrCreateConsumerAsync(context, token);
+			IBasicConsumer consumer = await this.GetOrCreateConsumerAsync(context, token);
 			context.Properties.TryAdd(PipeKey.Consumer, consumer);
-			await Next.InvokeAsync(context, token);
+			await this.Next.InvokeAsync(context, token);
 		}
 
 		protected virtual Task<IBasicConsumer> GetOrCreateConsumerAsync(IPipeContext context, CancellationToken token)
 		{
-			var consumerTask = ConsumerFunc(ConsumerFactory, token, context);
+			Task<IBasicConsumer> consumerTask = this._consumerFunc(this._consumerFactory, token, context);
 			if (consumerTask == null)
 			{
-				_logger.Warn("No Consumer creation task found in Pipe context.");
+				this._logger.Warn("No Consumer creation task found in Pipe context.");
 			}
 			return consumerTask;
 		}

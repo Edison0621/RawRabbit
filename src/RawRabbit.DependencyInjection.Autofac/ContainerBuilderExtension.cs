@@ -1,6 +1,6 @@
-﻿using Autofac;
+﻿using System;
+using Autofac;
 using Autofac.Features.ResolveAnything;
-using RawRabbit.DependencyInjection;
 using RawRabbit.Instantiation;
 
 namespace RawRabbit.DependencyInjection.Autofac
@@ -11,8 +11,9 @@ namespace RawRabbit.DependencyInjection.Autofac
 
 		public static ContainerBuilder RegisterRawRabbit(this ContainerBuilder builder, RawRabbitOptions options = null)
 		{
-			builder.RegisterSource(new AnyConcreteTypeNotAlreadyRegisteredSource(type => type.Namespace.StartsWith(RawRabbit)));
-			var adapter = new ContainerBuilderAdapter(builder);
+			// ReSharper disable once PossibleNullReferenceException
+			builder.RegisterSource(new AnyConcreteTypeNotAlreadyRegisteredSource(type => type.Namespace.StartsWith(RawRabbit, StringComparison.Ordinal)));
+			ContainerBuilderAdapter adapter = new ContainerBuilderAdapter(builder);
 			adapter.AddRawRabbit(options);
 			return builder;
 		}

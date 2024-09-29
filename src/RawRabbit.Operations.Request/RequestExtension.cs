@@ -59,7 +59,7 @@ namespace RawRabbit
 
 		public static async Task<TResponse> RequestAsync<TRequest, TResponse>(this IBusClient client, TRequest message = default(TRequest), Action<IRequestContext> context = null, CancellationToken ct = default(CancellationToken))
 		{
-			var result = await client
+			IPipeContext result = await client
 				.InvokeAsync(RequestPipe, ctx =>
 				{
 					ctx.Properties.Add(RequestKey.OutgoingMessageType, typeof(TRequest));

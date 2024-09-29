@@ -11,8 +11,8 @@ namespace RawRabbit.Serialization
 
 		public byte[] Serialize(object obj)
 		{
-			var serialized = SerializeToString(obj);
-			return ConvertToBytes(serialized);
+			string serialized = this.SerializeToString(obj);
+			return this.ConvertToBytes(serialized);
 		}
 
 		public object Deserialize(Type type, byte[] bytes)
@@ -21,14 +21,14 @@ namespace RawRabbit.Serialization
 			{
 				return null;
 			}
-			var serialized = ConvertToString(bytes);
-			return Deserialize(type, serialized);
+			string serialized = this.ConvertToString(bytes);
+			return this.Deserialize(type, serialized);
 		}
 
 		public TType Deserialize<TType>(byte[] bytes)
 		{
-			var serialized = ConvertToString(bytes);
-			return (TType)Deserialize(typeof(TType), serialized);
+			string serialized = this.ConvertToString(bytes);
+			return (TType)this.Deserialize(typeof(TType), serialized);
 		}
 
 		protected virtual byte[] ConvertToBytes(string serialzed)

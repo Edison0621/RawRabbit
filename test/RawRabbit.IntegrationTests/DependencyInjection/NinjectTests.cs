@@ -3,6 +3,7 @@ using Ninject;
 using RawRabbit.DependencyInjection.Ninject;
 using RawRabbit.Instantiation;
 using Xunit;
+#pragma warning disable CS1998 // Async method lacks 'await' operators and will run synchronously
 
 namespace RawRabbit.IntegrationTests.DependencyInjection
 {
@@ -12,12 +13,12 @@ namespace RawRabbit.IntegrationTests.DependencyInjection
 		public async Task Should_Be_Able_To_Resolve_Client_From_Ninject()
 		{
 			/* Setup */
-			var kernel = new StandardKernel();
+			StandardKernel kernel = new StandardKernel();
 			kernel.RegisterRawRabbit();
 			
 			/* Test */
-			var client = kernel.Get<IBusClient>();
-			var instanceFactory = kernel.Get<IInstanceFactory>();
+			IBusClient client = kernel.Get<IBusClient>();
+			IInstanceFactory instanceFactory = kernel.Get<IInstanceFactory>();
 
 			/* Assert */
 			(instanceFactory as InstanceFactory)?.Dispose();

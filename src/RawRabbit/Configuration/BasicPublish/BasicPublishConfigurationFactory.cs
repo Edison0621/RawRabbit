@@ -1,6 +1,5 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Text;
 using RabbitMQ.Client;
 using RabbitMQ.Client.Framing;
 using RawRabbit.Common;
@@ -16,19 +15,19 @@ namespace RawRabbit.Configuration.BasicPublish
 
 		public BasicPublishConfigurationFactory(INamingConventions conventions, ISerializer serializer, RawRabbitConfiguration config)
 		{
-			_conventions = conventions;
-			_serializer = serializer;
-			_config = config;
+			this._conventions = conventions;
+			this._serializer = serializer;
+			this._config = config;
 		}
 
 		public virtual BasicPublishConfiguration Create(object message)
 		{
 			if (message == null)
 			{
-				return Create();
+				return this.Create();
 			}
-			var cfg = Create(message.GetType());
-			cfg.Body = GetBody(message);
+			BasicPublishConfiguration cfg = this.Create(message.GetType());
+			cfg.Body = this.GetBody(message);
 			return cfg;
 		}
 
@@ -36,10 +35,10 @@ namespace RawRabbit.Configuration.BasicPublish
 		{
 			return new BasicPublishConfiguration
 			{
-				RoutingKey = GetRoutingKey(type),
-				BasicProperties = GetBasicProperties(type),
-				ExchangeName = GetExchangeName(type),
-				Mandatory = GetMandatory(type)
+				RoutingKey = this.GetRoutingKey(type),
+				BasicProperties = this.GetBasicProperties(type),
+				ExchangeName = this.GetExchangeName(type),
+				Mandatory = this.GetMandatory(type)
 			};
 		}
 
@@ -53,7 +52,7 @@ namespace RawRabbit.Configuration.BasicPublish
 
 		protected  virtual string GetRoutingKey(Type type)
 		{
-			return _conventions.RoutingKeyConvention(type);
+			return this._conventions.RoutingKeyConvention(type);
 		}
 
 		protected virtual bool GetMandatory(Type type)
@@ -63,7 +62,7 @@ namespace RawRabbit.Configuration.BasicPublish
 
 		protected virtual string GetExchangeName(Type type)
 		{
-			return _conventions.ExchangeNamingConvention(type);
+			return this._conventions.ExchangeNamingConvention(type);
 		}
 
 		protected virtual IBasicProperties GetBasicProperties(Type type)
@@ -72,17 +71,17 @@ namespace RawRabbit.Configuration.BasicPublish
 			{
 				Type = type.GetUserFriendlyName(),
 				MessageId = Guid.NewGuid().ToString(),
-				DeliveryMode = _config.PersistentDeliveryMode ? Convert.ToByte(2) : Convert.ToByte(1),
-				ContentType = _serializer.ContentType,
+				DeliveryMode = this._config.PersistentDeliveryMode ? Convert.ToByte(2) : Convert.ToByte(1),
+				ContentType = this._serializer.ContentType,
 				ContentEncoding = "UTF-8",
-				UserId =  _config.Username,
+				UserId = this._config.Username,
 				Headers = new Dictionary<string, object>()
 			};
 		}
 
 		protected virtual byte[] GetBody(object message)
 		{
-			return _serializer.Serialize(message);
+			return this._serializer.Serialize(message);
 		}
 	}
 }

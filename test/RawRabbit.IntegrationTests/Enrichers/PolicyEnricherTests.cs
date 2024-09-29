@@ -1,7 +1,11 @@
 ﻿using System;
 using System.Threading.Tasks;
 using Polly;
+using Polly.Fallback;
+using Polly.Retry;
 using RabbitMQ.Client.Exceptions;
+using RawRabbit.Common;
+using RawRabbit.Configuration;
 using RawRabbit.Configuration.Queue;
 using RawRabbit.Enrichers.Polly;
 using RawRabbit.Instantiation;
@@ -16,27 +20,27 @@ namespace RawRabbit.IntegrationTests.Enrichers
 		[Fact]
 		public async Task Should_Use_Custom_Policy()
 		{
-			var defaultCalled = false;
-			var customCalled = false;
-			var defaultPolicy = Policy
+			bool defaultCalled = false;
+			bool customCalled = false;
+			FallbackPolicy defaultPolicy = Policy
 				.Handle<Exception>()
 				.FallbackAsync(ct =>
 				{
 					defaultCalled = true;
 					return Task.FromResult(0);
 				});
-			var declareQueuePolicy = Policy
+			RetryPolicy declareQueuePolicy = Policy
 				.Handle<OperationInterruptedException>()
 				.RetryAsync(async (e, retryCount, ctx) =>
 				{
 					customCalled = true;
-					var defaultQueueCfg = ctx.GetPipeContext().GetClientConfiguration().Queue;
-					var topology = ctx.GetTopologyProvider();
-					var queue = new QueueDeclaration(defaultQueueCfg) { Name = ctx.GetQueueName(), Durable = false};
+					GeneralQueueConfiguration defaultQueueCfg = ctx.GetPipeContext().GetClientConfiguration().Queue;
+					ITopologyProvider topology = ctx.GetTopologyProvider();
+					QueueDeclaration queue = new QueueDeclaration(defaultQueueCfg) { Name = ctx.GetQueueName(), Durable = false};
 					await topology.DeclareQueueAsync(queue);
 				});
 
-			var options = new RawRabbitOptions
+			RawRabbitOptions options = new RawRabbitOptions
 			{
 				Plugins = p => p.UsePolly(c => c
 					.UsePolicy(defaultPolicy)
@@ -44,7 +48,7 @@ namespace RawRabbit.IntegrationTests.Enrichers
 				)
 			};
 
-			using (var client = RawRabbitFactory.CreateTestClient(options))
+			using (Instantiation.Disposable.BusClient client = RawRabbitFactory.CreateTestClient(options))
 			{
 				await client.SubscribeAsync<BasicMessage>(
 					message => Task.FromResult(0),

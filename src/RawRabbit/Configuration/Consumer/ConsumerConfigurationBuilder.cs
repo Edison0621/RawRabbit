@@ -11,39 +11,39 @@ namespace RawRabbit.Configuration.Consumer
 
 		public ConsumerConfigurationBuilder(ConsumerConfiguration initial)
 		{
-			Config = initial;
+			this.Config = initial;
 		}
 
 		public IConsumerConfigurationBuilder OnDeclaredExchange(Action<IExchangeDeclarationBuilder> exchange)
 		{
-			var builder = new ExchangeDeclarationBuilder(Config.Exchange);
+			ExchangeDeclarationBuilder builder = new ExchangeDeclarationBuilder(this.Config.Exchange);
 			exchange(builder);
-			Config.Exchange = builder.Declaration;
-			Config.Consume.ExchangeName = builder.Declaration.Name;
+			this.Config.Exchange = builder.Declaration;
+			this.Config.Consume.ExchangeName = builder.Declaration.Name;
 			return this;
 		}
 
 		public IConsumerConfigurationBuilder FromDeclaredQueue(Action<IQueueDeclarationBuilder> queue)
 		{
-			var builder = new QueueDeclarationBuilder(Config.Queue);
+			QueueDeclarationBuilder builder = new QueueDeclarationBuilder(this.Config.Queue);
 			queue(builder);
-			Config.Queue = builder.Declaration;
-			Config.Consume.QueueName = builder.Declaration.Name;
+			this.Config.Queue = builder.Declaration;
+			this.Config.Consume.QueueName = builder.Declaration.Name;
 			return this;
 		}
 
 		public IConsumerConfigurationBuilder Consume(Action<IConsumeConfigurationBuilder> consume)
 		{
-			var builder = new ConsumeConfigurationBuilder(Config.Consume);
+			ConsumeConfigurationBuilder builder = new ConsumeConfigurationBuilder(this.Config.Consume);
 			consume(builder);
-			Config.Consume = builder.Config;
+			this.Config.Consume = builder.Config;
 			if (builder.ExistingExchange)
 			{
-				Config.Exchange = null;
+				this.Config.Exchange = null;
 			}
 			if (builder.ExistingQueue)
 			{
-				Config.Queue = null;
+				this.Config.Queue = null;
 			}
 			return this;
 		}

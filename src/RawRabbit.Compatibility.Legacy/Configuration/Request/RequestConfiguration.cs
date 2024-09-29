@@ -12,15 +12,15 @@ namespace RawRabbit.Compatibility.Legacy.Configuration.Request
 		/* Response Queue Configuration*/
 		public bool AutoAck { get; set; }
 		public ushort PrefetchCount => 1; // Only expect one response
-		public QueueConfiguration Queue => ReplyQueue;
+		public QueueConfiguration Queue => this.ReplyQueue;
 		public QueueConfiguration ReplyQueue { get; set; }
 		public string ReplyQueueRoutingKey { get; set; }
 
 		public RequestConfiguration()
 		{
-			Exchange = new ExchangeConfiguration();
-			ReplyQueue = new QueueConfiguration();
-			AutoAck = true;
+			this.Exchange = new ExchangeConfiguration();
+			this.ReplyQueue = new QueueConfiguration();
+			this.AutoAck = true;
 		}
 	}
 }

@@ -1,6 +1,5 @@
 ﻿using System.Threading.Tasks;
 using RawRabbit.IntegrationTests.TestMessages;
-using RawRabbit.Pipe;
 using Xunit;
 
 namespace RawRabbit.IntegrationTests.Features
@@ -10,12 +9,12 @@ namespace RawRabbit.IntegrationTests.Features
 		[Fact]
 		public async void Should_Be_Able_To_Subscribe_To_Generic_Message()
 		{
-			using (var subscriber = RawRabbitFactory.CreateTestClient())
-			using (var publisher = RawRabbitFactory.CreateTestClient())
+			using (Instantiation.Disposable.BusClient subscriber = RawRabbitFactory.CreateTestClient())
+			using (Instantiation.Disposable.BusClient publisher = RawRabbitFactory.CreateTestClient())
 			{
 				/* Setup */
-				var doneTsc = new TaskCompletionSource<GenericMessage<int>>();
-				var message = new GenericMessage<int>
+				TaskCompletionSource<GenericMessage<int>> doneTsc = new TaskCompletionSource<GenericMessage<int>>();
+				GenericMessage<int> message = new GenericMessage<int>
 				{
 					Prop = 7
 				};

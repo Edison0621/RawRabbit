@@ -8,7 +8,7 @@ namespace RawRabbit.Operations.Publish.Context
 	{
 		public PublishContext(IPipeContext context)
 		{
-			Properties = context.Properties;
+			this.Properties = context.Properties;
 		}
 	}
 }

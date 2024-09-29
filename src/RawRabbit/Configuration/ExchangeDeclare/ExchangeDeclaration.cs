@@ -12,14 +12,14 @@ namespace RawRabbit.Configuration.Exchange
 
 		public ExchangeDeclaration()
 		{
-			Arguments = new Dictionary<string, object>();
+			this.Arguments = new Dictionary<string, object>();
 		}
 
 		public ExchangeDeclaration(GeneralExchangeConfiguration exchange) : this()
 		{
-			Durable = exchange.Durable;
-			AutoDelete = exchange.AutoDelete;
-			ExchangeType = exchange.Type.ToString().ToLower();
+			this.Durable = exchange.Durable;
+			this.AutoDelete = exchange.AutoDelete;
+			this.ExchangeType = exchange.Type.ToString().ToLower();
 		}
 
 		public static ExchangeDeclaration Default => new ExchangeDeclaration

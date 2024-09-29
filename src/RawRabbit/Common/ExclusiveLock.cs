@@ -22,14 +22,14 @@ namespace RawRabbit.Common
 
 		public ExclusiveLock()
 		{
-			_semaphoreDictionary = new ConcurrentDictionary<object, SemaphoreSlim>();
-			_lockDictionary = new ConcurrentDictionary<object, object>();
+			this._semaphoreDictionary = new ConcurrentDictionary<object, SemaphoreSlim>();
+			this._lockDictionary = new ConcurrentDictionary<object, object>();
 		}
 
 		public Task<object> AquireAsync(object obj, CancellationToken token = default(CancellationToken))
 		{
-			var theLock = _lockDictionary.GetOrAdd(obj, o => new object());
-			var semaphore = _semaphoreDictionary.GetOrAdd(theLock, o => new SemaphoreSlim(1,1));
+			object theLock = this._lockDictionary.GetOrAdd(obj, o => new object());
+			SemaphoreSlim semaphore = this._semaphoreDictionary.GetOrAdd(theLock, o => new SemaphoreSlim(1,1));
 			return semaphore
 				.WaitAsync(token)
 				.ContinueWith(t => theLock, token);
@@ -37,15 +37,15 @@ namespace RawRabbit.Common
 
 		public Task ReleaseAsync(object obj)
 		{
-			var semaphore = _semaphoreDictionary.GetOrAdd(obj, o => new SemaphoreSlim(1, 1));
+			SemaphoreSlim semaphore = this._semaphoreDictionary.GetOrAdd(obj, o => new SemaphoreSlim(1, 1));
 			semaphore.Release();
 			return Task.FromResult(0);
 		}
 
 		public void Execute<T>(T obj, Action<T> action, CancellationToken token = default(CancellationToken))
 		{
-			var theLock = _lockDictionary.GetOrAdd(obj, o => new object());
-			var semaphore = _semaphoreDictionary.GetOrAdd(theLock, o => new SemaphoreSlim(1, 1));
+			object theLock = this._lockDictionary.GetOrAdd(obj, o => new object());
+			SemaphoreSlim semaphore = this._semaphoreDictionary.GetOrAdd(theLock, o => new SemaphoreSlim(1, 1));
 			semaphore.Wait(token);
 			try
 			{
@@ -53,7 +53,7 @@ namespace RawRabbit.Common
 			}
 			catch (Exception e)
 			{
-				_logger.Error("Exception when performing exclusive execute", e);
+				this._logger.Error("Exception when performing exclusive execute", e);
 			}
 			finally
 			{
@@ -63,8 +63,8 @@ namespace RawRabbit.Common
 
 		public async Task ExecuteAsync<T>(T obj, Func<T, Task> func, CancellationToken token = default(CancellationToken))
 		{
-			var theLock = _lockDictionary.GetOrAdd(obj, o => new object());
-			var semaphore = _semaphoreDictionary.GetOrAdd(theLock, o => new SemaphoreSlim(1, 1));
+			object theLock = this._lockDictionary.GetOrAdd(obj, o => new object());
+			SemaphoreSlim semaphore = this._semaphoreDictionary.GetOrAdd(theLock, o => new SemaphoreSlim(1, 1));
 			await semaphore.WaitAsync(token);
 			try
 			{
@@ -72,7 +72,7 @@ namespace RawRabbit.Common
 			}
 			catch (Exception e)
 			{
-				_logger.ErrorException("Exception when performing exclusive executeasync", e);
+				this._logger.ErrorException("Exception when performing exclusive executeasync", e);
 			}
 			finally
 			{
@@ -82,7 +82,7 @@ namespace RawRabbit.Common
 
 		public void Dispose()
 		{
-			foreach (var slim in _semaphoreDictionary.Values)
+			foreach (SemaphoreSlim slim in this._semaphoreDictionary.Values)
 			{
 				slim.Dispose();
 			}

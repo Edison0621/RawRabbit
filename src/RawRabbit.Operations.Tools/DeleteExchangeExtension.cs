@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Threading.Tasks;
+using RawRabbit.Configuration.Exchange;
 using RawRabbit.Operations.Tools.Middleware;
 using RawRabbit.Pipe;
 using RawRabbit.Pipe.Middleware;
@@ -15,7 +16,7 @@ namespace RawRabbit
 			.Use<ExchangeDeclarationMiddleware>()
 			.Use((context, func) =>
 			{
-				var cfg = context.GetExchangeDeclaration();
+				ExchangeDeclaration cfg = context.GetExchangeDeclaration();
 				if (cfg != null)
 				{
 					context.Properties.TryAdd(ExchangeName, cfg.Name);

@@ -8,7 +8,7 @@ namespace RawRabbit.Common
 
 		public Retry(TimeSpan span)
 		{
-			Span = span;
+			this.Span = span;
 		}
 
 		public static Retry In(TimeSpan span)

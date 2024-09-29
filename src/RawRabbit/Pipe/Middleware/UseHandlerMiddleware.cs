@@ -10,12 +10,12 @@ namespace RawRabbit.Pipe.Middleware
 
 		public UseHandlerMiddleware(Func<IPipeContext, Func<Task>, Task> handler)
 		{
-			_handler = handler;
+			this._handler = handler;
 		}
 
-		public override async Task InvokeAsync(IPipeContext context, CancellationToken token)
+		public override async Task InvokeAsync(IPipeContext context, CancellationToken token = default(CancellationToken))
 		{
-			await  _handler(context, () => Next.InvokeAsync(context, token));
+			await this._handler(context, () => this.Next.InvokeAsync(context, token));
 		}
 	}
 }

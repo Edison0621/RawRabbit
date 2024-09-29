@@ -4,6 +4,8 @@ using System.Threading.Tasks;
 using RawRabbit.IntegrationTests.TestMessages;
 using RawRabbit.Operations.Request.Middleware;
 using Xunit;
+// ReSharper disable All
+#pragma warning disable CS1998 // Async method lacks 'await' operators and will run synchronously
 
 namespace RawRabbit.IntegrationTests.Rpc
 {
@@ -12,11 +14,11 @@ namespace RawRabbit.IntegrationTests.Rpc
 		[Fact]
 		public async Task Should_Return_Respose_Without_Any_Additional_Configuration()
 		{
-			using (var requester = RawRabbitFactory.CreateTestClient())
-			using (var responder = RawRabbitFactory.CreateTestClient())
+			using (Instantiation.Disposable.BusClient requester = RawRabbitFactory.CreateTestClient())
+			using (Instantiation.Disposable.BusClient responder = RawRabbitFactory.CreateTestClient())
 			{
 				/* Setup */
-				var sent = new BasicResponse
+				BasicResponse sent = new BasicResponse
 				{
 					Prop = "I am the response"
 				};
@@ -24,7 +26,7 @@ namespace RawRabbit.IntegrationTests.Rpc
 				);
 
 				/* Test */
-				var received = await requester.RequestAsync<BasicRequest, BasicResponse>(new BasicRequest());
+				BasicResponse received = await requester.RequestAsync<BasicRequest, BasicResponse>(new BasicRequest());
 
 				/* Assert */
 				Assert.Equal(received.Prop, sent.Prop);
@@ -34,11 +36,11 @@ namespace RawRabbit.IntegrationTests.Rpc
 		[Fact]
 		public async Task Should_Return_Response_When_Using_Custom_Request_And_Response_Configuration()
 		{
-			using (var requester = RawRabbitFactory.CreateTestClient())
-			using (var responder = RawRabbitFactory.CreateTestClient())
+			using (Instantiation.Disposable.BusClient requester = RawRabbitFactory.CreateTestClient())
+			using (Instantiation.Disposable.BusClient responder = RawRabbitFactory.CreateTestClient())
 			{
 				/* Setup */
-				var sent = new BasicResponse { Prop = "I am the response" };
+				BasicResponse sent = new BasicResponse { Prop = "I am the response" };
 				await responder.RespondAsync<BasicRequest, BasicResponse>(message =>
 						Task.FromResult(sent),
 					ctx => ctx.UseRespondConfiguration(cfg => cfg
@@ -53,7 +55,7 @@ namespace RawRabbit.IntegrationTests.Rpc
 				);
 
 				/* Test */
-				var received = await requester.RequestAsync<BasicRequest, BasicResponse>(new BasicRequest(), ctx => ctx
+				BasicResponse received = await requester.RequestAsync<BasicRequest, BasicResponse>(new BasicRequest(), ctx => ctx
 					.UseRequestConfiguration(cfg => cfg
 						.PublishRequest(p => p
 							.OnDeclaredExchange(e => e
@@ -83,16 +85,16 @@ namespace RawRabbit.IntegrationTests.Rpc
 		[Fact]
 		public async Task Should_Work_With_Dedicated_Consumer_And_Custom_Response_Queue()
 		{
-			using (var requester = RawRabbitFactory.CreateTestClient())
-			using (var responder = RawRabbitFactory.CreateTestClient())
+			using (Instantiation.Disposable.BusClient requester = RawRabbitFactory.CreateTestClient())
+			using (Instantiation.Disposable.BusClient responder = RawRabbitFactory.CreateTestClient())
 			{
 				/* Setup */
 				await responder.RespondAsync<BasicRequest, BasicResponse>(async request => new BasicResponse());
-				var numberOfRequests = 10;
-				var responses = new Task<BasicResponse>[numberOfRequests];
+				int numberOfRequests = 10;
+				Task<BasicResponse>[] responses = new Task<BasicResponse>[numberOfRequests];
 
 				/* Test */
-				for (var i = 0; i < numberOfRequests; i++)
+				for (int i = 0; i < numberOfRequests; i++)
 				{
 					responses[i] = requester.RequestAsync<BasicRequest, BasicResponse>(new BasicRequest(), ctx => ctx
 						.UseDedicatedResponseConsumer()

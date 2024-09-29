@@ -6,8 +6,8 @@ namespace RawRabbit.Operations.StateMachine.Trigger
 	{
 		public List<TriggerConfiguration> GetTriggerConfiguration()
 		{
-			var configurer = new TriggerConfigurer();
-			ConfigureTriggers(configurer);
+			TriggerConfigurer configurer = new TriggerConfigurer();
+			this.ConfigureTriggers(configurer);
 			return configurer.TriggerConfiguration;
 		}
 

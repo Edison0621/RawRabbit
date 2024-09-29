@@ -12,11 +12,11 @@ namespace RawRabbit.IntegrationTests.Rpc
 		[Fact]
 		public async Task Should_Be_Able_To_Auto_Ack()
 		{
-			using (var requester = RawRabbitFactory.CreateTestClient())
-			using (var responder = RawRabbitFactory.CreateTestClient())
+			using (Instantiation.Disposable.BusClient requester = RawRabbitFactory.CreateTestClient())
+			using (Instantiation.Disposable.BusClient responder = RawRabbitFactory.CreateTestClient())
 			{
 				/* Setup */
-				var sent = new BasicResponse
+				BasicResponse sent = new BasicResponse
 				{
 					Prop = "I am the response"
 				};
@@ -25,7 +25,7 @@ namespace RawRabbit.IntegrationTests.Rpc
 				);
 
 				/* Test */
-				var received = await requester.RequestAsync<BasicRequest, BasicResponse>(new BasicRequest());
+				BasicResponse received = await requester.RequestAsync<BasicRequest, BasicResponse>(new BasicRequest());
 
 				/* Assert */
 				Assert.Equal(received.Prop, sent.Prop);
@@ -35,11 +35,11 @@ namespace RawRabbit.IntegrationTests.Rpc
 		[Fact]
 		public async Task Should_Be_Able_To_Return_Ack()
 		{
-			using (var requester = RawRabbitFactory.CreateTestClient())
-			using (var responder = RawRabbitFactory.CreateTestClient())
+			using (Instantiation.Disposable.BusClient requester = RawRabbitFactory.CreateTestClient())
+			using (Instantiation.Disposable.BusClient responder = RawRabbitFactory.CreateTestClient())
 			{
 				/* Setup */
-				var sent = new BasicResponse
+				BasicResponse sent = new BasicResponse
 				{
 					Prop = "I am the response"
 				};
@@ -48,7 +48,7 @@ namespace RawRabbit.IntegrationTests.Rpc
 				);
 
 				/* Test */
-				var received = await requester.RequestAsync<BasicRequest, BasicResponse>(new BasicRequest());
+				BasicResponse received = await requester.RequestAsync<BasicRequest, BasicResponse>(new BasicRequest());
 
 				/* Assert */
 				Assert.Equal(received.Prop, sent.Prop);
@@ -58,13 +58,13 @@ namespace RawRabbit.IntegrationTests.Rpc
 		[Fact]
 		public async Task Should_Be_Able_To_Return_Nack()
 		{
-			using (var requester = RawRabbitFactory.CreateTestClient())
-			using (var responder = RawRabbitFactory.CreateTestClient())
+			using (Instantiation.Disposable.BusClient requester = RawRabbitFactory.CreateTestClient())
+			using (Instantiation.Disposable.BusClient responder = RawRabbitFactory.CreateTestClient())
 			{
 				/* Setup */
-				var firstTsc = new TaskCompletionSource<BasicRequest>();
-				var secondTsc = new TaskCompletionSource<BasicRequest>();
-				var sent = new BasicResponse {Prop = "I'm from the second handler"};
+				TaskCompletionSource<BasicRequest> firstTsc = new TaskCompletionSource<BasicRequest>();
+				TaskCompletionSource<BasicRequest> secondTsc = new TaskCompletionSource<BasicRequest>();
+				BasicResponse sent = new BasicResponse {Prop = "I'm from the second handler"};
 
 				await responder.RespondAsync<BasicRequest, BasicResponse>(async request =>
 					{
@@ -80,7 +80,7 @@ namespace RawRabbit.IntegrationTests.Rpc
 				);
 
 				/* Test */
-				var received = await requester.RequestAsync<BasicRequest, BasicResponse>(new BasicRequest());
+				BasicResponse received = await requester.RequestAsync<BasicRequest, BasicResponse>(new BasicRequest());
 				await firstTsc.Task;
 				await secondTsc.Task;
 				/* Assert */
@@ -91,13 +91,13 @@ namespace RawRabbit.IntegrationTests.Rpc
 		[Fact]
 		public async Task Should_Be_Able_To_Return_Reject()
 		{
-			using (var requester = RawRabbitFactory.CreateTestClient())
-			using (var responder = RawRabbitFactory.CreateTestClient())
+			using (Instantiation.Disposable.BusClient requester = RawRabbitFactory.CreateTestClient())
+			using (Instantiation.Disposable.BusClient responder = RawRabbitFactory.CreateTestClient())
 			{
 				/* Setup */
-				var firstTsc = new TaskCompletionSource<BasicRequest>();
-				var secondTsc = new TaskCompletionSource<BasicRequest>();
-				var sent = new BasicResponse { Prop = "I'm from the second handler" };
+				TaskCompletionSource<BasicRequest> firstTsc = new TaskCompletionSource<BasicRequest>();
+				TaskCompletionSource<BasicRequest> secondTsc = new TaskCompletionSource<BasicRequest>();
+				BasicResponse sent = new BasicResponse { Prop = "I'm from the second handler" };
 
 				await responder.RespondAsync<BasicRequest, BasicResponse>(async request =>
 				{
@@ -113,7 +113,7 @@ namespace RawRabbit.IntegrationTests.Rpc
 				);
 
 				/* Test */
-				var received = await requester.RequestAsync<BasicRequest, BasicResponse>(new BasicRequest());
+				BasicResponse received = await requester.RequestAsync<BasicRequest, BasicResponse>(new BasicRequest());
 				await firstTsc.Task;
 				await secondTsc.Task;
 				/* Assert */

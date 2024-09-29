@@ -6,8 +6,8 @@ using RawRabbit.Exceptions;
 using RawRabbit.Instantiation;
 using RawRabbit.IntegrationTests.TestMessages;
 using RawRabbit.Operations.Request.Middleware;
-using RawRabbit.Pipe;
 using Xunit;
+#pragma warning disable CS1998 // Async method lacks 'await' operators and will run synchronously
 
 namespace RawRabbit.IntegrationTests.Rpc
 {
@@ -16,14 +16,11 @@ namespace RawRabbit.IntegrationTests.Rpc
 		[Fact]
 		public async Task Should_Propegate_Responder_Exception_To_Requester()
 		{
-			using (var requester = RawRabbitFactory.CreateTestClient())
-			using (var responder = RawRabbitFactory.CreateTestClient())
+			using (Instantiation.Disposable.BusClient requester = RawRabbitFactory.CreateTestClient())
+			using (Instantiation.Disposable.BusClient responder = RawRabbitFactory.CreateTestClient())
 			{
 				/* Setup */
-				Func<BasicRequest, Task<BasicResponse>> errorHandler = request =>
-				{
-					throw new Exception("Kaboom");
-				};
+				Func<BasicRequest, Task<BasicResponse>> errorHandler = request => throw new Exception("Kaboom");
 				await responder.RespondAsync(errorHandler);
 
 				/* Test */
@@ -37,14 +34,11 @@ namespace RawRabbit.IntegrationTests.Rpc
 		[Fact]
 		public async Task Should_Propegate_Responder_Exception_To_Requester_When_Request_Handler_Is_Async()
 		{
-			using (var requester = RawRabbitFactory.CreateTestClient())
-			using (var responder = RawRabbitFactory.CreateTestClient())
+			using (Instantiation.Disposable.BusClient requester = RawRabbitFactory.CreateTestClient())
+			using (Instantiation.Disposable.BusClient responder = RawRabbitFactory.CreateTestClient())
 			{
 				/* Setup */
-				Func<BasicRequest, Task<BasicResponse>> errorHandler = async request =>
-				{
-					throw new Exception("Kaboom");
-				};
+				Func<BasicRequest, Task<BasicResponse>> errorHandler = async request => throw new Exception("Kaboom");
 				await responder.RespondAsync(errorHandler);
 
 				/* Test */
@@ -58,15 +52,12 @@ namespace RawRabbit.IntegrationTests.Rpc
 		[Fact]
 		public async Task Should_Propegate_Responder_Exception_To_Requester_When_Responder_Has_Context()
 		{
-			using (var requester = RawRabbitFactory.CreateTestClient())
-			using (var responder = RawRabbitFactory.CreateTestClient())
+			using (Instantiation.Disposable.BusClient requester = RawRabbitFactory.CreateTestClient())
+			using (Instantiation.Disposable.BusClient responder = RawRabbitFactory.CreateTestClient())
 			{
 				/* Setup */
 
-				Func<BasicRequest, MessageContext, Task<BasicResponse>> handler = (request, context) =>
-				{
-					throw new Exception("Kaboom");
-				};
+				Func<BasicRequest, MessageContext, Task<BasicResponse>> handler = (request, context) => throw new Exception("Kaboom");
 				await responder.RespondAsync(handler);
 
 				/* Test */
@@ -80,19 +71,16 @@ namespace RawRabbit.IntegrationTests.Rpc
 		[Fact]
 		public async Task Should_Publish_Message_To_Error_Exchange()
 		{
-			using (var publisher = RawRabbitFactory.CreateTestClient())
-			using (var subscriber = RawRabbitFactory.CreateTestClient())
+			using (Instantiation.Disposable.BusClient publisher = RawRabbitFactory.CreateTestClient())
+			using (Instantiation.Disposable.BusClient subscriber = RawRabbitFactory.CreateTestClient())
 			{
 				/* Setup */
-				var message = new BasicMessage
+				BasicMessage message = new BasicMessage
 				{
 					Prop = "I'm handled, and sent to Error Exchange"
 				};
-				var tsc = new TaskCompletionSource<BasicMessage>();
-				Func<BasicMessage, Task> errorHandler = request =>
-				{
-					throw new Exception("Kaboom");
-				};
+				TaskCompletionSource<BasicMessage> tsc = new TaskCompletionSource<BasicMessage>();
+				Func<BasicMessage, Task> errorHandler = request => throw new Exception("Kaboom");
 				await subscriber.SubscribeAsync(errorHandler);
 				await subscriber.SubscribeAsync<BasicMessage>(msg =>
 				{
@@ -116,19 +104,16 @@ namespace RawRabbit.IntegrationTests.Rpc
 		[Fact]
 		public async Task Should_Publish_Message_To_Error_Exchange_When_Subscriber_Has_Context()
 		{
-			using (var publisher = RawRabbitFactory.CreateTestClient(new RawRabbitOptions { Plugins = p => p.UseMessageContext<MessageContext>()}))
-			using (var subscriber = RawRabbitFactory.CreateTestClient())
+			using (Instantiation.Disposable.BusClient publisher = RawRabbitFactory.CreateTestClient(new RawRabbitOptions { Plugins = p => p.UseMessageContext<MessageContext>()}))
+			using (Instantiation.Disposable.BusClient subscriber = RawRabbitFactory.CreateTestClient())
 			{
 				/* Setup */
-				var message = new BasicMessage
+				BasicMessage message = new BasicMessage
 				{
 					Prop = "I'm handled, and sent to Error Exchange"
 				};
-				var tsc = new TaskCompletionSource<BasicMessage>();
-				Func<BasicMessage, MessageContext, Task> errorHandler = (msg, ctx) =>
-				{
-					throw new Exception("Kaboom");
-				};
+				TaskCompletionSource<BasicMessage> tsc = new TaskCompletionSource<BasicMessage>();
+				Func<BasicMessage, MessageContext, Task> errorHandler = (msg, ctx) => throw new Exception("Kaboom");
 				await subscriber.SubscribeAsync(errorHandler);
 				await subscriber.SubscribeAsync<BasicMessage, MessageContext>((msg, ctx) =>
 				{

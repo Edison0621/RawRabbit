@@ -12,23 +12,23 @@ namespace RawRabbit.Configuration.Publisher
 
 		public PublisherConfigurationFactory(IExchangeDeclarationFactory exchange, IBasicPublishConfigurationFactory basicPublish)
 		{
-			_exchange = exchange;
-			_basicPublish = basicPublish;
+			this._exchange = exchange;
+			this._basicPublish = basicPublish;
 		}
 
 		public PublisherConfiguration Create<TMessage>()
 		{
-			return Create(typeof(TMessage));
+			return this.Create(typeof(TMessage));
 		}
 
 		public PublisherConfiguration Create(Type messageType)
 		{
-			var cfg = _basicPublish.Create(messageType);
+			BasicPublishConfiguration cfg = this._basicPublish.Create(messageType);
 			return new PublisherConfiguration
 			{
 				BasicProperties = cfg.BasicProperties,
 				Body = cfg.Body,
-				Exchange = _exchange.Create(messageType),
+				Exchange = this._exchange.Create(messageType),
 				ExchangeName = cfg.ExchangeName,
 				Mandatory = cfg.Mandatory,
 				RoutingKey = cfg.RoutingKey
@@ -39,7 +39,7 @@ namespace RawRabbit.Configuration.Publisher
 		{
 			return new PublisherConfiguration
 			{
-				Exchange = _exchange.Create(exchangeName),
+				Exchange = this._exchange.Create(exchangeName),
 				ExchangeName = exchangeName,
 				RoutingKey = routingKey,
 				BasicProperties = new BasicProperties()

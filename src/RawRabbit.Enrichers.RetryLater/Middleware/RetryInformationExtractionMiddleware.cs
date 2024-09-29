@@ -16,31 +16,31 @@ namespace RawRabbit.Middleware
 	public class RetryInformationExtractionMiddleware : StagedMiddleware
 	{
 		private readonly IRetryInformationProvider _retryProvider;
-		protected Func<IPipeContext, BasicDeliverEventArgs> DeliveryArgsFunc;
+		protected readonly Func<IPipeContext, BasicDeliverEventArgs> _deliveryArgsFunc;
 		public override string StageMarker => Pipe.StageMarker.MessageReceived;
 
 		public RetryInformationExtractionMiddleware(IRetryInformationProvider retryProvider, RetryInformationExtractionOptions options = null)
 		{
-			_retryProvider = retryProvider;
-			DeliveryArgsFunc = options?.DeliveryArgsFunc ?? (context => context.GetDeliveryEventArgs());
+			this._retryProvider = retryProvider;
+			this._deliveryArgsFunc = options?.DeliveryArgsFunc ?? (context => context.GetDeliveryEventArgs());
 		}
 
 		public override Task InvokeAsync(IPipeContext context, CancellationToken token = default(CancellationToken))
 		{
-			var retryInfo = GetRetryInformation(context);
-			AddToPipeContext(context, retryInfo);
-			return Next.InvokeAsync(context, token);
+			RetryInformation retryInfo = this.GetRetryInformation(context);
+			this.AddToPipeContext(context, retryInfo);
+			return this.Next.InvokeAsync(context, token);
 		}
 
 		protected virtual BasicDeliverEventArgs GetDeliveryEventArgs(IPipeContext context)
 		{
-			return DeliveryArgsFunc?.Invoke(context);
+			return this._deliveryArgsFunc?.Invoke(context);
 		}
 
 		protected virtual RetryInformation GetRetryInformation(IPipeContext context)
 		{
-			var devlieryArgs = GetDeliveryEventArgs(context);
-			return _retryProvider.Get(devlieryArgs);
+			BasicDeliverEventArgs devlieryArgs = this.GetDeliveryEventArgs(context);
+			return this._retryProvider.Get(devlieryArgs);
 		}
 
 		protected virtual void AddToPipeContext(IPipeContext context, RetryInformation retryInfo)

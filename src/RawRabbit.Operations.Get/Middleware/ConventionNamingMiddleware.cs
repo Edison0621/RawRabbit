@@ -16,37 +16,37 @@ namespace RawRabbit.Operations.Get.Middleware
 	public class ConventionNamingMiddleware : Pipe.Middleware.Middleware
 	{
 		private readonly INamingConventions _conventions;
-		protected Func<IPipeContext, GetConfiguration> GetConfigFunc;
-		protected Func<IPipeContext, Type> MessageTypeFunc;
+		protected readonly Func<IPipeContext, GetConfiguration> _getConfigFunc;
+		protected readonly Func<IPipeContext, Type> _messageTypeFunc;
 
 		public ConventionNamingMiddleware(INamingConventions conventions, ConventionNamingOptions options = null)
 		{
-			_conventions = conventions;
-			GetConfigFunc = options?.GetConfigFunc ?? (context => context.GetGetConfiguration());
-			MessageTypeFunc = options?.MessageTypeFunc ?? (context => context.GetMessageType());
+			this._conventions = conventions;
+			this._getConfigFunc = options?.GetConfigFunc ?? (context => context.GetGetConfiguration());
+			this._messageTypeFunc = options?.MessageTypeFunc ?? (context => context.GetMessageType());
 		}
 
-		public override Task InvokeAsync(IPipeContext context, CancellationToken token)
+		public override Task InvokeAsync(IPipeContext context, CancellationToken token = default(CancellationToken))
 		{
-			var config = GetGetConfiguration(context);
+			GetConfiguration config = this.GetGetConfiguration(context);
 			if (!string.IsNullOrWhiteSpace(config.QueueName))
 			{
-				return Next.InvokeAsync(context, token);
+				return this.Next.InvokeAsync(context, token);
 			}
 
-			var messageType = GetMessageType(context);
-			config.QueueName = _conventions.QueueNamingConvention(messageType);
-			return Next.InvokeAsync(context, token);
+			Type messageType = this.GetMessageType(context);
+			config.QueueName = this._conventions.QueueNamingConvention(messageType);
+			return this.Next.InvokeAsync(context, token);
 		}
 
 		protected virtual GetConfiguration GetGetConfiguration(IPipeContext context)
 		{
-			return GetConfigFunc(context);
+			return this._getConfigFunc(context);
 		}
 
 		protected virtual Type GetMessageType(IPipeContext context)
 		{
-			return MessageTypeFunc(context);
+			return this._messageTypeFunc(context);
 		}
 	}
 }

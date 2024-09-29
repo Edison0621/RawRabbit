@@ -12,7 +12,7 @@ namespace RawRabbit.IntegrationTests.Rpc
 		[Fact]
 		public async Task Should_Throw_Timeout_Exception_If_Response_Is_Not_Received()
 		{
-			using (var requester = RawRabbitFactory.CreateTestClient())
+			using (Instantiation.Disposable.BusClient requester = RawRabbitFactory.CreateTestClient())
 			{
 				/* Setup */
 				/* Test */
@@ -27,28 +27,28 @@ namespace RawRabbit.IntegrationTests.Rpc
 		[Fact]
 		public async Task Should_Not_Use_Timeout_If_Cancellation_Token_Is_Provided()
 		{
-			using (var requester = RawRabbitFactory.CreateTestClient())
+			using (Instantiation.Disposable.BusClient requester = RawRabbitFactory.CreateTestClient())
 			{
 				/* Setup */
-				var timeout = TimeSpan.FromMilliseconds(300);
-				var timeoutCs = new CancellationTokenSource();
+				TimeSpan timeout = TimeSpan.FromMilliseconds(300);
+				CancellationTokenSource timeoutCs = new CancellationTokenSource();
 
 				/* Test */
 				/* Assert */
-				var requestTask = requester.RequestAsync<BasicRequest, BasicResponse>(
+				Task<BasicResponse> requestTask = requester.RequestAsync<BasicRequest, BasicResponse>(
 					message: new BasicRequest(),
 					context: ctx => ctx.UseRequestTimeout(timeout),
 					ct: timeoutCs.Token
 				);
 
-				await Task.Delay(timeout.Add(TimeSpan.FromMilliseconds(100)));
+				await Task.Delay(timeout.Add(TimeSpan.FromMilliseconds(100)), timeoutCs.Token);
 
 				Assert.False(requestTask.IsFaulted);
 				Assert.False(requestTask.IsCanceled);
 				Assert.False(requestTask.IsCompleted);
 
 				timeoutCs.Cancel();
-				await Task.Delay(timeout.Add(TimeSpan.FromMilliseconds(50)));
+				await Task.Delay(timeout.Add(TimeSpan.FromMilliseconds(50)), timeoutCs.Token);
 				Assert.True(requestTask.IsCanceled);
 			}
 		}
@@ -56,8 +56,8 @@ namespace RawRabbit.IntegrationTests.Rpc
 		[Fact]
 		public async Task Should_Not_Time_out_If_Response_Is_Received()
 		{
-			using (var requester = RawRabbitFactory.CreateTestClient())
-			using (var responder = RawRabbitFactory.CreateTestClient())
+			using (Instantiation.Disposable.BusClient requester = RawRabbitFactory.CreateTestClient())
+			using (Instantiation.Disposable.BusClient responder = RawRabbitFactory.CreateTestClient())
 			{
 				/* Setup */
 				await responder.RespondAsync<BasicRequest, BasicResponse>(request =>
@@ -65,7 +65,7 @@ namespace RawRabbit.IntegrationTests.Rpc
 				);
 
 				/* Test */
-				var response = await requester.RequestAsync<BasicRequest, BasicResponse>();
+				BasicResponse response = await requester.RequestAsync<BasicRequest, BasicResponse>();
 				
 				/* Assert */
 				Assert.NotNull(response);

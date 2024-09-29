@@ -5,6 +5,8 @@ using RawRabbit.Exceptions;
 using RawRabbit.Instantiation;
 using RawRabbit.Pipe.Middleware;
 using Xunit;
+// ReSharper disable All
+#pragma warning disable CS1587 // XML comment is not placed on a valid language element
 
 namespace RawRabbit.IntegrationTests.Enrichers
 {
@@ -13,11 +15,11 @@ namespace RawRabbit.IntegrationTests.Enrichers
 		[Fact]
 		public async Task Should_Deliver_And_Reiieve_Messages_Serialized_With_Protobuf()
 		{
-			using (var client = RawRabbitFactory.CreateTestClient(new RawRabbitOptions{ Plugins = p => p.UseProtobuf() }))
+			using (Instantiation.Disposable.BusClient client = RawRabbitFactory.CreateTestClient(new RawRabbitOptions{ Plugins = p => p.UseProtobuf() }))
 			{
 				/** Setup **/
-				var tcs = new TaskCompletionSource<ProtoMessage>();
-				var message = new ProtoMessage
+				TaskCompletionSource<ProtoMessage> tcs = new TaskCompletionSource<ProtoMessage>();
+				ProtoMessage message = new ProtoMessage
 				{
 					Member = "Straight into bytes",
 					Id = Guid.NewGuid()
@@ -41,14 +43,14 @@ namespace RawRabbit.IntegrationTests.Enrichers
 		[Fact]
 		public async Task Should_Perform_Rpc_With_Messages_Serialized_With_Protobuf()
 		{
-			using (var client = RawRabbitFactory.CreateTestClient(new RawRabbitOptions {Plugins = p => p.UseProtobuf()}))
+			using (Instantiation.Disposable.BusClient client = RawRabbitFactory.CreateTestClient(new RawRabbitOptions {Plugins = p => p.UseProtobuf()}))
 			{
 				/* Setup */
-				var response = new ProtoResponse {Id = Guid.NewGuid()};
+				ProtoResponse response = new ProtoResponse {Id = Guid.NewGuid()};
 				await client.RespondAsync<ProtoRequest, ProtoResponse>(request => Task.FromResult(response));
 
 				/* Test */
-				var received = await client.RequestAsync<ProtoRequest, ProtoResponse>(new ProtoRequest());
+				ProtoResponse received = await client.RequestAsync<ProtoRequest, ProtoResponse>(new ProtoRequest());
 
 				/* Assert */
 				Assert.Equal(received.Id, response.Id);
@@ -58,13 +60,13 @@ namespace RawRabbit.IntegrationTests.Enrichers
 		[Fact]
 		public async Task Should_Publish_Message_To_Error_Exchange_If_Serializer_Mismatch()
 		{
-			using (var protobufClient = RawRabbitFactory.CreateTestClient(new RawRabbitOptions { Plugins = p => p.UseProtobuf() }))
-			using (var jsonClient = RawRabbitFactory.CreateTestClient())
+			using (Instantiation.Disposable.BusClient protobufClient = RawRabbitFactory.CreateTestClient(new RawRabbitOptions { Plugins = p => p.UseProtobuf() }))
+			using (Instantiation.Disposable.BusClient jsonClient = RawRabbitFactory.CreateTestClient())
 			{
 				/** Setup **/
-				var handlerInvoked = false;
-				var tcs = new TaskCompletionSource<ProtoMessage>();
-				var message = new ProtoMessage
+				bool handlerInvoked = false;
+				TaskCompletionSource<ProtoMessage> tcs = new TaskCompletionSource<ProtoMessage>();
+				ProtoMessage message = new ProtoMessage
 				{
 					Member = "Straight into bytes",
 					Id = Guid.NewGuid()
@@ -97,8 +99,8 @@ namespace RawRabbit.IntegrationTests.Enrichers
 		[Fact]
 		public async Task Should_Throw_Exception_If_Responder_Can_Not_Deserialize_Request_And_Content_Type_Check_Is_Activated()
 		{
-			using (var protobufClient = RawRabbitFactory.CreateTestClient(new RawRabbitOptions { Plugins = p => p.UseProtobuf() }))
-			using (var jsonClient = RawRabbitFactory.CreateTestClient())
+			using (Instantiation.Disposable.BusClient protobufClient = RawRabbitFactory.CreateTestClient(new RawRabbitOptions { Plugins = p => p.UseProtobuf() }))
+			using (Instantiation.Disposable.BusClient jsonClient = RawRabbitFactory.CreateTestClient())
 			{
 				/* Setup */
 				await jsonClient.RespondAsync<ProtoRequest, ProtoResponse>(request =>
@@ -107,7 +109,7 @@ namespace RawRabbit.IntegrationTests.Enrichers
 
 				/* Test */
 				/* Assert */
-				var e = await Assert.ThrowsAsync<MessageHandlerException>(() =>
+				MessageHandlerException e = await Assert.ThrowsAsync<MessageHandlerException>(() =>
 					protobufClient.RequestAsync<ProtoRequest, ProtoResponse>(new ProtoRequest {  Id = Guid.NewGuid()}
 				, ctx => ctx.UseContentTypeCheck()));
 			}

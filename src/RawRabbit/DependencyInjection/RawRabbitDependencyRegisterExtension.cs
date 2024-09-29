@@ -28,7 +28,7 @@ namespace RawRabbit.DependencyInjection
 				.AddSingleton(options?.ClientConfiguration ?? RawRabbitConfiguration.Local)
 				.AddSingleton<IConnectionFactory, ConnectionFactory>(provider =>
 				{
-					var cfg = provider.GetService<RawRabbitConfiguration>();
+					RawRabbitConfiguration cfg = provider.GetService<RawRabbitConfiguration>();
 					return new ConnectionFactory
 					{
 						VirtualHost = cfg.VirtualHost,
@@ -63,7 +63,7 @@ namespace RawRabbit.DependencyInjection
 				.AddSingleton<IConsumerFactory, ConsumerFactory>()
 				.AddSingleton<IChannelFactory>(resolver =>
 				{
-					var channelFactory = new ChannelFactory(resolver.GetService<IConnectionFactory>(), resolver.GetService<RawRabbitConfiguration>());
+					ChannelFactory channelFactory = new ChannelFactory(resolver.GetService<IConnectionFactory>(), resolver.GetService<RawRabbitConfiguration>());
 					channelFactory
 						.ConnectAsync()
 						.ConfigureAwait(false)
@@ -88,7 +88,7 @@ namespace RawRabbit.DependencyInjection
 				.AddTransient<IExtendedPipeBuilder, PipeBuilder>(resolver => new PipeBuilder(resolver))
 				.AddSingleton<IPipeBuilderFactory>(provider => new PipeBuilderFactory(provider));
 
-			var clientBuilder = new ClientBuilder();
+			ClientBuilder clientBuilder = new ClientBuilder();
 			options?.Plugins?.Invoke(clientBuilder);
 			clientBuilder.DependencyInjection?.Invoke(register);
 			register.AddSingleton(clientBuilder.PipeBuilderAction);

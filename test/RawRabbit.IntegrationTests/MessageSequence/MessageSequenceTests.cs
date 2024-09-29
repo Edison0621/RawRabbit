@@ -20,7 +20,7 @@ namespace RawRabbit.IntegrationTests.MessageSequence
 		public async Task Should_Create_Simple_Chain_Of_One_Send_And_Final_Receive()
 		{	
 			/* Setup */
-			using (var client = RawRabbitFactory.CreateTestClient(new RawRabbitOptions
+			using (Instantiation.Disposable.BusClient client = RawRabbitFactory.CreateTestClient(new RawRabbitOptions
 			{
 				Plugins = p => p
 					.UseGlobalExecutionId()
@@ -32,7 +32,7 @@ namespace RawRabbit.IntegrationTests.MessageSequence
 				);
 
 				/* Test */
-				var chain = client.ExecuteSequence(c => c
+				MessageSequence<BasicResponse> chain = client.ExecuteSequence(c => c
 						.PublishAsync<BasicRequest>()
 						.Complete<BasicResponse>()
 				);
@@ -48,7 +48,7 @@ namespace RawRabbit.IntegrationTests.MessageSequence
 		public async Task Should_Create_Chain_With_Publish_When_And_Complete()
 		{
 			/* Setup */
-			using (var client = RawRabbitFactory.CreateTestClient(new RawRabbitOptions
+			using (Instantiation.Disposable.BusClient client = RawRabbitFactory.CreateTestClient(new RawRabbitOptions
 			{
 				Plugins = p => p
 					.UseMessageContext<MessageContext>()
@@ -56,7 +56,7 @@ namespace RawRabbit.IntegrationTests.MessageSequence
 					.UseGlobalExecutionId()
 			}))
 			{
-				var secondTcs = new TaskCompletionSource<SecondMessage>();
+				TaskCompletionSource<SecondMessage> secondTcs = new TaskCompletionSource<SecondMessage>();
 				await client.SubscribeAsync<FirstMessage, MessageContext>((request, context) =>
 							client.PublishAsync(new SecondMessage())
 				);
@@ -65,7 +65,7 @@ namespace RawRabbit.IntegrationTests.MessageSequence
 				);
 
 				/* Test */
-				var chain = client.ExecuteSequence(c => c
+				MessageSequence<ThirdMessage> chain = client.ExecuteSequence(c => c
 						.PublishAsync<FirstMessage>()
 						.When<SecondMessage, MessageContext>((message, context) =>
 						{
@@ -88,20 +88,20 @@ namespace RawRabbit.IntegrationTests.MessageSequence
 		public async Task Should_Abort_Execution_If_Configured_To()
 		{
 			/* Setup */
-			using (var client = RawRabbitFactory.CreateTestClient(new RawRabbitOptions
+			using (Instantiation.Disposable.BusClient client = RawRabbitFactory.CreateTestClient(new RawRabbitOptions
 			{
 				Plugins = p => p
 					.UseStateMachine()
 					.UseGlobalExecutionId()
 			}))
 			{
-				var secondTcs = new TaskCompletionSource<SecondMessage>();
+				TaskCompletionSource<SecondMessage> secondTcs = new TaskCompletionSource<SecondMessage>();
 				await client.SubscribeAsync<FirstMessage, MessageContext>((request, context) =>
 							client.PublishAsync(new SecondMessage())
 				);
 
 				/* Test */
-				var chain = client.ExecuteSequence(c => c
+				MessageSequence<ThirdMessage> chain = client.ExecuteSequence(c => c
 						.PublishAsync<FirstMessage>()
 						.When<SecondMessage, MessageContext>((message, context) =>
 						{
@@ -124,16 +124,16 @@ namespace RawRabbit.IntegrationTests.MessageSequence
 		public async Task Should_Execute_Sequence_With_Multiple_Whens()
 		{
 			/* Setup */
-			using (var client = RawRabbitFactory.CreateTestClient(new RawRabbitOptions
+			using (Instantiation.Disposable.BusClient client = RawRabbitFactory.CreateTestClient(new RawRabbitOptions
 			{
 				Plugins = p => p
 					.UseStateMachine()
 					.UseGlobalExecutionId()
 			}))
 			{
-				var secondTcs = new TaskCompletionSource<SecondMessage>();
-				var thirdTsc = new TaskCompletionSource<ThirdMessage>();
-				var forthTcs = new TaskCompletionSource<ForthMessage>();
+				TaskCompletionSource<SecondMessage> secondTcs = new TaskCompletionSource<SecondMessage>();
+				TaskCompletionSource<ThirdMessage> thirdTsc = new TaskCompletionSource<ThirdMessage>();
+				TaskCompletionSource<ForthMessage> forthTcs = new TaskCompletionSource<ForthMessage>();
 				await client.SubscribeAsync<FirstMessage, MessageContext>((request, context) =>
 							client.PublishAsync(new SecondMessage())
 				);
@@ -148,7 +148,7 @@ namespace RawRabbit.IntegrationTests.MessageSequence
 				);
 
 				/* Test */
-				var chain = client.ExecuteSequence(c => c
+				MessageSequence<FifthMessage> chain = client.ExecuteSequence(c => c
 						.PublishAsync<FirstMessage>()
 						.When<SecondMessage, MessageContext>((message, context) =>
 						{
@@ -183,14 +183,14 @@ namespace RawRabbit.IntegrationTests.MessageSequence
 		public async Task Should_Work_For_Concurrent_Sequences()
 		{
 			/* Setup */
-			using (var client = RawRabbitFactory.CreateTestClient(new RawRabbitOptions
+			using (Instantiation.Disposable.BusClient client = RawRabbitFactory.CreateTestClient(new RawRabbitOptions
 			{
 				Plugins = p => p
 					.UseStateMachine()
 					.UseGlobalExecutionId()
 			}))
 			{
-				var secondTcs = new TaskCompletionSource<SecondMessage>();
+				TaskCompletionSource<SecondMessage> secondTcs = new TaskCompletionSource<SecondMessage>();
 				await client.SubscribeAsync<FirstMessage, MessageContext>((request, context) =>
 							client.PublishAsync(new SecondMessage())
 				);
@@ -199,10 +199,10 @@ namespace RawRabbit.IntegrationTests.MessageSequence
 				);
 
 				const int numberOfSequences = 10;
-				var sequences = new List<MessageSequence<ThirdMessage>>();
-				for (var i = 0; i < numberOfSequences; i++)
+				List<MessageSequence<ThirdMessage>> sequences = new List<MessageSequence<ThirdMessage>>();
+				for (int i = 0; i < numberOfSequences; i++)
 				{
-					var seq = client.ExecuteSequence(c => c
+					MessageSequence<ThirdMessage> seq = client.ExecuteSequence(c => c
 							.PublishAsync<FirstMessage>()
 							.When<SecondMessage, MessageContext>((message, context) =>
 							{
@@ -213,7 +213,7 @@ namespace RawRabbit.IntegrationTests.MessageSequence
 					);
 					sequences.Add(seq);
 				}
-				Task.WaitAll(sequences.Select(s => s.Task).ToArray());
+				Task.WaitAll(sequences.Select(s => s.Task).ToArray<Task>());
 
 				/* Test */
 
@@ -226,16 +226,16 @@ namespace RawRabbit.IntegrationTests.MessageSequence
 		public async Task Should_Not_Invoke_Handler_If_Previous_Mandatory_Handler_Not_Invoked()
 		{
 			/* Setup */
-			using (var client = RawRabbitFactory.CreateTestClient(new RawRabbitOptions
+			using (Instantiation.Disposable.BusClient client = RawRabbitFactory.CreateTestClient(new RawRabbitOptions
 			{
 				Plugins = p => p
 					.UseStateMachine()
 					.UseGlobalExecutionId()
 			}))
 			{
-				var firstTcs = new TaskCompletionSource<FirstMessage>();
-				var secondTcs = new TaskCompletionSource<SecondMessage>();
-				var thirdTcs = new TaskCompletionSource<ThirdMessage>();
+				TaskCompletionSource<FirstMessage> firstTcs = new TaskCompletionSource<FirstMessage>();
+				TaskCompletionSource<SecondMessage> secondTcs = new TaskCompletionSource<SecondMessage>();
+				TaskCompletionSource<ThirdMessage> thirdTcs = new TaskCompletionSource<ThirdMessage>();
 				await client.SubscribeAsync<FirstMessage, MessageContext>((request, context) =>
 				{
 					firstTcs.TrySetResult(request);
@@ -272,9 +272,9 @@ namespace RawRabbit.IntegrationTests.MessageSequence
 		public async Task Should_Honor_Timeout()
 		{
 			/* Setup */
-			var cfg = RawRabbitConfiguration.Local;
+			RawRabbitConfiguration cfg = RawRabbitConfiguration.Local;
 			cfg.RequestTimeout = TimeSpan.FromMilliseconds(200);
-			using (var client = RawRabbitFactory.CreateTestClient(new RawRabbitOptions
+			using (Instantiation.Disposable.BusClient client = RawRabbitFactory.CreateTestClient(new RawRabbitOptions
 			{
 				Plugins = p => p
 					.UseStateMachine()
@@ -283,7 +283,7 @@ namespace RawRabbit.IntegrationTests.MessageSequence
 			}))
 			{
 				/* Test */
-				var chain = client.ExecuteSequence(c => c
+				MessageSequence<SecondMessage> chain = client.ExecuteSequence(c => c
 					.PublishAsync<FirstMessage>()
 					.Complete<SecondMessage>()
 				);
@@ -297,14 +297,14 @@ namespace RawRabbit.IntegrationTests.MessageSequence
 		public async Task Should_Forward_Message_Context_In_When_Message_Handler()
 		{
 			/* Setup */
-			using(var client = RawRabbitFactory.CreateTestClient(new RawRabbitOptions
+			using(Instantiation.Disposable.BusClient client = RawRabbitFactory.CreateTestClient(new RawRabbitOptions
 			{
 				Plugins = p => p
 					.UseMessageContext<MessageContext>()
 					.UseContextForwarding()
 					.UseGlobalExecutionId()
 			}))
-			using (var sequenceClient = RawRabbitFactory.CreateTestClient(new RawRabbitOptions
+			using (Instantiation.Disposable.BusClient sequenceClient = RawRabbitFactory.CreateTestClient(new RawRabbitOptions
 			{
 				Plugins = p => p
 					.UseStateMachine()
@@ -313,8 +313,8 @@ namespace RawRabbit.IntegrationTests.MessageSequence
 					.UseGlobalExecutionId()
 			}))
 			{
-				var firstTcs = new TaskCompletionSource<MessageContext>();
-				var secondTcs = new TaskCompletionSource<MessageContext>();
+				TaskCompletionSource<MessageContext> firstTcs = new TaskCompletionSource<MessageContext>();
+				TaskCompletionSource<MessageContext> secondTcs = new TaskCompletionSource<MessageContext>();
 				await client.SubscribeAsync<FirstMessage, MessageContext>((request, context) =>
 					sequenceClient.PublishAsync(new SecondMessage())
 				);
@@ -346,7 +346,7 @@ namespace RawRabbit.IntegrationTests.MessageSequence
 		[Fact]
 		public async Task Should_Work_With_Generic_Messages()
 		{
-			using (var client = RawRabbitFactory.CreateTestClient(new RawRabbitOptions
+			using (Instantiation.Disposable.BusClient client = RawRabbitFactory.CreateTestClient(new RawRabbitOptions
 			{
 				Plugins = p => p
 					.UseStateMachine()
@@ -356,13 +356,13 @@ namespace RawRabbit.IntegrationTests.MessageSequence
 			}))
 			{
 				/* Setup */
-				var guidMsg = new GenericMessage<Guid>{ Prop = Guid.NewGuid()};
+				GenericMessage<Guid> guidMsg = new GenericMessage<Guid>{ Prop = Guid.NewGuid()};
 				await client.SubscribeAsync<GenericMessage<string>>(message =>
 					client.PublishAsync(guidMsg)
 				);
 
 				/* Test */
-				var sequence = client.ExecuteSequence(s => s
+				MessageSequence<GenericMessage<Guid>> sequence = client.ExecuteSequence(s => s
 					.PublishAsync(new GenericMessage<string>())
 					.Complete<GenericMessage<Guid>>()
 				);
@@ -375,7 +375,7 @@ namespace RawRabbit.IntegrationTests.MessageSequence
 		[Fact]
 		public async Task Should_Support_Chained_Message_Sequences()
 		{
-			var sequenceOptions = new RawRabbitOptions
+			RawRabbitOptions sequenceOptions = new RawRabbitOptions
 			{
 				Plugins = p => p
 					.UseStateMachine()
@@ -383,27 +383,24 @@ namespace RawRabbit.IntegrationTests.MessageSequence
 					.UseContextForwarding()
 					.UseGlobalExecutionId()
 			};
-			using (var serviceA = RawRabbitFactory.CreateTestClient(sequenceOptions))
-			using (var serviceB = RawRabbitFactory.CreateTestClient(sequenceOptions))
-			using (var serviceC = RawRabbitFactory.CreateTestClient(sequenceOptions))
+			using (Instantiation.Disposable.BusClient serviceA = RawRabbitFactory.CreateTestClient(sequenceOptions))
+			using (Instantiation.Disposable.BusClient serviceB = RawRabbitFactory.CreateTestClient(sequenceOptions))
+			using (Instantiation.Disposable.BusClient serviceC = RawRabbitFactory.CreateTestClient(sequenceOptions))
 			{
 				/* Setup */
 				await serviceB.SubscribeAsync<FirstMessage>(async message =>
 					{
-						var nestedSequence = serviceB.ExecuteSequence(s => s
+						MessageSequence<ThirdMessage> nestedSequence = serviceB.ExecuteSequence(s => s
 							.PublishAsync(new SecondMessage())
 							.Complete<ThirdMessage>());
 						await nestedSequence.Task;
 						await serviceB.PublishAsync(new ForthMessage());
 					}
 				);
-				await serviceC.SubscribeAsync<SecondMessage>(message =>
-				{
-					return serviceC.PublishAsync(new ThirdMessage());
-				});
+				await serviceC.SubscribeAsync<SecondMessage>(message => serviceC.PublishAsync(new ThirdMessage()));
 
 				/* Test */
-				var mainSequence = serviceA.ExecuteSequence(s => s
+				MessageSequence<ForthMessage> mainSequence = serviceA.ExecuteSequence(s => s
 					.PublishAsync(new FirstMessage())
 					.Complete<ForthMessage>()
 				);

@@ -6,12 +6,12 @@
 
 		public Ack(TResponse response)
 		{
-			Response = response;
+			this.Response = response;
 		}
 
 		public override Common.Acknowledgement AsUntyped()
 		{
-			return new Ack() { Response = Response };
+			return new Ack { Response = this.Response };
 		}
 	}
 }

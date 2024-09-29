@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
+using RabbitMQ.Client;
 using RabbitMQ.Client.Events;
 using RawRabbit.Channel.Abstraction;
 using RawRabbit.Common;
@@ -23,48 +24,48 @@ namespace RawRabbit.Middleware
 	public class RetryLaterMiddleware : StagedMiddleware
 	{
 		private readonly ILog _logger = LogProvider.For<RetryLaterMiddleware>();
-		protected readonly ITopologyProvider TopologyProvider;
-		protected readonly INamingConventions Conventions;
-		protected readonly IChannelFactory ChannelFactory;
+		protected readonly ITopologyProvider _topologyProvider;
+		protected readonly INamingConventions _conventions;
+		protected readonly IChannelFactory _channelFactory;
 		private readonly IRetryInformationHeaderUpdater _headerUpdater;
-		protected Func<IPipeContext, Acknowledgement> AcknowledgementFunc;
-		protected Func<IPipeContext, BasicDeliverEventArgs> DeliveryArgsFunc;
+		protected readonly Func<IPipeContext, Acknowledgement> _acknowledgementFunc;
+		protected readonly Func<IPipeContext, BasicDeliverEventArgs> _deliveryArgsFunc;
 
 		public override string StageMarker => Pipe.StageMarker.HandlerInvoked;
 
 		public RetryLaterMiddleware(ITopologyProvider topology, INamingConventions conventions, IChannelFactory channelFactory, IRetryInformationHeaderUpdater headerUpdater, RetryLaterOptions options = null)
 		{
-			TopologyProvider = topology;
-			Conventions = conventions;
-			ChannelFactory = channelFactory;
-			_headerUpdater = headerUpdater;
-			AcknowledgementFunc = options?.AcknowledgementFunc ?? (context => context.GetMessageAcknowledgement());
-			DeliveryArgsFunc = options?.DeliveryArgsFunc ?? (context => context.GetDeliveryEventArgs());
+			this._topologyProvider = topology;
+			this._conventions = conventions;
+			this._channelFactory = channelFactory;
+			this._headerUpdater = headerUpdater;
+			this._acknowledgementFunc = options?.AcknowledgementFunc ?? (context => context.GetMessageAcknowledgement());
+			this._deliveryArgsFunc = options?.DeliveryArgsFunc ?? (context => context.GetDeliveryEventArgs());
 		}
 
 		public override async Task InvokeAsync(IPipeContext context, CancellationToken token = default(CancellationToken))
 		{
-			var ack = GetMessageAcknowledgement(context);
+			Acknowledgement ack = this.GetMessageAcknowledgement(context);
 			if (!(ack is Retry retryAck))
 			{
-				await Next.InvokeAsync(context, token);
+				await this.Next.InvokeAsync(context, token);
 				return;
 			}
 
-			var deadLeterExchangeName = GetDeadLetterExchangeName(retryAck.Span);
-			await TopologyProvider.DeclareExchangeAsync(new ExchangeDeclaration
+			string deadLeterExchangeName = this.GetDeadLetterExchangeName(retryAck.Span);
+			await this._topologyProvider.DeclareExchangeAsync(new ExchangeDeclaration
 			{
 				Name = deadLeterExchangeName,
 				Durable = true,
 				ExchangeType = ExchangeType.Direct
 			});
 
-			var deliveryArgs = GetDeliveryEventArgs(context);
-			_logger.Info("Message is marked for Retry. Will be published on exchange {exchangeName} with routing key {routingKey} in {retryIn}", deliveryArgs.Exchange, deliveryArgs.RoutingKey, retryAck.Span);
-			UpdateRetryHeaders(deliveryArgs, context);
-			var deadLetterQueueName = GetDeadLetterQueueName(deliveryArgs.Exchange, retryAck.Span);
-			var deadLetterExchange = context?.GetConsumerConfiguration()?.Exchange.Name ?? deliveryArgs.Exchange;
-			await TopologyProvider.DeclareQueueAsync(new QueueDeclaration
+			BasicDeliverEventArgs deliveryArgs = this.GetDeliveryEventArgs(context);
+			this._logger.Info("Message is marked for Retry. Will be published on exchange {exchangeName} with routing key {routingKey} in {retryIn}", deliveryArgs.Exchange, deliveryArgs.RoutingKey, retryAck.Span);
+			this.UpdateRetryHeaders(deliveryArgs, context);
+			string deadLetterQueueName = this.GetDeadLetterQueueName(deliveryArgs.Exchange, retryAck.Span);
+			string deadLetterExchange = context?.GetConsumerConfiguration()?.Exchange.Name ?? deliveryArgs.Exchange;
+			await this._topologyProvider.DeclareQueueAsync(new QueueDeclaration
 			{
 				Name = deadLetterQueueName,
 				Durable = true,
@@ -75,46 +76,46 @@ namespace RawRabbit.Middleware
 					{QueueArgument.MessageTtl, Convert.ToInt32(retryAck.Span.TotalMilliseconds)}
 				}
 			});
-			await TopologyProvider.BindQueueAsync(deadLetterQueueName, deadLeterExchangeName, deliveryArgs.RoutingKey, deliveryArgs.BasicProperties.Headers);
-			using (var publishChannel = await ChannelFactory.CreateChannelAsync(token))
+			await this._topologyProvider.BindQueueAsync(deadLetterQueueName, deadLeterExchangeName, deliveryArgs.RoutingKey, deliveryArgs.BasicProperties.Headers);
+			using (IModel publishChannel = await this._channelFactory.CreateChannelAsync(token))
 			{
 				publishChannel.BasicPublish(deadLeterExchangeName, deliveryArgs.RoutingKey, false, deliveryArgs.BasicProperties, deliveryArgs.Body);
 			}
-			await TopologyProvider.UnbindQueueAsync(deadLetterQueueName, deadLeterExchangeName, deliveryArgs.RoutingKey, deliveryArgs.BasicProperties.Headers);
+			await this._topologyProvider.UnbindQueueAsync(deadLetterQueueName, deadLeterExchangeName, deliveryArgs.RoutingKey, deliveryArgs.BasicProperties.Headers);
 
-			context.Properties.AddOrReplace(PipeKey.MessageAcknowledgement, new Ack());
-			await Next.InvokeAsync(context, token);
+			context?.Properties.AddOrReplace(PipeKey.MessageAcknowledgement, new Ack());
+			await this.Next.InvokeAsync(context, token);
 		}
 
 		private string GetDeadLetterQueueName(string originalExchangeName, TimeSpan retryAckSpan)
 		{
-			return Conventions.RetryLaterQueueNameConvetion(originalExchangeName, retryAckSpan);
+			return this._conventions.RetryLaterQueueNameConvetion(originalExchangeName, retryAckSpan);
 		}
 
 		protected virtual Acknowledgement GetMessageAcknowledgement(IPipeContext context)
 		{
-			return AcknowledgementFunc?.Invoke(context);
+			return this._acknowledgementFunc?.Invoke(context);
 		}
 
 		protected virtual BasicDeliverEventArgs GetDeliveryEventArgs(IPipeContext context)
 		{
-			return DeliveryArgsFunc?.Invoke(context);
+			return this._deliveryArgsFunc?.Invoke(context);
 		}
 
 		protected virtual string GetDeadLetterExchangeName(TimeSpan retryIn)
 		{
-			return Conventions.RetryLaterExchangeConvention(retryIn);
+			return this._conventions.RetryLaterExchangeConvention(retryIn);
 		}
 
 		protected virtual TimeSpan GetRetryTimeSpan(IPipeContext context)
 		{
-			return (GetMessageAcknowledgement(context) as Retry)?.Span ?? new TimeSpan(-1);
+			return (this.GetMessageAcknowledgement(context) as Retry)?.Span ?? new TimeSpan(-1);
 		}
 
 		protected virtual void UpdateRetryHeaders(BasicDeliverEventArgs args, IPipeContext context)
 		{
-			var retryInfo = context.GetRetryInformation();
-			_headerUpdater.AddOrUpdate(args, retryInfo);
+			RetryInformation retryInfo = context.GetRetryInformation();
+			this._headerUpdater.AddOrUpdate(args, retryInfo);
 		}
 	}
 }

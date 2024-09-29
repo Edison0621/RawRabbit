@@ -1,6 +1,5 @@
 ﻿using Ninject;
 using Ninject.Modules;
-using RawRabbit.DependencyInjection;
 using RawRabbit.Instantiation;
 
 namespace RawRabbit.DependencyInjection.Ninject
@@ -9,17 +8,14 @@ namespace RawRabbit.DependencyInjection.Ninject
 	{
 		public override void Load()
 		{
-			Kernel
-				.Bind<IDependencyResolver>()
+			this.Kernel?.Bind<IDependencyResolver>()
 				.ToMethod(context => new NinjectAdapter(context));
 
-			Kernel
-				.Bind<IInstanceFactory>()
+			this.Kernel?.Bind<IInstanceFactory>()
 				.ToMethod(context => RawRabbitFactory.CreateInstanceFactory(context.Kernel.Get<RawRabbitOptions>()))
 				.InSingletonScope();
 
-			Kernel
-				.Bind<IBusClient>()
+			this.Kernel?.Bind<IBusClient>()
 				.ToMethod(context => context.Kernel.Get<IInstanceFactory>().Create());
 		}
 	}

@@ -8,43 +8,43 @@ namespace RawRabbit.Configuration.Queue
 
 		public QueueDeclarationBuilder(QueueDeclaration initialQueue = null)
 		{
-			Declaration = initialQueue ?? QueueDeclaration.Default;
+			this.Declaration = initialQueue ?? QueueDeclaration.Default;
 		}
 
 		public IQueueDeclarationBuilder WithName(string queueName)
 		{
 			Truncator.Truncate(ref queueName);
-			Declaration.Name = queueName;
+			this.Declaration.Name = queueName;
 			return this;
 		}
 
 		public IQueueDeclarationBuilder WithNameSuffix(string suffix)
 		{
-			WithName($"{Declaration.Name}_{suffix}");
+			this.WithName($"{this.Declaration.Name}_{suffix}");
 			return this;
 		}
 
 		public IQueueDeclarationBuilder WithAutoDelete(bool autoDelete = true)
 		{
-			Declaration.AutoDelete = autoDelete;
+			this.Declaration.AutoDelete = autoDelete;
 			return this;
 		}
 
 		public IQueueDeclarationBuilder WithDurability(bool durable = true)
 		{
-			Declaration.Durable = durable;
+			this.Declaration.Durable = durable;
 			return this;
 		}
 
 		public IQueueDeclarationBuilder WithExclusivity(bool exclusive = true)
 		{
-			Declaration.Exclusive = exclusive;
+			this.Declaration.Exclusive = exclusive;
 			return this;
 		}
 
 		public IQueueDeclarationBuilder WithArgument(string key, object value)
 		{
-			Declaration.Arguments.Add(key, value);
+			this.Declaration.Arguments.Add(key, value);
 			return this;
 		}
 	}

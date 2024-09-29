@@ -12,12 +12,12 @@ namespace RawRabbit.Operations.StateMachine.Middleware
 
 		public GlobalLockMiddleware(IGlobalLock globalLock)
 		{
-			_globalLock = globalLock;
+			this._globalLock = globalLock;
 		}
 
-		public override Task InvokeAsync(IPipeContext context, CancellationToken token)
+		public override Task InvokeAsync(IPipeContext context, CancellationToken token = default(CancellationToken))
 		{
-			return _globalLock.ExecuteAsync(context.Get<Guid>(StateMachineKey.ModelId), () => Next.InvokeAsync(context, token), token);
+			return this._globalLock.ExecuteAsync(context.Get<Guid>(StateMachineKey.ModelId), () => this.Next.InvokeAsync(context, token), token);
 		}
 	}
 }

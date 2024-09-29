@@ -16,17 +16,17 @@ namespace RawRabbit.Pipe
 
 		public PipeBuilderFactory(IDependencyResolver resolver)
 		{
-			_resolver = resolver;
+			this._resolver = resolver;
 		}
 
 		public IExtendedPipeBuilder Create()
 		{
-			return new PipeBuilder(_resolver);
+			return new PipeBuilder(this._resolver);
 		}
 
 		public Middleware.Middleware Create(Action<IPipeBuilder> pipe)
 		{
-			var builder = Create();
+			IExtendedPipeBuilder builder = this.Create();
 			pipe(builder);
 			return builder.Build();
 		}
@@ -39,18 +39,18 @@ namespace RawRabbit.Pipe
 
 		public CachedPipeBuilderFactory(IDependencyResolver resolver)
 		{
-			_fallback = new PipeBuilderFactory(resolver);
-			_pipeCache = new ConcurrentDictionary<Action<IPipeBuilder>, Middleware.Middleware>();
+			this._fallback = new PipeBuilderFactory(resolver);
+			this._pipeCache = new ConcurrentDictionary<Action<IPipeBuilder>, Middleware.Middleware>();
 		}
 
 		public IExtendedPipeBuilder Create()
 		{
-			return _fallback.Create();
+			return this._fallback.Create();
 		}
 
 		public Middleware.Middleware Create(Action<IPipeBuilder> pipe)
 		{
-			var result = _pipeCache.GetOrAdd(pipe, action => _fallback.Create(action));
+			Middleware.Middleware result = this._pipeCache.GetOrAdd(pipe, action => this._fallback.Create(action));
 			return result;
 		}
 	}

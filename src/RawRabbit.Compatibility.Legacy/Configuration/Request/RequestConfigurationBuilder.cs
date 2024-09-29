@@ -12,39 +12,39 @@ namespace RawRabbit.Compatibility.Legacy.Configuration.Request
 
 		public RequestConfigurationBuilder(RequestConfiguration defaultConfig)
 		{
-			_replyQueue = new QueueConfigurationBuilder(defaultConfig.ReplyQueue);
-			_exchange = new ExchangeConfigurationBuilder(defaultConfig.Exchange);
-			Configuration = defaultConfig ?? new RequestConfiguration();
+			this._replyQueue = new QueueConfigurationBuilder(defaultConfig.ReplyQueue);
+			this._exchange = new ExchangeConfigurationBuilder(defaultConfig.Exchange);
+			this.Configuration = defaultConfig;
 		}
 
 		public IRequestConfigurationBuilder WithExchange(Action<IExchangeConfigurationBuilder> exchange)
 		{
-			exchange(_exchange);
-			Configuration.Exchange = _exchange.Configuration;
+			exchange(this._exchange);
+			this.Configuration.Exchange = this._exchange.Configuration;
 			return this;
 		}
 
 		public IRequestConfigurationBuilder WithRoutingKey(string routingKey)
 		{
-			Configuration.RoutingKey = routingKey;
+			this.Configuration.RoutingKey = routingKey;
 			return this;
 		}
 
 		public IRequestConfigurationBuilder WithReplyQueue(Action<IQueueConfigurationBuilder> replyTo)
 		{
-			replyTo(_replyQueue);
-			Configuration.ReplyQueue = _replyQueue.Configuration;
+			replyTo(this._replyQueue);
+			this.Configuration.ReplyQueue = this._replyQueue.Configuration;
 			return this;
 		}
 
 		public IRequestConfigurationBuilder WithNoAck(bool noAck)
 		{
-			return WithAutoAck(noAck);
+			return this.WithAutoAck(noAck);
 		}
 
 		public IRequestConfigurationBuilder WithAutoAck(bool autoAck)
 		{
-			Configuration.AutoAck = autoAck;
+			this.Configuration.AutoAck = autoAck;
 			return this;
 		}
 	}

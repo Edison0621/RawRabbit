@@ -17,21 +17,21 @@ namespace RawRabbit.Tests.Channel
 		public async Task Should_Serve_Open_Channels_In_A_Round_Robin_Manner()
 		{
 			/* Setup */
-			var mockObjects = new List<Mock<IModel>> {new Mock<IModel>(), new Mock<IModel>(), new Mock<IModel>()};
-			foreach (var mockObject in mockObjects)
+			List<Mock<IModel>> mockObjects = new List<Mock<IModel>> {new Mock<IModel>(), new Mock<IModel>(), new Mock<IModel>()};
+			foreach (Mock<IModel> mockObject in mockObjects)
 			{
 				mockObject.As<IRecoverable>();
 				mockObject
 					.Setup(m => m.IsOpen)
 					.Returns(true);
 			}
-			var pool = new StaticChannelPool(mockObjects.Select(m => m.Object));
+			StaticChannelPool pool = new StaticChannelPool(mockObjects.Select(m => m.Object));
 
 			/* Test */
-			var first = await pool.GetAsync();
-			var second = await pool.GetAsync();
-			var third = await pool.GetAsync();
-			var forth = await pool.GetAsync();
+			IModel first = await pool.GetAsync();
+			IModel second = await pool.GetAsync();
+			IModel third = await pool.GetAsync();
+			IModel forth = await pool.GetAsync();
 
 			/* Assert */
 			Assert.Equal(first, mockObjects[0].Object);
@@ -44,8 +44,8 @@ namespace RawRabbit.Tests.Channel
 		public async Task Should_Not_Serve_Closed_Channels()
 		{
 			/* Setup */
-			var openChannel = new Mock<IModel> { Name = "Always open"};
-			var toCloseChannel = new Mock<IModel> { Name = "Will close"};
+			Mock<IModel> openChannel = new Mock<IModel> { Name = "Always open"};
+			Mock<IModel> toCloseChannel = new Mock<IModel> { Name = "Will close"};
 
 			openChannel
 				.Setup(c => c.IsClosed)
@@ -55,13 +55,13 @@ namespace RawRabbit.Tests.Channel
 				.SetupSequence(model => model.IsClosed)
 				.Returns(false)
 				.Returns(true);
-			var pool = new StaticChannelPool(new []{openChannel.Object, toCloseChannel.Object});
+			StaticChannelPool pool = new StaticChannelPool(new []{openChannel.Object, toCloseChannel.Object});
 
 			/* Test */
-			var first = await pool.GetAsync();
-			var second = await pool.GetAsync();
-			var third = await pool.GetAsync();
-			var forth = await pool.GetAsync();
+			IModel first = await pool.GetAsync();
+			IModel second = await pool.GetAsync();
+			IModel third = await pool.GetAsync();
+			IModel forth = await pool.GetAsync();
 
 			/* Assert */
 			Assert.Equal(first, openChannel.Object);
@@ -74,9 +74,9 @@ namespace RawRabbit.Tests.Channel
 		public async Task Should_Serve_Recovered_Channels()
 		{
 			/* Setup */
-			var openChannel = new Mock<IModel> { Name = "Always open" };
-			var closedChannel = new Mock<IModel> { Name = "Will Recover" };
-			var recoverable = closedChannel.As<IRecoverable>();
+			Mock<IModel> openChannel = new Mock<IModel> { Name = "Always open" };
+			Mock<IModel> closedChannel = new Mock<IModel> { Name = "Will Recover" };
+			Mock<IRecoverable> recoverable = closedChannel.As<IRecoverable>();
 
 			openChannel
 				.Setup(c => c.IsClosed)
@@ -87,14 +87,14 @@ namespace RawRabbit.Tests.Channel
 				.Returns(true)
 				.Returns(true)
 				.Returns(false);
-			var pool = new StaticChannelPool(new[] { openChannel.Object, closedChannel.Object });
+			StaticChannelPool pool = new StaticChannelPool(new[] { openChannel.Object, closedChannel.Object });
 
 			/* Test */
-			var first = await pool.GetAsync();
-			var second = await pool.GetAsync();
+			IModel first = await pool.GetAsync();
+			IModel second = await pool.GetAsync();
 			recoverable.Raise(model => model.Recovery += null, null, null);
-			var third = await pool.GetAsync();
-			var forth = await pool.GetAsync();
+			IModel third = await pool.GetAsync();
+			IModel forth = await pool.GetAsync();
 
 			/* Assert */
 			Assert.Equal(first, openChannel.Object);
@@ -107,14 +107,14 @@ namespace RawRabbit.Tests.Channel
 		public async Task Should_Throw_Exception_If_All_Channels_Are_Closed_And_None_Is_Recoverable()
 		{
 			/* Setup */
-			var mockObjects = new List<Mock<IModel>> { new Mock<IModel>(), new Mock<IModel>(), new Mock<IModel>() };
-			foreach (var mockObject in mockObjects)
+			List<Mock<IModel>> mockObjects = new List<Mock<IModel>> { new Mock<IModel>(), new Mock<IModel>(), new Mock<IModel>() };
+			foreach (Mock<IModel> mockObject in mockObjects)
 			{
 				mockObject
 					.Setup(m => m.IsClosed)
 					.Returns(true);
 			}
-			var pool = new StaticChannelPool(mockObjects.Select(m => m.Object));
+			StaticChannelPool pool = new StaticChannelPool(mockObjects.Select(m => m.Object));
 
 			/* Test */
 			try
@@ -132,9 +132,9 @@ namespace RawRabbit.Tests.Channel
 		public async Task Should_Not_Throw_If_All_Channels_Are_Closed_But_At_Least_One_Is_Recoverable()
 		{
 			/* Setup */
-			var closedChannel = new Mock<IModel> { Name = "Always open" };
-			var recoverableChannel = new Mock<IModel> { Name = "Will Recover" };
-			var recoverable = recoverableChannel.As<IRecoverable>();
+			Mock<IModel> closedChannel = new Mock<IModel> { Name = "Always open" };
+			Mock<IModel> recoverableChannel = new Mock<IModel> { Name = "Will Recover" };
+			Mock<IRecoverable> recoverable = recoverableChannel.As<IRecoverable>();
 
 			closedChannel
 				.Setup(c => c.IsClosed)
@@ -146,10 +146,10 @@ namespace RawRabbit.Tests.Channel
 				.Returns(true)
 				.Returns(false);
 
-			var pool = new StaticChannelPool(new[] { recoverableChannel.Object, closedChannel.Object });
+			StaticChannelPool pool = new StaticChannelPool(new[] { recoverableChannel.Object, closedChannel.Object });
 
 			/* Test */
-			var channelTask = pool.GetAsync();
+			Task<IModel> channelTask = pool.GetAsync();
 			channelTask.Wait(TimeSpan.FromMilliseconds(20));
 			Assert.False(channelTask.IsCompleted, "No channels should be open,");
 
@@ -164,20 +164,20 @@ namespace RawRabbit.Tests.Channel
 		{
 			/* Setup */
 			const int numberOfCalls = 200;
-			var taskArray = new Task[numberOfCalls];
-			var mockObjects = new List<Mock<IModel>> { new Mock<IModel>(), new Mock<IModel>(), new Mock<IModel>() };
-			foreach (var mockObject in mockObjects)
+			Task[] taskArray = new Task[numberOfCalls];
+			List<Mock<IModel>> mockObjects = new List<Mock<IModel>> { new Mock<IModel>(), new Mock<IModel>(), new Mock<IModel>() };
+			foreach (Mock<IModel> mockObject in mockObjects)
 			{
 				mockObject.As<IRecoverable>();
 				mockObject
 					.Setup(m => m.IsClosed)
 					.Returns(false);
 			}
-			var pool = new StaticChannelPool(mockObjects.Select(m => m.Object));
+			StaticChannelPool pool = new StaticChannelPool(mockObjects.Select(m => m.Object));
 
 
 			/* Test */
-			for (var i = 0; i < numberOfCalls; i++)
+			for (int i = 0; i < numberOfCalls; i++)
 			{
 				taskArray[i] = pool.GetAsync();
 			}
@@ -191,8 +191,8 @@ namespace RawRabbit.Tests.Channel
 		public async Task Should_Throw_Exception_If_All_Channels_Are_Closed_And_Close_Reason_For_All_Recoverable_Channels_Are_Application()
 		{
 			/* Setup */
-			var mockObjects = new List<Mock<IModel>> { new Mock<IModel>(), new Mock<IModel>(), new Mock<IModel>() };
-			foreach (var mockObject in mockObjects)
+			List<Mock<IModel>> mockObjects = new List<Mock<IModel>> { new Mock<IModel>(), new Mock<IModel>(), new Mock<IModel>() };
+			foreach (Mock<IModel> mockObject in mockObjects)
 			{
 				mockObject.As<IRecoverable>();
 				mockObject
@@ -202,12 +202,12 @@ namespace RawRabbit.Tests.Channel
 					.Setup(c => c.CloseReason)
 					.Returns(new ShutdownEventArgs(ShutdownInitiator.Application, 0, ""));
 			}
-			var pool = new StaticChannelPool(mockObjects.Select(m => m.Object));
+			StaticChannelPool pool = new StaticChannelPool(mockObjects.Select(m => m.Object));
 
 			/* Test */
 			try
 			{
-				var cts = new CancellationTokenSource(TimeSpan.FromMilliseconds(50));
+				CancellationTokenSource cts = new CancellationTokenSource(TimeSpan.FromMilliseconds(50));
 				await pool.GetAsync(cts.Token);
 				Assert.True(false, $"Should throw {nameof(ChannelAvailabilityException)}.");
 			}
@@ -221,13 +221,13 @@ namespace RawRabbit.Tests.Channel
 		public async Task Should_Be_Able_To_Cancel_With_Token()
 		{
 			/* Setup */
-			var closedChannel = new Mock<IModel> { Name = "Closed Channel"};
+			Mock<IModel> closedChannel = new Mock<IModel> { Name = "Closed Channel"};
 			closedChannel.As<IRecoverable>();
 			closedChannel
 				.Setup(m => m.IsClosed)
 				.Returns(true);
-			var pool = new StaticChannelPool(new []{closedChannel.Object});
-			var cts = new CancellationTokenSource(TimeSpan.FromMilliseconds(50));
+			StaticChannelPool pool = new StaticChannelPool(new []{closedChannel.Object});
+			CancellationTokenSource cts = new CancellationTokenSource(TimeSpan.FromMilliseconds(50));
 
 			/* Test */
 			/* Assert */
@@ -246,13 +246,13 @@ namespace RawRabbit.Tests.Channel
 		public async Task Should_Throw_Exception_If_Recoverable_Channel_Is_Closed_By_Application()
 		{
 			/* Setup */
-			var closedChannel = new Mock<IModel> { Name = "Closed Channel" };
+			Mock<IModel> closedChannel = new Mock<IModel> { Name = "Closed Channel" };
 			closedChannel.As<IRecoverable>();
 			closedChannel
 				.SetupSequence(m => m.IsClosed)
 				.Returns(false)
 				.Returns(true);
-			var pool = new StaticChannelPool(new[] { closedChannel.Object });
+			StaticChannelPool pool = new StaticChannelPool(new[] { closedChannel.Object });
 			closedChannel.Raise(c =>c.ModelShutdown += null, null, new ShutdownEventArgs(ShutdownInitiator.Application, 0, string.Empty));
 
 			/* Test */

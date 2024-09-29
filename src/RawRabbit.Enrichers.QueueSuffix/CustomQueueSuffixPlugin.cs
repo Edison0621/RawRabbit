@@ -7,11 +7,11 @@ namespace RawRabbit
 	{
 		public static IClientBuilder UseCustomQueueSuffix(this IClientBuilder builder, string suffix = null)
 		{
-			var options =  new QueueSuffixOptions
+			QueueSuffixOptions options =  new QueueSuffixOptions
 			{
-				CustomSuffixFunc = context => suffix,
-				ActiveFunc = context => context.GetCustomQueueSuffixActivated(),
-				ContextSuffixOverrideFunc = context => context.GetCustomQueueSuffix()
+				_customSuffixFunc = context => suffix,
+				_activeFunc = context => context.GetCustomQueueSuffixActivated(),
+				_contextSuffixOverrideFunc = context => context.GetCustomQueueSuffix()
 			};
 			builder.UseQueueSuffix(options);
 

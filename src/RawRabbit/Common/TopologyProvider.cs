@@ -36,36 +36,36 @@ namespace RawRabbit.Common
 
 		public TopologyProvider(IChannelFactory channelFactory)
 		{
-			_channelFactory = channelFactory;
-			_initExchanges = new List<string>();
-			_initQueues = new List<string>();
-			_queueBinds = new List<string>();
-			_topologyTasks = new ConcurrentQueue<ScheduledTopologyTask>();
+			this._channelFactory = channelFactory;
+			this._initExchanges = new List<string>();
+			this._initQueues = new List<string>();
+			this._queueBinds = new List<string>();
+			this._topologyTasks = new ConcurrentQueue<ScheduledTopologyTask>();
 		}
 
 		public Task DeclareExchangeAsync(ExchangeDeclaration exchange)
 		{
-			if (IsDeclared(exchange))
+			if (this.IsDeclared(exchange))
 			{
-				return _completed;
+				return this._completed;
 			}
 
-			var scheduled = new ScheduledExchangeTask(exchange);
-			_topologyTasks.Enqueue(scheduled);
-			EnsureWorker();
+			ScheduledExchangeTask scheduled = new ScheduledExchangeTask(exchange);
+			this._topologyTasks.Enqueue(scheduled);
+			this.EnsureWorker();
 			return scheduled.TaskCompletionSource.Task;
 		}
 
 		public Task DeclareQueueAsync(QueueDeclaration queue)
 		{
-			if (IsDeclared(queue))
+			if (this.IsDeclared(queue))
 			{
-				return _completed;
+				return this._completed;
 			}
 
-			var scheduled = new ScheduledQueueTask(queue);
-			_topologyTasks.Enqueue(scheduled);
-			EnsureWorker();
+			ScheduledQueueTask scheduled = new ScheduledQueueTask(queue);
+			this._topologyTasks.Enqueue(scheduled);
+			this.EnsureWorker();
 			return scheduled.TaskCompletionSource.Task;
 		}
 
@@ -78,85 +78,85 @@ namespace RawRabbit.Common
 					with a routing key equal to the queue name. It it not possible
 					to explicitly bind to, or unbind from the default exchange."
 				*/
-				return _completed;
+				return this._completed;
 			}
 
-			var bindKey = CreateBindKey(queue, exchange, routingKey, arguments);
-			if (_queueBinds.Contains(bindKey))
+			string bindKey = CreateBindKey(queue, exchange, routingKey, arguments);
+			if (this._queueBinds.Contains(bindKey))
 			{
-				return _completed;
+				return this._completed;
 			}
-			var scheduled = new ScheduledBindQueueTask
+			ScheduledBindQueueTask scheduled = new ScheduledBindQueueTask
 			{
 				Queue = queue,
 				Exchange = exchange,
 				RoutingKey = routingKey,
 				Arguments = arguments
 			};
-			_topologyTasks.Enqueue(scheduled);
-			EnsureWorker();
+			this._topologyTasks.Enqueue(scheduled);
+			this.EnsureWorker();
 			return scheduled.TaskCompletionSource.Task;
 		}
 
 		public Task UnbindQueueAsync(string queue, string exchange, string routingKey, IDictionary<string, object> arguments)
 		{
-			var scheduled = new ScheduledUnbindQueueTask
+			ScheduledUnbindQueueTask scheduled = new ScheduledUnbindQueueTask
 			{
 				Queue = queue,
 				Exchange = exchange,
 				RoutingKey = routingKey,
 				Arguments = arguments
 			};
-			_topologyTasks.Enqueue(scheduled);
-			EnsureWorker();
+			this._topologyTasks.Enqueue(scheduled);
+			this.EnsureWorker();
 			return scheduled.TaskCompletionSource.Task;
 		}
 
 		public bool IsDeclared(ExchangeDeclaration exchange)
 		{
-			return exchange.IsDefaultExchange() || _initExchanges.Contains(exchange.Name);
+			return exchange.IsDefaultExchange() || this._initExchanges.Contains(exchange.Name);
 		}
 
 		public bool IsDeclared(QueueDeclaration queue)
 		{
-			return queue.IsDirectReplyTo() || _initQueues.Contains(queue.Name);
+			return queue.IsDirectReplyTo() || this._initQueues.Contains(queue.Name);
 		}
 
 		private void BindQueueToExchange(ScheduledBindQueueTask bind)
 		{
 			string bindKey = CreateBindKey(bind);
-			if (_queueBinds.Contains(bindKey))
+			if (this._queueBinds.Contains(bindKey))
 			{
 				return;
 			}
 
-			_logger.Info("Binding queue {queueName} to exchange {exchangeName} with routing key {routingKey}", bind.Queue, bind.Exchange, bind.RoutingKey);
+			this._logger.Info("Binding queue {queueName} to exchange {exchangeName} with routing key {routingKey}", bind.Queue, bind.Exchange, bind.RoutingKey);
 
-			var channel = GetOrCreateChannel();
+			IModel channel = this.GetOrCreateChannel();
 			channel.QueueBind(
 				queue: bind.Queue,
 				exchange: bind.Exchange,
 				routingKey: bind.RoutingKey,
 				arguments: bind.Arguments
 			);
-			_queueBinds.Add(bindKey);
+			this._queueBinds.Add(bindKey);
 		}
 
 		private void UnbindQueueFromExchange(ScheduledUnbindQueueTask bind)
 		{
-			_logger.Info("Unbinding queue {queueName} from exchange {exchangeName} with routing key {routingKey}", bind.Queue, bind.Exchange, bind.RoutingKey);
+			this._logger.Info("Unbinding queue {queueName} from exchange {exchangeName} with routing key {routingKey}", bind.Queue, bind.Exchange, bind.RoutingKey);
 
-			var channel = GetOrCreateChannel();
+			IModel channel = this.GetOrCreateChannel();
 			channel.QueueUnbind(
 				queue: bind.Queue,
 				exchange: bind.Exchange,
 				routingKey: bind.RoutingKey,
 				arguments: bind.Arguments
 			);
-			var bindKey = CreateBindKey(bind);
-			if (_queueBinds.Contains(bindKey))
+			string bindKey = CreateBindKey(bind);
+			if (this._queueBinds.Contains(bindKey))
 			{
-				_queueBinds.Remove(bindKey);
+				this._queueBinds.Remove(bindKey);
 			}
 		}
 		
@@ -172,7 +172,7 @@ namespace RawRabbit.Common
 
 		private static string CreateBindKey(string queue, string exchange, string routingKey, IDictionary<string, object> arguments)
 		{
-			var bindKey = $"{queue}_{exchange}_{routingKey}";
+			string bindKey = $"{queue}_{exchange}_{routingKey}";
 			if (arguments != null && arguments.Count > 0)
 			{
 				// order the arguments, for the key to be identical no matter the ordering
@@ -184,14 +184,14 @@ namespace RawRabbit.Common
 
 		private void DeclareQueue(QueueDeclaration queue)
 		{
-			if (IsDeclared(queue))
+			if (this.IsDeclared(queue))
 			{
 				return;
 			}
 
-			_logger.Info("Declaring queue {queueName}.", queue.Name);
+			this._logger.Info("Declaring queue {queueName}.", queue.Name);
 
-			var channel = GetOrCreateChannel();
+			IModel channel = this.GetOrCreateChannel();
 			channel.QueueDeclare(
 				queue.Name,
 				queue.Durable,
@@ -201,19 +201,19 @@ namespace RawRabbit.Common
 
 			if (queue.AutoDelete)
 			{
-				_initQueues.Add(queue.Name);
+				this._initQueues.Add(queue.Name);
 			}
 		}
 
 		private void DeclareExchange(ExchangeDeclaration exchange)
 		{
-			if (IsDeclared(exchange))
+			if (this.IsDeclared(exchange))
 			{
 				return;
 			}
 
-			_logger.Info("Declaring exchange {exchangeName}.", exchange.Name);
-			var channel = GetOrCreateChannel();
+			this._logger.Info("Declaring exchange {exchangeName}.", exchange.Name);
+			IModel channel = this.GetOrCreateChannel();
 			channel.ExchangeDeclare(
 				exchange.Name,
 				exchange.ExchangeType,
@@ -222,106 +222,97 @@ namespace RawRabbit.Common
 				exchange.Arguments);
 			if (!exchange.AutoDelete)
 			{
-				_initExchanges.Add(exchange.Name);
+				this._initExchanges.Add(exchange.Name);
 			}
 		}
 
 		private void EnsureWorker()
 		{
-			if (!Monitor.TryEnter(_processLock))
+			if (!Monitor.TryEnter(this._processLock))
 			{
 				return;
 			}
 
 			ScheduledTopologyTask topologyTask;
-			while (_topologyTasks.TryDequeue(out topologyTask))
+			while (this._topologyTasks.TryDequeue(out topologyTask))
 			{
-				var exchange = topologyTask as ScheduledExchangeTask;
-				if (exchange != null)
+				switch (topologyTask)
 				{
-					try
-					{
-						DeclareExchange(exchange.Declaration);
-						exchange.TaskCompletionSource.TrySetResult(true);
-					}
-					catch (Exception e)
-					{
-						_logger.Error(e, "Unable to declare exchange {exchangeName}", exchange.Declaration.Name);
-						exchange.TaskCompletionSource.TrySetException(e);
-					}
+					case ScheduledExchangeTask exchange:
+						try
+						{
+							this.DeclareExchange(exchange.Declaration);
+							exchange.TaskCompletionSource.TrySetResult(true);
+						}
+						catch (Exception e)
+						{
+							this._logger.Error(e, "Unable to declare exchange {exchangeName}", exchange.Declaration.Name);
+							exchange.TaskCompletionSource.TrySetException(e);
+						}
 
-					continue;
-				}
+						continue;
+					case ScheduledQueueTask queue:
+						try
+						{
+							this.DeclareQueue(queue.Configuration);
+							queue.TaskCompletionSource.TrySetResult(true);
+						}
+						catch (Exception e)
+						{
+							this._logger.Error(e, "Unable to declare queue");
+							queue.TaskCompletionSource.TrySetException(e);
+						}
 
-				var queue = topologyTask as ScheduledQueueTask;
-				if (queue != null)
-				{
-					try
-					{
-						DeclareQueue(queue.Configuration);
-						queue.TaskCompletionSource.TrySetResult(true);
-					}
-					catch (Exception e)
-					{
-						_logger.Error(e, "Unable to declare queue");
-						queue.TaskCompletionSource.TrySetException(e);
-					}
+						continue;
+					case ScheduledBindQueueTask bind:
+						try
+						{
+							this.BindQueueToExchange(bind);
+							bind.TaskCompletionSource.TrySetResult(true);
+						}
+						catch (Exception e)
+						{
+							this._logger.Error(e, "Unable to bind queue");
+							bind.TaskCompletionSource.TrySetException(e);
+						}
+						continue;
+					case ScheduledUnbindQueueTask unbind:
+						try
+						{
+							this.UnbindQueueFromExchange(unbind);
+							unbind.TaskCompletionSource.TrySetResult(true);
+						}
+						catch (Exception e)
+						{
+							this._logger.Error(e, "Unable to unbind queue");
+							unbind.TaskCompletionSource.TrySetException(e);
+						}
 
-					continue;
-				}
-
-				var bind = topologyTask as ScheduledBindQueueTask;
-				if (bind != null)
-				{
-					try
-					{
-						BindQueueToExchange(bind);
-						bind.TaskCompletionSource.TrySetResult(true);
-					}
-					catch (Exception e)
-					{
-						_logger.Error(e, "Unable to bind queue");
-						bind.TaskCompletionSource.TrySetException(e);
-					}
-					continue;
-				}
-
-				var unbind = topologyTask as ScheduledUnbindQueueTask;
-				if (unbind != null)
-				{
-					try
-					{
-						UnbindQueueFromExchange(unbind);
-						unbind.TaskCompletionSource.TrySetResult(true);
-					}
-					catch (Exception e)
-					{
-						_logger.Error(e, "Unable to unbind queue");
-						unbind.TaskCompletionSource.TrySetException(e);
-					}
+						break;
 				}
 			}
-			_logger.Debug("Done processing topology work.");
-			Monitor.Exit(_processLock);
+
+			this._logger.Debug("Done processing topology work.");
+			Monitor.Exit(this._processLock);
 		}
 
 		private IModel GetOrCreateChannel()
 		{
-			if (_channel?.IsOpen ?? false)
+			if (this._channel?.IsOpen ?? false)
 			{
-				return _channel;
+				return this._channel;
 			}
 
-			_channel = _channelFactory
+			this._channel = this._channelFactory
 				.CreateChannelAsync()
 				.GetAwaiter()
 				.GetResult();
-			return _channel;
+			return this._channel;
 		}
 
 		public void Dispose()
 		{
-			_channelFactory?.Dispose();
+			this._channelFactory?.Dispose();
 		}
 
 		#region Classes for Scheduled Tasks
@@ -329,30 +320,30 @@ namespace RawRabbit.Common
 		{
 			protected ScheduledTopologyTask()
 			{
-				TaskCompletionSource = new TaskCompletionSource<bool>();
+				this.TaskCompletionSource = new TaskCompletionSource<bool>();
 			}
 			public TaskCompletionSource<bool> TaskCompletionSource { get; }
 		}
 
-		private class ScheduledQueueTask : ScheduledTopologyTask
+		private sealed class ScheduledQueueTask : ScheduledTopologyTask
 		{
 			public ScheduledQueueTask(QueueDeclaration queue)
 			{
-				Configuration = queue;
+				this.Configuration = queue;
 			}
 			public QueueDeclaration Configuration { get; }
 		}
 
-		private class ScheduledExchangeTask : ScheduledTopologyTask
+		private sealed class ScheduledExchangeTask : ScheduledTopologyTask
 		{
 			public ScheduledExchangeTask(ExchangeDeclaration exchange)
 			{
-				Declaration = exchange;
+				this.Declaration = exchange;
 			}
 			public ExchangeDeclaration Declaration { get; }
 		}
 
-		private class ScheduledBindQueueTask : ScheduledTopologyTask
+		private sealed class ScheduledBindQueueTask : ScheduledTopologyTask
 		{
 			public string Exchange { get; set; }
 			public string Queue { get; set; }
@@ -360,7 +351,7 @@ namespace RawRabbit.Common
 			public IDictionary<string,object> Arguments { get; set; }
 		}
 
-		private class ScheduledUnbindQueueTask : ScheduledTopologyTask
+		private sealed class ScheduledUnbindQueueTask : ScheduledTopologyTask
 		{
 			public string Exchange { get; set; }
 			public string Queue { get; set; }

@@ -8,37 +8,37 @@ namespace RawRabbit.Configuration.Exchange
 
 		public ExchangeDeclarationBuilder(ExchangeDeclaration initialExchange = null)
 		{
-			Declaration = initialExchange ?? ExchangeDeclaration.Default;
+			this.Declaration = initialExchange ?? ExchangeDeclaration.Default;
 		}
 
 		public IExchangeDeclarationBuilder WithName(string exchangeName)
 		{
 			Truncator.Truncate(ref exchangeName);
-			Declaration.Name = exchangeName;
+			this.Declaration.Name = exchangeName;
 			return this;
 		}
 
 		public IExchangeDeclarationBuilder WithType(ExchangeType exchangeType)
 		{
-			Declaration.ExchangeType = exchangeType.ToString().ToLower();
+			this.Declaration.ExchangeType = exchangeType.ToString().ToLower();
 			return this;
 		}
 
 		public IExchangeDeclarationBuilder WithDurability(bool durable = true)
 		{
-			Declaration.Durable = durable;
+			this.Declaration.Durable = durable;
 			return this;
 		}
 
 		public IExchangeDeclarationBuilder WithAutoDelete(bool autoDelete = true)
 		{
-			Declaration.AutoDelete = autoDelete;
+			this.Declaration.AutoDelete = autoDelete;
 			return this;
 		}
 
 		public IExchangeDeclarationBuilder WithArgument(string name, string value)
 		{
-			Declaration.Arguments.Add(name, value);
+			this.Declaration.Arguments.Add(name, value);
 			return this;
 		}
 	}

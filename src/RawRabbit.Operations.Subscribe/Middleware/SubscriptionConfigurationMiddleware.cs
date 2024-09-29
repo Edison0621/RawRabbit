@@ -18,64 +18,65 @@ namespace RawRabbit.Operations.Subscribe.Middleware
 	{
 		private readonly ILog _logger = LogProvider.For<SubscriptionConfigurationMiddleware>();
 
-		protected readonly IConsumerConfigurationFactory ConfigFactory;
-		protected Func<IPipeContext, Type> MessageTypeFunc;
-		protected Func<IPipeContext, ConsumerConfiguration> ConfigurationFunc;
-		protected Func<IPipeContext, Action<IConsumerConfigurationBuilder>> ConfigActionFunc;
+		protected readonly IConsumerConfigurationFactory _configFactory;
+		protected readonly Func<IPipeContext, Type> _messageTypeFunc;
+		protected readonly Func<IPipeContext, ConsumerConfiguration> _configurationFunc;
+		protected readonly Func<IPipeContext, Action<IConsumerConfigurationBuilder>> _configActionFunc;
 
 		public SubscriptionConfigurationMiddleware(IConsumerConfigurationFactory configFactory, SubscriptionConfigurationOptions options = null)
 		{
-			ConfigFactory = configFactory;
-			MessageTypeFunc = options?.MessageTypeFunc ?? (context => context.GetMessageType()) ;
-			ConfigurationFunc = options?.ConfigFunc;
-			ConfigActionFunc = options?.ConfigActionFunc ?? (context => context.Get<Action<IConsumerConfigurationBuilder>>(PipeKey.ConfigurationAction));
+			this._configFactory = configFactory;
+			this._messageTypeFunc = options?.MessageTypeFunc ?? (context => context.GetMessageType()) ;
+			this._configurationFunc = options?.ConfigFunc;
+			this._configActionFunc = options?.ConfigActionFunc ?? (context => context.Get<Action<IConsumerConfigurationBuilder>>(PipeKey.ConfigurationAction));
 		}
 
 		public override async Task InvokeAsync(IPipeContext context, CancellationToken token = default(CancellationToken))
 		{
-			var config = ExtractFromContextProperty(context) ?? ExtractConfigFromMessageType(context);
+			ConsumerConfiguration config = this.ExtractFromContextProperty(context) ?? this.ExtractConfigFromMessageType(context);
 			if (config == null)
 			{
-				_logger.Info("Unable to extract configuration for Subscriber.");
+				this._logger.Info("Unable to extract configuration for Subscriber.");
 			}
 
-			var action = GetConfigurationAction(context);
+			Action<IConsumerConfigurationBuilder> action = this.GetConfigurationAction(context);
 			if (action != null)
 			{
-				_logger.Info("Configuration action for {queueName} found.", config?.Consume.QueueName);
-				var builder = new ConsumerConfigurationBuilder(config);
+				this._logger.Info("Configuration action for {queueName} found.", config?.Consume.QueueName);
+				ConsumerConfigurationBuilder builder = new ConsumerConfigurationBuilder(config);
 				action(builder);
 				config = builder.Config;
 			}
 
 			context.Properties.TryAdd(PipeKey.ConsumerConfiguration, config);
+			// ReSharper disable once PossibleNullReferenceException
 			context.Properties.TryAdd(PipeKey.ConsumeConfiguration, config.Consume);
 			context.Properties.TryAdd(PipeKey.QueueDeclaration, config.Queue);
 			context.Properties.TryAdd(PipeKey.ExchangeDeclaration, config.Exchange);
 
-			await Next.InvokeAsync(context, token);
+			await this.Next.InvokeAsync(context, token);
 		}
 
 		protected virtual ConsumerConfiguration ExtractFromContextProperty(IPipeContext context)
 		{
-			return ConfigurationFunc?.Invoke(context);
+			return this._configurationFunc?.Invoke(context);
 		}
 
 		protected virtual ConsumerConfiguration ExtractConfigFromMessageType(IPipeContext context)
 		{
-			var messageType = MessageTypeFunc(context);
+			Type messageType = this._messageTypeFunc(context);
 			if (messageType != null)
 			{
-				_logger.Debug("Found message type {messageType} in context. Creating consumer config based on it.", messageType.Name);
+				this._logger.Debug("Found message type {messageType} in context. Creating consumer config based on it.", messageType.Name);
 			}
 			return messageType == null
 				? null
-				: ConfigFactory.Create(messageType);
+				: this._configFactory.Create(messageType);
 		}
 
 		protected Action<IConsumerConfigurationBuilder> GetConfigurationAction(IPipeContext context)
 		{
-			return ConfigActionFunc?.Invoke(context);
+			return this._configActionFunc?.Invoke(context);
 		}
 	}
 }

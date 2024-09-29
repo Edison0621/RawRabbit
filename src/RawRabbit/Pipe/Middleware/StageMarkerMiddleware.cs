@@ -7,7 +7,7 @@ namespace RawRabbit.Pipe.Middleware
 {
 	public class StageMarkerMiddleware : Middleware
 	{
-		public readonly string Stage;
+		public readonly string _stage;
 		private readonly ILog _logger = LogProvider.For<StageMarkerMiddleware>();
 
 		public StageMarkerMiddleware(StageMarkerOptions options)
@@ -17,20 +17,20 @@ namespace RawRabbit.Pipe.Middleware
 				throw new ArgumentNullException(nameof(options));
 			}
 
-			Stage = options.Stage;
+			this._stage = options.Stage;
 		}
 
-		public override Task InvokeAsync(IPipeContext context, CancellationToken token)
+		public override Task InvokeAsync(IPipeContext context, CancellationToken token = default(CancellationToken))
 		{
-			if (Next is NoOpMiddleware || Next is CancellationMiddleware)
+			if (this.Next is NoOpMiddleware || this.Next is CancellationMiddleware)
 			{
-				_logger.Debug("Stage {pipeStage} has no additional middlewares registered.", Stage);
+				this._logger.Debug("Stage {pipeStage} has no additional middlewares registered.", this._stage);
 			}
 			else
 			{
-				_logger.Info("Invoking additional middlewares on stage {pipeStage}", Stage);
+				this._logger.Info("Invoking additional middlewares on stage {pipeStage}", this._stage);
 			}
-			return Next.InvokeAsync(context, token);
+			return this.Next.InvokeAsync(context, token);
 		}
 	}
 

@@ -8,38 +8,38 @@ namespace RawRabbit.Common
 {
 	public class ConnectionStringParser
 	{
-		private static readonly Regex MainRegex = new Regex(@"((?<username>.*):(?<password>.*)@)?(?<hosts>[^\/\?:]*)(:(?<port>[^\/\?]*))?(?<vhost>\/[^\?]*)?(\?(?<parameters>.*))?");
-		private static readonly Regex ParametersRegex = new Regex(@"(?<name>[^?=&]+)=(?<value>[^&]*)?");
-		private static readonly RawRabbitConfiguration Defaults = RawRabbitConfiguration.Local;
+		private static readonly Regex _mainRegex = new Regex(@"((?<username>.*):(?<password>.*)@)?(?<hosts>[^\/\?:]*)(:(?<port>[^\/\?]*))?(?<vhost>\/[^\?]*)?(\?(?<parameters>.*))?");
+		private static readonly Regex _parametersRegex = new Regex(@"(?<name>[^?=&]+)=(?<value>[^&]*)?");
+		private static readonly RawRabbitConfiguration _defaults = RawRabbitConfiguration.Local;
 
 		public static RawRabbitConfiguration Parse(string connectionString)
 		{
-			var mainMatch = MainRegex.Match(connectionString);
-			var port = Defaults.Port;
+			Match mainMatch = _mainRegex.Match(connectionString);
+			int port = _defaults.Port;
 			if (RegexMatchGroupIsNonEmpty(mainMatch, "port"))
 			{
-				var suppliedPort = mainMatch.Groups["port"].Value;
+				string suppliedPort = mainMatch.Groups["port"].Value;
 				if (!int.TryParse(suppliedPort, out port))
 				{
 					throw new FormatException($"The supplied port '{suppliedPort}' in the connection string is not a number");
 				}
 			}
 
-			var cfg = new RawRabbitConfiguration
+			RawRabbitConfiguration cfg = new RawRabbitConfiguration
 			{
-				Username = RegexMatchGroupIsNonEmpty(mainMatch, "username") ? mainMatch.Groups["username"].Value : Defaults.Username,
-				Password = RegexMatchGroupIsNonEmpty(mainMatch, "password") ? mainMatch.Groups["password"].Value : Defaults.Password,
+				Username = RegexMatchGroupIsNonEmpty(mainMatch, "username") ? mainMatch.Groups["username"].Value : _defaults.Username,
+				Password = RegexMatchGroupIsNonEmpty(mainMatch, "password") ? mainMatch.Groups["password"].Value : _defaults.Password,
 				Hostnames = mainMatch.Groups["hosts"].Value.Split(',').ToList(),
 				Port = port,
 				VirtualHost = ExctractVirutalHost(mainMatch)
 			};
 
-			var parametersMatches = ParametersRegex.Matches(mainMatch.Groups["parameters"].Value);
+			MatchCollection parametersMatches = _parametersRegex.Matches(mainMatch.Groups["parameters"].Value);
 			foreach (Match match in parametersMatches)
 			{
-				var name = match.Groups["name"].Value.ToLower();
-				var val = match.Groups["value"].Value.ToLower();
-				var propertyInfo = cfg
+				string name = match.Groups["name"].Value.ToLower();
+				string val = match.Groups["value"].Value.ToLower();
+				PropertyInfo propertyInfo = cfg
 					.GetType()
 					.GetTypeInfo()
 					.GetProperty(name, BindingFlags.IgnoreCase | BindingFlags.Public | BindingFlags.Instance);
@@ -51,7 +51,7 @@ namespace RawRabbit.Common
 
 				if (propertyInfo.PropertyType == typeof (TimeSpan))
 				{
-					var convertedValue = TimeSpan.FromSeconds(int.Parse(val));
+					TimeSpan convertedValue = TimeSpan.FromSeconds(int.Parse(val));
 					propertyInfo.SetValue(cfg, convertedValue, null);
 				}
 				else
@@ -65,8 +65,8 @@ namespace RawRabbit.Common
 
 		private static string ExctractVirutalHost(Match mainMatch)
 		{
-			var vhost = RegexMatchGroupIsNonEmpty(mainMatch, "vhost") ? mainMatch.Groups["vhost"].Value : Defaults.VirtualHost;
-			return string.Equals(vhost, Defaults.VirtualHost, StringComparison.CurrentCultureIgnoreCase)
+			string vhost = RegexMatchGroupIsNonEmpty(mainMatch, "vhost") ? mainMatch.Groups["vhost"].Value : _defaults.VirtualHost;
+			return string.Equals(vhost, _defaults.VirtualHost, StringComparison.CurrentCultureIgnoreCase)
 				? vhost
 				: vhost.Substring(1);
 		}

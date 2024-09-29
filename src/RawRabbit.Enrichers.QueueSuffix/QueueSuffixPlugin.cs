@@ -1,5 +1,4 @@
-﻿using System;
-using RawRabbit.Instantiation;
+﻿using RawRabbit.Instantiation;
 
 namespace RawRabbit.Enrichers.QueueSuffix
 {

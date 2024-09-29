@@ -13,14 +13,14 @@ namespace RawRabbit.Operations.StateMachine
 
 	public abstract class StateMachineBase<TState, TTrigger, TModel> : StateMachineBase where TModel : Model<TState>
 	{
-		protected readonly TModel Model;
-		protected StateMachine<TState, TTrigger> StateMachine;
+		protected readonly TModel _model;
+		protected readonly StateMachine<TState, TTrigger> _stateMachine;
 
 		protected StateMachineBase(TModel model = null)
 		{
-			Model = (model == null || model.Id == Guid.Empty) ? Initialize() : model;
-			StateMachine = new StateMachine<TState, TTrigger>(() => Model.State, s => Model.State = s);
-			ConfigureState(StateMachine);
+			this._model = (model == null || model.Id == Guid.Empty) ? this.Initialize() : model;
+			this._stateMachine = new StateMachine<TState, TTrigger>(() => this._model.State, s => this._model.State = s);
+			this.ConfigureState(this._stateMachine);
 		}
 
 		protected abstract void ConfigureState(StateMachine<TState, TTrigger> machine);
@@ -29,18 +29,18 @@ namespace RawRabbit.Operations.StateMachine
 
 		public override Task TriggerAsync(object trigger)
 		{
-			return StateMachine.FireAsync((TTrigger) trigger);
+			return this._stateMachine.FireAsync((TTrigger) trigger);
 		}
 
 		public override Task TriggerAsync<TPayload>(object trigger, TPayload payload)
 		{
-			var paramTrigger = new StateMachine<TState, TTrigger>.TriggerWithParameters<TPayload>((TTrigger)trigger);
-			return StateMachine.FireAsync(paramTrigger, payload);
+			StateMachine<TState, TTrigger>.TriggerWithParameters<TPayload> paramTrigger = new StateMachine<TState, TTrigger>.TriggerWithParameters<TPayload>((TTrigger)trigger);
+			return this._stateMachine.FireAsync(paramTrigger, payload);
 		}
 		
 		public override Model GetDto()
 		{
-			return Model;
+			return this._model;
 		}
 	}
 }

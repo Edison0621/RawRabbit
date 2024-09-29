@@ -9,19 +9,19 @@ namespace RawRabbit.Operations.MessageSequence.Configuration
 
 		public StepOptionBuilder()
 		{
-			Configuration = StepOption.Default;
+			this.Configuration = StepOption.Default;
 		}
 
 		public IStepOptionBuilder AbortsExecution(bool aborts = true)
 		{
-			Configuration.Optional = true;
-			Configuration.AbortsExecution = aborts;
+			this.Configuration.Optional = true;
+			this.Configuration.AbortsExecution = aborts;
 			return this;
 		}
 
 		public IStepOptionBuilder IsOptional(bool optional = true)
 		{
-			Configuration.Optional = optional;
+			this.Configuration.Optional = optional;
 			return this;
 		}
 	}

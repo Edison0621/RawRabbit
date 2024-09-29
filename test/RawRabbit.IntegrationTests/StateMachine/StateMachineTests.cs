@@ -5,6 +5,7 @@ using RawRabbit.Instantiation;
 using RawRabbit.IntegrationTests.StateMachine.Generic;
 using RawRabbit.Operations.StateMachine;
 using Xunit;
+// ReSharper disable All
 
 namespace RawRabbit.IntegrationTests.StateMachine
 {
@@ -13,13 +14,13 @@ namespace RawRabbit.IntegrationTests.StateMachine
 		[Fact]
 		public async Task Should_Complete_Generic_Task()
 		{
-			using (var processOwner = RawRabbitFactory.CreateTestClient(new RawRabbitOptions { Plugins = p => p.UseStateMachine() }))
-			using (var worker = RawRabbitFactory.CreateTestClient())
-			using (var initiator = RawRabbitFactory.CreateTestClient())
-			using (var observer = RawRabbitFactory.CreateTestClient())
+			using (Instantiation.Disposable.BusClient processOwner = RawRabbitFactory.CreateTestClient(new RawRabbitOptions { Plugins = p => p.UseStateMachine() }))
+			using (Instantiation.Disposable.BusClient worker = RawRabbitFactory.CreateTestClient())
+			using (Instantiation.Disposable.BusClient initiator = RawRabbitFactory.CreateTestClient())
+			using (Instantiation.Disposable.BusClient observer = RawRabbitFactory.CreateTestClient())
 			{
-				var tsc = new TaskCompletionSource<ProcessCompeted>();
-				var updates = new List<ProcessUpdated>();
+				TaskCompletionSource<ProcessCompeted> tsc = new TaskCompletionSource<ProcessCompeted>();
+				List<ProcessUpdated> updates = new List<ProcessUpdated>();
 				await processOwner.RegisterStateMachineAsync<ProcessTriggers>();
 				await observer.SubscribeAsync<ProcessCompeted>(competed =>
 				{

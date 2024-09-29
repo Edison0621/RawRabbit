@@ -12,21 +12,21 @@ namespace RawRabbit.Operations.Request.Configuration
 
 		public RequestConfigurationFactory(IPublisherConfigurationFactory publisher, IConsumerConfigurationFactory consumer)
 		{
-			_publisher = publisher;
-			_consumer = consumer;
+			this._publisher = publisher;
+			this._consumer = consumer;
 		}
 
 		public RequestConfiguration Create<TRequest, TResponse>()
 		{
-			return Create(typeof(TRequest), typeof(TResponse));
+			return this.Create(typeof(TRequest), typeof(TResponse));
 		}
 
 		public RequestConfiguration Create(Type requestType, Type responseType)
 		{
-			var cfg = new RequestConfiguration
+			RequestConfiguration cfg = new RequestConfiguration
 			{
-				Request = _publisher.Create(requestType),
-				Response = _consumer.Create(responseType)
+				Request = this._publisher.Create(requestType),
+				Response = this._consumer.Create(responseType)
 			};
 			cfg.ToDirectRpc();
 			return cfg;
@@ -34,10 +34,10 @@ namespace RawRabbit.Operations.Request.Configuration
 
 		public RequestConfiguration Create(string requestExchange, string requestRoutingKey, string responseQueue, string responseExchange, string responseRoutingKey)
 		{
-			var cfg = new RequestConfiguration
+			RequestConfiguration cfg = new RequestConfiguration
 			{
-				Request = _publisher.Create(requestExchange, requestRoutingKey),
-				Response = _consumer.Create(responseQueue, responseExchange, responseRoutingKey)
+				Request = this._publisher.Create(requestExchange, requestRoutingKey),
+				Response = this._consumer.Create(responseQueue, responseExchange, responseRoutingKey)
 			};
 			cfg.ToDirectRpc();
 			return cfg;

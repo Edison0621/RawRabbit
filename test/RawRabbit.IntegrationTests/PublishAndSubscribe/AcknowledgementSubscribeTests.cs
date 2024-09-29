@@ -6,6 +6,9 @@ using RawRabbit.Instantiation;
 using RawRabbit.IntegrationTests.TestMessages;
 using RawRabbit.IntegrationTests.TestMessages.Extras;
 using Xunit;
+// ReSharper disable All
+#pragma warning disable CS4014 // Because this call is not awaited, execution of the current method continues before the call is completed
+#pragma warning disable CS1998 // Async method lacks 'await' operators and will run synchronously
 
 namespace RawRabbit.IntegrationTests.PublishAndSubscribe
 {
@@ -14,16 +17,16 @@ namespace RawRabbit.IntegrationTests.PublishAndSubscribe
 		[Fact]
 		public async Task Should_Be_Able_To_Auto_Ack()
 		{
-			using (var publisher = RawRabbitFactory.CreateTestClient())
-			using (var subscriber = RawRabbitFactory.CreateTestClient())
+			using (Instantiation.Disposable.BusClient publisher = RawRabbitFactory.CreateTestClient())
+			using (Instantiation.Disposable.BusClient subscriber = RawRabbitFactory.CreateTestClient())
 			{
 				/* Setup */
-				var receivedTcs = new TaskCompletionSource<BasicMessage>();
+				TaskCompletionSource<BasicMessage> receivedTcs = new TaskCompletionSource<BasicMessage>();
 				await subscriber.SubscribeAsync<BasicMessage>(async received =>
 				{
 					receivedTcs.TrySetResult(received);
 				});
-				var message = new BasicMessage { Prop = "Hello, world!" };
+				BasicMessage message = new BasicMessage { Prop = "Hello, world!" };
 
 				/* Test */
 				await publisher.PublishAsync(message);
@@ -37,17 +40,17 @@ namespace RawRabbit.IntegrationTests.PublishAndSubscribe
 		[Fact]
 		public async Task Should_Be_Able_To_Return_Ack()
 		{
-			using (var publisher = RawRabbitFactory.CreateTestClient())
-			using (var subscriber = RawRabbitFactory.CreateTestClient())
+			using (Instantiation.Disposable.BusClient publisher = RawRabbitFactory.CreateTestClient())
+			using (Instantiation.Disposable.BusClient subscriber = RawRabbitFactory.CreateTestClient())
 			{
 				/* Setup */
-				var receivedTcs = new TaskCompletionSource<BasicMessage>();
+				TaskCompletionSource<BasicMessage> receivedTcs = new TaskCompletionSource<BasicMessage>();
 				await subscriber.SubscribeAsync<BasicMessage>(async received =>
 				{
 					receivedTcs.TrySetResult(received);
 					return new Ack();
 				});
-				var message = new BasicMessage { Prop = "Hello, world!" };
+				BasicMessage message = new BasicMessage { Prop = "Hello, world!" };
 
 				/* Test */
 				await publisher.PublishAsync(message);
@@ -61,17 +64,17 @@ namespace RawRabbit.IntegrationTests.PublishAndSubscribe
 		[Fact]
 		public async Task Should_Be_Able_To_Return_Ack_From_Subscriber_With_Context()
 		{
-			using (var publisher = RawRabbitFactory.CreateTestClient())
-			using (var subscriber = RawRabbitFactory.CreateTestClient())
+			using (Instantiation.Disposable.BusClient publisher = RawRabbitFactory.CreateTestClient())
+			using (Instantiation.Disposable.BusClient subscriber = RawRabbitFactory.CreateTestClient())
 			{
 				/* Setup */
-				var receivedTcs = new TaskCompletionSource<BasicMessage>();
+				TaskCompletionSource<BasicMessage> receivedTcs = new TaskCompletionSource<BasicMessage>();
 				await subscriber.SubscribeAsync<BasicMessage, MessageContext>(async (received, context) =>
 				{
 					receivedTcs.TrySetResult(received);
 					return new Ack();
 				});
-				var message = new BasicMessage { Prop = "Hello, world!" };
+				BasicMessage message = new BasicMessage { Prop = "Hello, world!" };
 
 				/* Test */
 				await publisher.PublishAsync(message);
@@ -85,13 +88,13 @@ namespace RawRabbit.IntegrationTests.PublishAndSubscribe
 		[Fact]
 		public async Task Should_Be_Able_To_Return_Nack_Without_Requeue()
 		{
-			using (var publisher = RawRabbitFactory.CreateTestClient())
-			using (var firstSubscriber = RawRabbitFactory.CreateTestClient())
-			using (var secondSubscriber = RawRabbitFactory.CreateTestClient())
+			using (Instantiation.Disposable.BusClient publisher = RawRabbitFactory.CreateTestClient())
+			using (Instantiation.Disposable.BusClient firstSubscriber = RawRabbitFactory.CreateTestClient())
+			using (Instantiation.Disposable.BusClient secondSubscriber = RawRabbitFactory.CreateTestClient())
 			{
 				/* Setup */
-				var firstTsc = new TaskCompletionSource<BasicMessage>();
-				var secondTsc = new TaskCompletionSource<BasicMessage>();
+				TaskCompletionSource<BasicMessage> firstTsc = new TaskCompletionSource<BasicMessage>();
+				TaskCompletionSource<BasicMessage> secondTsc = new TaskCompletionSource<BasicMessage>();
 				await firstSubscriber.SubscribeAsync<BasicMessage>(async received =>
 				{
 					firstTsc.TrySetResult(received);
@@ -102,7 +105,7 @@ namespace RawRabbit.IntegrationTests.PublishAndSubscribe
 					secondTsc.TrySetResult(received);
 					return new Nack(requeue: false);
 				});
-				var message = new BasicMessage { Prop = "Hello, world!" };
+				BasicMessage message = new BasicMessage { Prop = "Hello, world!" };
 
 				/* Test */
 				await publisher.PublishAsync(message);
@@ -117,13 +120,13 @@ namespace RawRabbit.IntegrationTests.PublishAndSubscribe
 		[Fact]
 		public async Task Should_Be_Able_To_Return_Nack_Without_Requeue_From_Handler_With_Context()
 		{
-			using (var publisher = RawRabbitFactory.CreateTestClient())
-			using (var firstSubscriber = RawRabbitFactory.CreateTestClient())
-			using (var secondSubscriber = RawRabbitFactory.CreateTestClient())
+			using (Instantiation.Disposable.BusClient publisher = RawRabbitFactory.CreateTestClient())
+			using (Instantiation.Disposable.BusClient firstSubscriber = RawRabbitFactory.CreateTestClient())
+			using (Instantiation.Disposable.BusClient secondSubscriber = RawRabbitFactory.CreateTestClient())
 			{
 				/* Setup */
-				var firstTsc = new TaskCompletionSource<BasicMessage>();
-				var secondTsc = new TaskCompletionSource<BasicMessage>();
+				TaskCompletionSource<BasicMessage> firstTsc = new TaskCompletionSource<BasicMessage>();
+				TaskCompletionSource<BasicMessage> secondTsc = new TaskCompletionSource<BasicMessage>();
 				await firstSubscriber.SubscribeAsync<BasicMessage, MessageContext>(async (received, context) =>
 				{
 					firstTsc.TrySetResult(received);
@@ -134,7 +137,7 @@ namespace RawRabbit.IntegrationTests.PublishAndSubscribe
 					secondTsc.TrySetResult(received);
 					return new Nack(requeue: false);
 				});
-				var message = new BasicMessage { Prop = "Hello, world!" };
+				BasicMessage message = new BasicMessage { Prop = "Hello, world!" };
 
 				/* Test */
 				await publisher.PublishAsync(message);
@@ -149,13 +152,13 @@ namespace RawRabbit.IntegrationTests.PublishAndSubscribe
 		[Fact]
 		public async Task Should_Be_Able_To_Return_Nack_With_Requeue()
 		{
-			using (var publisher = RawRabbitFactory.CreateTestClient())
-			using (var firstSubscriber = RawRabbitFactory.CreateTestClient())
-			using (var secondSubscriber = RawRabbitFactory.CreateTestClient())
+			using (Instantiation.Disposable.BusClient publisher = RawRabbitFactory.CreateTestClient())
+			using (Instantiation.Disposable.BusClient firstSubscriber = RawRabbitFactory.CreateTestClient())
+			using (Instantiation.Disposable.BusClient secondSubscriber = RawRabbitFactory.CreateTestClient())
 			{
 				/* Setup */
-				var firstTsc = new TaskCompletionSource<BasicMessage>();
-				var secondTsc = new TaskCompletionSource<BasicMessage>();
+				TaskCompletionSource<BasicMessage> firstTsc = new TaskCompletionSource<BasicMessage>();
+				TaskCompletionSource<BasicMessage> secondTsc = new TaskCompletionSource<BasicMessage>();
 				await firstSubscriber.SubscribeAsync<BasicMessage>(async received =>
 				{
 					firstTsc.TrySetResult(received);
@@ -166,7 +169,7 @@ namespace RawRabbit.IntegrationTests.PublishAndSubscribe
 					secondTsc.TrySetResult(received);
 					return new Ack();
 				});
-				var message = new BasicMessage { Prop = "Hello, world!" };
+				BasicMessage message = new BasicMessage { Prop = "Hello, world!" };
 
 				/* Test */
 				await publisher.PublishAsync(message);
@@ -181,13 +184,13 @@ namespace RawRabbit.IntegrationTests.PublishAndSubscribe
 		[Fact]
 		public async Task Should_Be_Able_To_Return_Nack_With_Requeue_From_Subscriber_With_Context()
 		{
-			using (var publisher = RawRabbitFactory.CreateTestClient())
-			using (var firstSubscriber = RawRabbitFactory.CreateTestClient())
-			using (var secondSubscriber = RawRabbitFactory.CreateTestClient())
+			using (Instantiation.Disposable.BusClient publisher = RawRabbitFactory.CreateTestClient())
+			using (Instantiation.Disposable.BusClient firstSubscriber = RawRabbitFactory.CreateTestClient())
+			using (Instantiation.Disposable.BusClient secondSubscriber = RawRabbitFactory.CreateTestClient())
 			{
 				/* Setup */
-				var firstTsc = new TaskCompletionSource<BasicMessage>();
-				var secondTsc = new TaskCompletionSource<BasicMessage>();
+				TaskCompletionSource<BasicMessage> firstTsc = new TaskCompletionSource<BasicMessage>();
+				TaskCompletionSource<BasicMessage> secondTsc = new TaskCompletionSource<BasicMessage>();
 				await firstSubscriber.SubscribeAsync<BasicMessage, MessageContext>(async (received, context) =>
 				{
 					firstTsc.TrySetResult(received);
@@ -198,7 +201,7 @@ namespace RawRabbit.IntegrationTests.PublishAndSubscribe
 					secondTsc.TrySetResult(received);
 					return new Ack();
 				});
-				var message = new BasicMessage { Prop = "Hello, world!" };
+				BasicMessage message = new BasicMessage { Prop = "Hello, world!" };
 
 				/* Test */
 				await publisher.PublishAsync(message);
@@ -213,13 +216,13 @@ namespace RawRabbit.IntegrationTests.PublishAndSubscribe
 		[Fact]
 		public async Task Should_Be_Able_To_Return_Reject_With_Requeue()
 		{
-			using (var publisher = RawRabbitFactory.CreateTestClient())
-			using (var firstSubscriber = RawRabbitFactory.CreateTestClient())
-			using (var secondSubscriber = RawRabbitFactory.CreateTestClient())
+			using (Instantiation.Disposable.BusClient publisher = RawRabbitFactory.CreateTestClient())
+			using (Instantiation.Disposable.BusClient firstSubscriber = RawRabbitFactory.CreateTestClient())
+			using (Instantiation.Disposable.BusClient secondSubscriber = RawRabbitFactory.CreateTestClient())
 			{
 				/* Setup */
-				var firstTsc = new TaskCompletionSource<BasicMessage>();
-				var secondTsc = new TaskCompletionSource<BasicMessage>();
+				TaskCompletionSource<BasicMessage> firstTsc = new TaskCompletionSource<BasicMessage>();
+				TaskCompletionSource<BasicMessage> secondTsc = new TaskCompletionSource<BasicMessage>();
 				await firstSubscriber.SubscribeAsync<BasicMessage>(async received =>
 				{
 					firstTsc.TrySetResult(received);
@@ -230,7 +233,7 @@ namespace RawRabbit.IntegrationTests.PublishAndSubscribe
 					secondTsc.TrySetResult(received);
 					return new Ack();
 				});
-				var message = new BasicMessage { Prop = "Hello, world!" };
+				BasicMessage message = new BasicMessage { Prop = "Hello, world!" };
 
 				/* Test */
 				await publisher.PublishAsync(message);
@@ -245,13 +248,13 @@ namespace RawRabbit.IntegrationTests.PublishAndSubscribe
 		[Fact]
 		public async Task Should_Be_Able_To_Return_Reject_With_Requeue_From_Subscriber_With_Context()
 		{
-			using (var publisher = RawRabbitFactory.CreateTestClient())
-			using (var firstSubscriber = RawRabbitFactory.CreateTestClient())
-			using (var secondSubscriber = RawRabbitFactory.CreateTestClient())
+			using (Instantiation.Disposable.BusClient publisher = RawRabbitFactory.CreateTestClient())
+			using (Instantiation.Disposable.BusClient firstSubscriber = RawRabbitFactory.CreateTestClient())
+			using (Instantiation.Disposable.BusClient secondSubscriber = RawRabbitFactory.CreateTestClient())
 			{
 				/* Setup */
-				var firstTsc = new TaskCompletionSource<BasicMessage>();
-				var secondTsc = new TaskCompletionSource<BasicMessage>();
+				TaskCompletionSource<BasicMessage> firstTsc = new TaskCompletionSource<BasicMessage>();
+				TaskCompletionSource<BasicMessage> secondTsc = new TaskCompletionSource<BasicMessage>();
 				await firstSubscriber.SubscribeAsync<BasicMessage, MessageContext>(async (received, context) =>
 				{
 					firstTsc.TrySetResult(received);
@@ -262,7 +265,7 @@ namespace RawRabbit.IntegrationTests.PublishAndSubscribe
 					secondTsc.TrySetResult(received);
 					return new Ack();
 				});
-				var message = new BasicMessage { Prop = "Hello, world!" };
+				BasicMessage message = new BasicMessage { Prop = "Hello, world!" };
 
 				/* Test */
 				await publisher.PublishAsync(message);
@@ -277,13 +280,13 @@ namespace RawRabbit.IntegrationTests.PublishAndSubscribe
 		[Fact]
 		public async Task Should_Be_Able_To_Return_Retry()
 		{
-			using (var publisher = RawRabbitFactory.CreateTestClient())
-			using (var firstSubscriber = RawRabbitFactory.CreateTestClient(new RawRabbitOptions { Plugins = p => p.UseRetryLater()}))
-			using (var secondSubscriber = RawRabbitFactory.CreateTestClient())
+			using (Instantiation.Disposable.BusClient publisher = RawRabbitFactory.CreateTestClient())
+			using (Instantiation.Disposable.BusClient firstSubscriber = RawRabbitFactory.CreateTestClient(new RawRabbitOptions { Plugins = p => p.UseRetryLater()}))
+			using (Instantiation.Disposable.BusClient secondSubscriber = RawRabbitFactory.CreateTestClient())
 			{
 				/* Setup */
-				var firstTsc = new TaskCompletionSource<DateTime>();
-				var secondTsc = new TaskCompletionSource<DateTime>();
+				TaskCompletionSource<DateTime> firstTsc = new TaskCompletionSource<DateTime>();
+				TaskCompletionSource<DateTime> secondTsc = new TaskCompletionSource<DateTime>();
 				await firstSubscriber.SubscribeAsync<BasicMessage>(async received =>
 				{
 					firstTsc.TrySetResult(DateTime.Now);
@@ -294,7 +297,7 @@ namespace RawRabbit.IntegrationTests.PublishAndSubscribe
 					secondTsc.TrySetResult(DateTime.Now);
 					return new Ack();
 				});
-				var message = new BasicMessage { Prop = "Hello, world!" };
+				BasicMessage message = new BasicMessage { Prop = "Hello, world!" };
 
 				/* Test */
 				await publisher.PublishAsync(message);
@@ -308,13 +311,13 @@ namespace RawRabbit.IntegrationTests.PublishAndSubscribe
 		[Fact]
 		public async Task Should_Be_Able_To_Return_Retry_From_Subscriber_With_Context()
 		{
-			using (var publisher = RawRabbitFactory.CreateTestClient())
-			using (var firstSubscriber = RawRabbitFactory.CreateTestClient(p => p.UseRetryLater()))
-			using (var secondSubscriber = RawRabbitFactory.CreateTestClient())
+			using (Instantiation.Disposable.BusClient publisher = RawRabbitFactory.CreateTestClient())
+			using (Instantiation.Disposable.BusClient firstSubscriber = RawRabbitFactory.CreateTestClient(p => p.UseRetryLater()))
+			using (Instantiation.Disposable.BusClient secondSubscriber = RawRabbitFactory.CreateTestClient())
 			{
 				/* Setup */
-				var firstTsc = new TaskCompletionSource<DateTime>();
-				var secondTsc = new TaskCompletionSource<DateTime>();
+				TaskCompletionSource<DateTime> firstTsc = new TaskCompletionSource<DateTime>();
+				TaskCompletionSource<DateTime> secondTsc = new TaskCompletionSource<DateTime>();
 				await firstSubscriber.SubscribeAsync<BasicMessage, MessageContext>(async (received, context) =>
 				{
 					firstTsc.TrySetResult(DateTime.Now);
@@ -325,7 +328,7 @@ namespace RawRabbit.IntegrationTests.PublishAndSubscribe
 					secondTsc.TrySetResult(DateTime.Now);
 					return new Ack();
 				});
-				var message = new BasicMessage { Prop = "Hello, world!" };
+				BasicMessage message = new BasicMessage { Prop = "Hello, world!" };
 
 				/* Test */
 				await publisher.PublishAsync(message);
@@ -339,16 +342,16 @@ namespace RawRabbit.IntegrationTests.PublishAndSubscribe
 		[Fact]
 		public async Task Should_Be_Able_To_Retry_Multiple_Times()
 		{
-			using (var publisher = RawRabbitFactory.CreateTestClient())
-			using (var subscriber = RawRabbitFactory.CreateTestClient(p => p.UseRetryLater()))
+			using (Instantiation.Disposable.BusClient publisher = RawRabbitFactory.CreateTestClient())
+			using (Instantiation.Disposable.BusClient subscriber = RawRabbitFactory.CreateTestClient(p => p.UseRetryLater()))
 			{
 				/* Setup */
-				var firstTsc = new TaskCompletionSource<DateTime>();
-				var secondTsc = new TaskCompletionSource<DateTime>();
-				var thirdTsc = new TaskCompletionSource<DateTime>();
+				TaskCompletionSource<DateTime> firstTsc = new TaskCompletionSource<DateTime>();
+				TaskCompletionSource<DateTime> secondTsc = new TaskCompletionSource<DateTime>();
+				TaskCompletionSource<DateTime> thirdTsc = new TaskCompletionSource<DateTime>();
 				await subscriber.SubscribeAsync<BasicMessage>(async received =>
 				{
-					var receivedAt = DateTime.Now;
+					DateTime receivedAt = DateTime.Now;
 					if (firstTsc.TrySetResult(receivedAt))
 					{
 						return Retry.In(TimeSpan.FromSeconds(1));
@@ -374,18 +377,18 @@ namespace RawRabbit.IntegrationTests.PublishAndSubscribe
 		[Fact]
 		public async Task Should_Handle_Concurrent_Retries()
 		{
-			using (var publisher = RawRabbitFactory.CreateTestClient())
-			using (var subscriber = RawRabbitFactory.CreateTestClient(p => p.UseRetryLater()))
+			using (Instantiation.Disposable.BusClient publisher = RawRabbitFactory.CreateTestClient())
+			using (Instantiation.Disposable.BusClient subscriber = RawRabbitFactory.CreateTestClient(p => p.UseRetryLater()))
 			{
 				/* Setup */
-				var firstTsc = new TaskCompletionSource<DateTime>();
-				var secondTsc = new TaskCompletionSource<DateTime>();
-				var thirdTsc = new TaskCompletionSource<DateTime>();
-				var forthTsc = new TaskCompletionSource<DateTime>();
+				TaskCompletionSource<DateTime> firstTsc = new TaskCompletionSource<DateTime>();
+				TaskCompletionSource<DateTime> secondTsc = new TaskCompletionSource<DateTime>();
+				TaskCompletionSource<DateTime> thirdTsc = new TaskCompletionSource<DateTime>();
+				TaskCompletionSource<DateTime> forthTsc = new TaskCompletionSource<DateTime>();
 
 				await subscriber.SubscribeAsync<BasicMessage> (async received =>
 				{
-					var receivedAt = DateTime.Now;
+					DateTime receivedAt = DateTime.Now;
 					if (firstTsc.TrySetResult(receivedAt))
 					{
 						await Task.Delay(TimeSpan.FromMilliseconds(100));
@@ -397,7 +400,7 @@ namespace RawRabbit.IntegrationTests.PublishAndSubscribe
 				});
 				await subscriber.SubscribeAsync<NamespacedMessages>(async second =>
 				{
-					var receivedAt = DateTime.Now;
+					DateTime receivedAt = DateTime.Now;
 					if (secondTsc.TrySetResult(receivedAt))
 						 {
 						return Retry.In(TimeSpan.FromSeconds(1));

@@ -1,4 +1,5 @@
-﻿namespace RawRabbit.IntegrationTests.TestMessages
+﻿// ReSharper disable All
+namespace RawRabbit.IntegrationTests.TestMessages
 {
 	public class GenericRequest<TFirst, TSecond>
 	{ }

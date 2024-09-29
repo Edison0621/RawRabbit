@@ -1,14 +1,10 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
 using RabbitMQ.Client;
 using RabbitMQ.Client.Events;
 using RawRabbit.Channel.Abstraction;
 using RawRabbit.Common;
-using RawRabbit.Configuration.Exchange;
-using RawRabbit.Configuration.Queue;
-using ExchangeType = RabbitMQ.Client.ExchangeType;
 
 namespace RawRabbit.Pipe.Middleware
 {
@@ -24,50 +20,50 @@ namespace RawRabbit.Pipe.Middleware
 
 	public class ExplicitAckMiddleware : Middleware
 	{
-		protected INamingConventions Conventions;
-		protected readonly ITopologyProvider Topology;
-		protected readonly IChannelFactory ChannelFactory;
-		protected Func<IPipeContext, BasicDeliverEventArgs> DeliveryArgsFunc;
-		protected Func<IPipeContext, IBasicConsumer> ConsumerFunc;
-		protected Func<IPipeContext, Acknowledgement> MessageAcknowledgementFunc;
-		protected Predicate<Acknowledgement> AbortExecution;
-		protected Func<IPipeContext, bool> AutoAckFunc;
+		protected INamingConventions _conventions;
+		protected readonly ITopologyProvider _topology;
+		protected readonly IChannelFactory _channelFactory;
+		protected readonly Func<IPipeContext, BasicDeliverEventArgs> _deliveryArgsFunc;
+		protected readonly Func<IPipeContext, IBasicConsumer> _consumerFunc;
+		protected readonly Func<IPipeContext, Acknowledgement> _messageAcknowledgementFunc;
+		protected readonly Predicate<Acknowledgement> _abortExecution;
+		protected readonly Func<IPipeContext, bool> _autoAckFunc;
 
 		public ExplicitAckMiddleware(INamingConventions conventions, ITopologyProvider topology, IChannelFactory channelFactory, ExplicitAckOptions options = null)
 		{
-			Conventions = conventions;
-			Topology = topology;
-			ChannelFactory = channelFactory;
-			DeliveryArgsFunc = options?.DeliveryArgsFunc ?? (context => context.GetDeliveryEventArgs());
-			ConsumerFunc = options?.ConsumerFunc ?? (context => context.GetConsumer());
-			MessageAcknowledgementFunc = options?.GetMessageAcknowledgement ?? (context => context.GetMessageAcknowledgement());
-			AbortExecution = options?.AbortExecution ?? (ack => !(ack is Ack));
-			AutoAckFunc = options?.AutoAckFunc ?? (context => context.GetConsumeConfiguration().AutoAck);
+			this._conventions = conventions;
+			this._topology = topology;
+			this._channelFactory = channelFactory;
+			this._deliveryArgsFunc = options?.DeliveryArgsFunc ?? (context => context.GetDeliveryEventArgs());
+			this._consumerFunc = options?.ConsumerFunc ?? (context => context.GetConsumer());
+			this._messageAcknowledgementFunc = options?.GetMessageAcknowledgement ?? (context => context.GetMessageAcknowledgement());
+			this._abortExecution = options?.AbortExecution ?? (ack => !(ack is Ack));
+			this._autoAckFunc = options?.AutoAckFunc ?? (context => context.GetConsumeConfiguration().AutoAck);
 		}
 
-		public override async Task InvokeAsync(IPipeContext context, CancellationToken token)
+		public override async Task InvokeAsync(IPipeContext context, CancellationToken token = default(CancellationToken))
 		{
-			var autoAck = GetAutoAck(context);
+			bool autoAck = this.GetAutoAck(context);
 			if (!autoAck)
 			{
-				var ack = await AcknowledgeMessageAsync(context);
-				if (AbortExecution(ack))
+				Acknowledgement ack = await this.AcknowledgeMessageAsync(context);
+				if (this._abortExecution(ack))
 				{
 					return;
 				}
 			}
-			await Next.InvokeAsync(context, token);
+			await this.Next.InvokeAsync(context, token);
 		}
 
 		protected virtual async Task<Acknowledgement> AcknowledgeMessageAsync(IPipeContext context)
 		{
-			var ack = MessageAcknowledgementFunc(context);
+			Acknowledgement ack = this._messageAcknowledgementFunc(context);
 			if (ack == null)
 			{
 				throw new NotSupportedException("Invocation Result of Message Handler not found.");
 			}
-			var deliveryArgs = DeliveryArgsFunc(context);
-			var channel = ConsumerFunc(context).Model;
+			BasicDeliverEventArgs deliveryArgs = this._deliveryArgsFunc(context);
+			IModel channel = this._consumerFunc(context).Model;
 
 			if (channel == null)
 			{
@@ -78,38 +74,35 @@ namespace RawRabbit.Pipe.Middleware
 			{
 				if (channel is IRecoverable recoverable)
 				{
-					var recoverTsc = new TaskCompletionSource<bool>();
+					TaskCompletionSource<bool> recoverTsc = new TaskCompletionSource<bool>();
 
-					EventHandler<EventArgs> OnRecover = null;
-					OnRecover = (sender, args) =>
+					EventHandler<EventArgs> onRecover = null;
+					onRecover = (sender, args) =>
 					{
 						recoverTsc.TrySetResult(true);
-						recoverable.Recovery -= OnRecover;
+						recoverable.Recovery -= onRecover;
 					};
-					recoverable.Recovery += OnRecover;
+					recoverable.Recovery += onRecover;
 					await recoverTsc.Task;
 					
 				}
 				return new Ack();
 			}
 
-			if (ack is Ack)
+			switch (ack)
 			{
-				HandleAck(ack as Ack, channel, deliveryArgs);
-				return ack;
+				case Ack async:
+					this.HandleAck(async, channel, deliveryArgs);
+					return async;
+				case Nack nack:
+					this.HandleNack(nack, channel, deliveryArgs);
+					return nack;
+				case Reject reject:
+					this.HandleReject(reject, channel, deliveryArgs);
+					return reject;
+				default:
+					throw new NotSupportedException($"Unable to handle {ack.GetType()} as an Acknowledgement.");
 			}
-			if (ack is Nack)
-			{
-				HandleNack(ack as Nack, channel, deliveryArgs);
-				return ack;
-			}
-			if (ack is Reject)
-			{
-				HandleReject(ack as Reject, channel, deliveryArgs);
-				return ack;
-			}
-
-			throw new NotSupportedException($"Unable to handle {ack.GetType()} as an Acknowledgement.");
 		}
 
 		protected virtual void HandleAck(Ack ack, IModel channel, BasicDeliverEventArgs deliveryArgs)
@@ -129,7 +122,7 @@ namespace RawRabbit.Pipe.Middleware
 
 		protected virtual bool GetAutoAck(IPipeContext context)
 		{
-			return AutoAckFunc(context);
+			return this._autoAckFunc(context);
 		}
 	}
 }

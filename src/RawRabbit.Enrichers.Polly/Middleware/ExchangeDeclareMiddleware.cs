@@ -1,6 +1,7 @@
 ﻿using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
+using Polly;
 using RawRabbit.Common;
 using RawRabbit.Configuration.Exchange;
 using RawRabbit.Pipe;
@@ -15,13 +16,13 @@ namespace RawRabbit.Enrichers.Polly.Middleware
 
 		protected override Task DeclareExchangeAsync(ExchangeDeclaration exchange, IPipeContext context, CancellationToken token)
 		{
-			var policy = context.GetPolicy(PolicyKeys.ExchangeDeclare);
+			Policy policy = context.GetPolicy(PolicyKeys.ExchangeDeclare);
 			return policy.ExecuteAsync(
 				action: ct => base.DeclareExchangeAsync(exchange, context, ct),
 				cancellationToken: token,
 				contextData: new Dictionary<string, object>
 				{
-					[RetryKey.TopologyProvider] = TopologyProvider,
+					[RetryKey.TopologyProvider] = this._topologyProvider,
 					[RetryKey.ExchangeDeclaration] = exchange,
 					[RetryKey.PipeContext] = context,
 					[RetryKey.CancellationToken] = token,

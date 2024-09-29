@@ -1,12 +1,11 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.Net;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
-using RawRabbit.Enrichers.MessageContext.Context;
 using RawRabbit.Messages.Sample;
 using RawRabbit.Operations.MessageSequence;
+using RawRabbit.Operations.MessageSequence.Model;
 
 namespace RawRabbit.AspNet.Sample.Controllers
 {
@@ -18,25 +17,25 @@ namespace RawRabbit.AspNet.Sample.Controllers
 
 		public ValuesController(IBusClient legacyBusClient, ILoggerFactory loggerFactory)
 		{
-			_busClient = legacyBusClient;
-			_logger = loggerFactory.CreateLogger<ValuesController>();
-			_random = new Random();
+			this._busClient = legacyBusClient;
+			this._logger = loggerFactory.CreateLogger<ValuesController>();
+			this._random = new Random();
 		}
 
 		[HttpGet]
 		[Route("api/values")]
 		public async Task<IActionResult> GetAsync()
 		{
-			_logger.LogDebug("Received Value Request.");
-			var valueSequence = _busClient.ExecuteSequence(s => s
+			this._logger.LogDebug("Received Value Request.");
+			MessageSequence<ValuesCalculated> valueSequence = this._busClient.ExecuteSequence(s => s
 				.PublishAsync(new ValuesRequested
 					{
-						NumberOfValues = _random.Next(1,10)
+						NumberOfValues = this._random.Next(1,10)
 					})
 				.When<ValueCreationFailed, MessageContext>(
 					(failed, context) =>
 					{
-						_logger.LogWarning("Unable to create Values. Exception: {0}", failed.Exception);
+						this._logger.LogWarning("Unable to create Values. Exception: {0}", failed.Exception);
 						return Task.FromResult(true);
 					}, it => it.AbortsExecution())
 				.Complete<ValuesCalculated>()
@@ -48,19 +47,19 @@ namespace RawRabbit.AspNet.Sample.Controllers
 			}
 			catch (Exception e)
 			{
-				return StatusCode((int)HttpStatusCode.InternalServerError, $"No response received. Is the Console App started? \n\nException: {e}");
+				return this.StatusCode((int)HttpStatusCode.InternalServerError, $"No response received. Is the Console App started? \n\nException: {e}");
 			}
 
-			_logger.LogInformation("Successfully created {valueCount} values", valueSequence.Task.Result.Values.Count);
+			this._logger.LogInformation("Successfully created {valueCount} values", valueSequence.Task.Result.Values.Count);
 
-			return Ok(valueSequence.Task.Result.Values);
+			return this.Ok(valueSequence.Task.Result.Values);
 		}
 
 		[HttpGet("api/values/{id}")]
 		public async Task<string> GetAsync(int id)
 		{
-			_logger.LogInformation("Requesting Value with id {valueId}", id);
-			var response = await _busClient.RequestAsync<ValueRequest, ValueResponse>(new ValueRequest {Value = id});
+			this._logger.LogInformation("Requesting Value with id {valueId}", id);
+			ValueResponse response = await this._busClient.RequestAsync<ValueRequest, ValueResponse>(new ValueRequest {Value = id});
 			return response.Value;
 		}
 	}

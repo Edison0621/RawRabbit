@@ -16,8 +16,8 @@ namespace RawRabbit.Tests.Channel
 		public async Task Should_Throw_Exception_If_Connection_Is_Closed_By_Application()
 		{
 			/* Setup */
-			var connectionFactroy = new Mock<IConnectionFactory>();
-			var connection = new Mock<IConnection>();
+			Mock<IConnectionFactory> connectionFactroy = new Mock<IConnectionFactory>();
+			Mock<IConnection> connection = new Mock<IConnection>();
 			connectionFactroy
 				.Setup(c => c.CreateConnection(
 					It.IsAny<List<string>>()))
@@ -28,7 +28,7 @@ namespace RawRabbit.Tests.Channel
 			connection
 				.Setup(c => c.CloseReason)
 				.Returns(new ShutdownEventArgs(ShutdownInitiator.Application, 0, string.Empty));
-			var channelFactory = new ChannelFactory(connectionFactroy.Object, RawRabbitConfiguration.Local);
+			ChannelFactory channelFactory = new ChannelFactory(connectionFactroy.Object, RawRabbitConfiguration.Local);
 
 			/* Test */
 			/* Assert */
@@ -47,8 +47,8 @@ namespace RawRabbit.Tests.Channel
 		public async Task Should_Throw_Exception_If_Connection_Is_Closed_By_Lib_But_Is_Not_Recoverable()
 		{
 			/* Setup */
-			var connectionFactroy = new Mock<IConnectionFactory>();
-			var connection = new Mock<IConnection>();
+			Mock<IConnectionFactory> connectionFactroy = new Mock<IConnectionFactory>();
+			Mock<IConnection> connection = new Mock<IConnection>();
 			connectionFactroy
 				.Setup(c => c.CreateConnection(
 					It.IsAny<List<string>>()))
@@ -59,7 +59,7 @@ namespace RawRabbit.Tests.Channel
 			connection
 				.Setup(c => c.CloseReason)
 				.Returns(new ShutdownEventArgs(ShutdownInitiator.Library, 0, string.Empty));
-			var channelFactory = new ChannelFactory(connectionFactroy.Object, RawRabbitConfiguration.Local);
+			ChannelFactory channelFactory = new ChannelFactory(connectionFactroy.Object, RawRabbitConfiguration.Local);
 
 			/* Test */
 			/* Assert */
@@ -78,9 +78,9 @@ namespace RawRabbit.Tests.Channel
 		public async Task Should_Return_Channel_From_Connection()
 		{
 			/* Setup */
-			var channel = new Mock<IModel>();
-			var connectionFactroy = new Mock<IConnectionFactory>();
-			var connection = new Mock<IConnection>();
+			Mock<IModel> channel = new Mock<IModel>();
+			Mock<IConnectionFactory> connectionFactroy = new Mock<IConnectionFactory>();
+			Mock<IConnection> connection = new Mock<IConnection>();
 			connectionFactroy
 				.Setup(c => c.CreateConnection(
 					It.IsAny<List<string>>()))
@@ -91,10 +91,10 @@ namespace RawRabbit.Tests.Channel
 			connection
 				.Setup(c => c.IsOpen)
 				.Returns(true);
-			var channelFactory = new ChannelFactory(connectionFactroy.Object, RawRabbitConfiguration.Local);
+			ChannelFactory channelFactory = new ChannelFactory(connectionFactroy.Object, RawRabbitConfiguration.Local);
 
 			/* Test */
-			var retrievedChannel = await channelFactory.CreateChannelAsync();
+			IModel retrievedChannel = await channelFactory.CreateChannelAsync();
 
 			/* Assert */
 			Assert.Equal(channel.Object, retrievedChannel);
@@ -104,10 +104,10 @@ namespace RawRabbit.Tests.Channel
 		public async Task Should_Wait_For_Connection_To_Recover_Before_Returning_Channel()
 		{
 			/* Setup */
-			var channel = new Mock<IModel>();
-			var connectionFactroy = new Mock<IConnectionFactory>();
-			var connection = new Mock<IConnection>();
-			var recoverable = connection.As<IRecoverable>();
+			Mock<IModel> channel = new Mock<IModel>();
+			Mock<IConnectionFactory> connectionFactroy = new Mock<IConnectionFactory>();
+			Mock<IConnection> connection = new Mock<IConnection>();
+			Mock<IRecoverable> recoverable = connection.As<IRecoverable>();
 			connectionFactroy
 				.Setup(c => c.CreateConnection(
 					It.IsAny<List<string>>()))
@@ -118,11 +118,11 @@ namespace RawRabbit.Tests.Channel
 			connection
 				.Setup(c => c.IsOpen)
 				.Returns(false);
-			var channelFactory = new ChannelFactory(connectionFactroy.Object, RawRabbitConfiguration.Local);
+			ChannelFactory channelFactory = new ChannelFactory(connectionFactroy.Object, RawRabbitConfiguration.Local);
 
 			/* Test */
 			/* Assert */
-			var channelTask = channelFactory.CreateChannelAsync();
+			Task<IModel> channelTask = channelFactory.CreateChannelAsync();
 			channelTask.Wait(TimeSpan.FromMilliseconds(30));
 			Assert.False(channelTask.IsCompleted);
 

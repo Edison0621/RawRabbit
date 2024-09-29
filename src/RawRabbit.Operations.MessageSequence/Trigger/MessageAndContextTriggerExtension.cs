@@ -52,7 +52,7 @@ namespace RawRabbit.Operations.MessageSequence.Trigger
 
 			return configurer.From(SubscribePipe,context =>
 			{
-				var stateMachineContext = new StateMachineContext(context);
+				StateMachineContext stateMachineContext = new StateMachineContext(context);
 				stateMachineContext.Properties.Add(StateMachineKey.Type, typeof(TStateMachine));
 				stateMachineContext.AddMessageContextType<TMessageContext>();
 				stateMachineContext.Properties.Add(StateMachineKey.CorrelationFunc, genericCorrFunc);

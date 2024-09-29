@@ -13,54 +13,54 @@ namespace RawRabbit.Compatibility.Legacy.Configuration.Respond
 
 		public ResponderConfigurationBuilder(QueueConfiguration defaultQueue = null, ExchangeConfiguration defaultExchange = null)
 		{
-			_exchangeBuilder = new ExchangeConfigurationBuilder(defaultExchange);
-			_queueBuilder = new QueueConfigurationBuilder(defaultQueue);
-			Configuration = new ResponderConfiguration
+			this._exchangeBuilder = new ExchangeConfigurationBuilder(defaultExchange);
+			this._queueBuilder = new QueueConfigurationBuilder(defaultQueue);
+			this.Configuration = new ResponderConfiguration
 			{
-				Queue = _queueBuilder.Configuration,
-				Exchange = _exchangeBuilder.Configuration,
-				RoutingKey = _queueBuilder.Configuration.QueueName
+				Queue = this._queueBuilder.Configuration,
+				Exchange = this._exchangeBuilder.Configuration,
+				RoutingKey = this._queueBuilder.Configuration.QueueName
 			};
 		}
 
 		public IResponderConfigurationBuilder WithExchange(Action<IExchangeConfigurationBuilder> exchange)
 		{
-			exchange(_exchangeBuilder);
-			Configuration.Exchange = _exchangeBuilder.Configuration;
+			exchange(this._exchangeBuilder);
+			this.Configuration.Exchange = this._exchangeBuilder.Configuration;
 			return this;
 		}
 
 		public IResponderConfigurationBuilder WithPrefetchCount(ushort count)
 		{
-			Configuration.PrefetchCount = count;
+			this.Configuration.PrefetchCount = count;
 			return this;
 		}
 
 		public IResponderConfigurationBuilder WithQueue(Action<IQueueConfigurationBuilder> queue)
 		{
-			queue(_queueBuilder);
-			Configuration.Queue = _queueBuilder.Configuration;
-			if (string.IsNullOrEmpty(Configuration.RoutingKey))
+			queue(this._queueBuilder);
+			this.Configuration.Queue = this._queueBuilder.Configuration;
+			if (string.IsNullOrEmpty(this.Configuration.RoutingKey))
 			{
-				Configuration.RoutingKey = _queueBuilder.Configuration.QueueName;
+				this.Configuration.RoutingKey = this._queueBuilder.Configuration.QueueName;
 			}
 			return this;
 		}
 
 		public IResponderConfigurationBuilder WithRoutingKey(string routingKey)
 		{
-			Configuration.RoutingKey = routingKey;
+			this.Configuration.RoutingKey = routingKey;
 			return this;
 		}
 
 		public IResponderConfigurationBuilder WithNoAck(bool noAck)
 		{
-			return WithAutoAck(noAck);
+			return this.WithAutoAck(noAck);
 		}
 
 		public IResponderConfigurationBuilder WithAutoAck(bool autoAck = true)
 		{
-			Configuration.AutoAck = autoAck;
+			this.Configuration.AutoAck = autoAck;
 			return this;
 		}
 	}

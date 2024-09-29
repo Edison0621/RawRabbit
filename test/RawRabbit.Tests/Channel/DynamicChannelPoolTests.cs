@@ -14,20 +14,20 @@ namespace RawRabbit.Tests.Channel
 		public async Task Should_Be_Able_To_Add_And_Use_Channels()
 		{
 			/* Setup */
-			var channels = new List<Mock<IModel>> {new Mock<IModel>(), new Mock<IModel>(), new Mock<IModel>()};
-			foreach (var channel in channels)
+			List<Mock<IModel>> channels = new List<Mock<IModel>> {new Mock<IModel>(), new Mock<IModel>(), new Mock<IModel>()};
+			foreach (Mock<IModel> channel in channels)
 			{
 				channel
 					.Setup(c => c.IsClosed)
 					.Returns(false);
 			}
-			var pool = new DynamicChannelPool();
+			DynamicChannelPool pool = new DynamicChannelPool();
 			pool.Add(channels.Select(c => c.Object));
 
 			/* Test */
-			var firstChannel = await pool.GetAsync();
-			var secondChannel = await pool.GetAsync();
-			var thirdChannel = await pool.GetAsync();
+			IModel firstChannel = await pool.GetAsync();
+			IModel secondChannel = await pool.GetAsync();
+			IModel thirdChannel = await pool.GetAsync();
 
 			/* Assert */
 			Assert.Equal(firstChannel, channels[0].Object);
@@ -39,8 +39,8 @@ namespace RawRabbit.Tests.Channel
 		public void Should_Not_Throw_Exception_If_Trying_To_Remove_Channel_Not_In_Pool()
 		{
 			/* Setup */
-			var pool = new DynamicChannelPool();
-			var channel = new Mock<IModel>();
+			DynamicChannelPool pool = new DynamicChannelPool();
+			Mock<IModel> channel = new Mock<IModel>();
 
 			/* Test */
 			pool.Remove(channel.Object);
@@ -53,25 +53,25 @@ namespace RawRabbit.Tests.Channel
 		public async Task Should_Remove_Channels_Based_On_Count()
 		{
 			/* Setup */
-			var channels = new List<Mock<IModel>>
+			List<Mock<IModel>> channels = new List<Mock<IModel>>
 			{
 				new Mock<IModel>{ Name = "First" },
 				new Mock<IModel>{ Name = "Second"},
 				new Mock<IModel>{ Name = "Third"}
 			};
-			foreach (var channel in channels)
+			foreach (Mock<IModel> channel in channels)
 			{
 				channel
 					.Setup(c => c.IsOpen)
 					.Returns(true);
 			}
-			var pool = new DynamicChannelPool(channels.Select(c => c.Object));
+			DynamicChannelPool pool = new DynamicChannelPool(channels.Select(c => c.Object));
 
 			/* Test */
 			pool.Remove(2);
-			var firstChannel = await pool.GetAsync();
-			var secondChannel = await pool.GetAsync();
-			var thirdChannel = await pool.GetAsync();
+			IModel firstChannel = await pool.GetAsync();
+			IModel secondChannel = await pool.GetAsync();
+			IModel thirdChannel = await pool.GetAsync();
 
 			/* Assert */
 			Assert.Equal(firstChannel, channels[2].Object);

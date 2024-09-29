@@ -9,21 +9,21 @@ namespace RawRabbit.Channel
 	{
 		private readonly ConcurrentQueue<TaskCompletionSource<IModel>> _queue;
 
-		public EventHandler Queued;
+		public EventHandler _queued;
 
 		public ConcurrentChannelQueue()
 		{
-			_queue = new ConcurrentQueue<TaskCompletionSource<IModel>>();
+			this._queue = new ConcurrentQueue<TaskCompletionSource<IModel>>();
 		}
 
 		public TaskCompletionSource<IModel> Enqueue()
 		{
-			var modelTsc = new TaskCompletionSource<IModel>();
-			var raiseEvent = _queue.IsEmpty;
-			_queue.Enqueue(modelTsc);
+			TaskCompletionSource<IModel> modelTsc = new TaskCompletionSource<IModel>();
+			bool raiseEvent = this._queue.IsEmpty;
+			this._queue.Enqueue(modelTsc);
 			if (raiseEvent)
 			{
-				Queued?.Invoke(this, EventArgs.Empty);
+				this._queued?.Invoke(this, EventArgs.Empty);
 			}
 
 			return modelTsc;
@@ -31,11 +31,11 @@ namespace RawRabbit.Channel
 
 		public bool TryDequeue(out TaskCompletionSource<IModel> channel)
 		{
-			return _queue.TryDequeue(out channel);
+			return this._queue.TryDequeue(out channel);
 		}
 
-		public bool IsEmpty => _queue.IsEmpty;
+		public bool IsEmpty => this._queue.IsEmpty;
 
-		public int Count => _queue.Count;
+		public int Count => this._queue.Count;
 	}
 }

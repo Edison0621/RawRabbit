@@ -16,36 +16,36 @@ namespace RawRabbit.Operations.Request.Middleware
 
 		public RequestConfigurationMiddleware(IPublisherConfigurationFactory publisher, IConsumerConfigurationFactory consumer)
 		{
-			_factory = new RequestConfigurationFactory(publisher, consumer);
+			this._factory = new RequestConfigurationFactory(publisher, consumer);
 		}
 
 		public RequestConfigurationMiddleware(IRequestConfigurationFactory factory)
 		{
-			_factory = factory;
+			this._factory = factory;
 		}
 
-		public override Task InvokeAsync(IPipeContext context, CancellationToken token)
+		public override Task InvokeAsync(IPipeContext context, CancellationToken token = default(CancellationToken))
 		{
-			var requestType = context.GetRequestMessageType();
-			var responseType = context.GetResponseMessageType();
+			Type requestType = context.GetRequestMessageType();
+			Type responseType = context.GetResponseMessageType();
 
 			if (requestType == null)
 				throw new ArgumentNullException(nameof(requestType));
 			if (responseType == null)
 				throw new ArgumentNullException(nameof(responseType));
 
-			var defaultCfg = _factory.Create(requestType, responseType);
+			RequestConfiguration defaultCfg = this._factory.Create(requestType, responseType);
 
-			var builder = new RequestConfigurationBuilder(defaultCfg);
-			var action = context.Get<Action<IRequestConfigurationBuilder>>(PipeKey.ConfigurationAction);
+			RequestConfigurationBuilder builder = new RequestConfigurationBuilder(defaultCfg);
+			Action<IRequestConfigurationBuilder> action = context.Get<Action<IRequestConfigurationBuilder>>(PipeKey.ConfigurationAction);
 			action?.Invoke(builder);
-			var requestConfig = builder.Config;
+			RequestConfiguration requestConfig = builder.Config;
 
 			context.Properties.TryAdd(RequestKey.Configuration, requestConfig);
 			context.Properties.TryAdd(PipeKey.PublisherConfiguration, requestConfig.Request);
 			context.Properties.TryAdd(PipeKey.ConsumerConfiguration, requestConfig.Response);
 			context.Properties.TryAdd(PipeKey.ConsumeConfiguration, requestConfig.Response.Consume);
-			return Next.InvokeAsync(context, token);
+			return this.Next.InvokeAsync(context, token);
 		}
 	}
 }

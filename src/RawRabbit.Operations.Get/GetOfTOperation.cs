@@ -36,7 +36,7 @@ namespace RawRabbit
 
 		internal static async Task<Ackable<TMessage>> GetAsync<TMessage>(this IBusClient busClient, Action<IGetConfigurationBuilder> config = null, Action<IPipeContext> pipeAction = null, CancellationToken token = default(CancellationToken))
 		{
-			var result = await busClient
+			IPipeContext result = await busClient
 				.InvokeAsync(DeserializedBodyGetPipe, context =>
 				{
 					context.Properties.Add(PipeKey.ConfigurationAction, config);

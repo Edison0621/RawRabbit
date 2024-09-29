@@ -15,21 +15,21 @@ namespace RawRabbit.Common
 		{
 			return new RetryInformation
 			{
-				NumberOfRetries = ExtractNumberOfRetries(args),
-				OriginalDelivered = ExtractOriginalDelivered(args)
+				NumberOfRetries = this.ExtractNumberOfRetries(args),
+				OriginalDelivered = this.ExtractOriginalDelivered(args)
 			};
 		}
 
 		private DateTime ExtractOriginalDelivered(BasicDeliverEventArgs args)
 		{
-			var headerValue = GetHeaderString(args.BasicProperties.Headers, RetryHeaders.OriginalDelivered);
-			return DateTime.TryParse(headerValue, out var originalSent) ? originalSent : DateTime.UtcNow;
+			string headerValue = GetHeaderString(args.BasicProperties.Headers, RetryHeaders.OriginalDelivered);
+			return DateTime.TryParse(headerValue, out DateTime originalSent) ? originalSent : DateTime.UtcNow;
 		}
 
 		private int ExtractNumberOfRetries(BasicDeliverEventArgs args)
 		{
-			var headerValue = GetHeaderString(args.BasicProperties.Headers, RetryHeaders.NumberOfRetries);
-			return int.TryParse(headerValue, out var noOfRetries) ? noOfRetries : 0;
+			string headerValue = GetHeaderString(args.BasicProperties.Headers, RetryHeaders.NumberOfRetries);
+			return int.TryParse(headerValue, out int noOfRetries) ? noOfRetries : 0;
 		}
 
 		private static string GetHeaderString(IDictionary<string, object> headers, string key)
@@ -47,7 +47,7 @@ namespace RawRabbit.Common
 				return null;
 			}
 
-			var headerStr = System.Text.Encoding.UTF8.GetString(headerBytes);
+			string headerStr = System.Text.Encoding.UTF8.GetString(headerBytes);
 			return headerStr;
 		}
 	}

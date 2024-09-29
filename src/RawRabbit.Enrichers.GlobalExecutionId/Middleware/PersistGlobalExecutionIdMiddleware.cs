@@ -14,25 +14,25 @@ namespace RawRabbit.Enrichers.GlobalExecutionId.Middleware
 
 	public class PersistGlobalExecutionIdMiddleware : StagedMiddleware
 	{
-		protected Func<IPipeContext, string> ExecutionIdFunc;
+		protected readonly Func<IPipeContext, string> _executionIdFunc;
 
 		public override string StageMarker => Pipe.StageMarker.MessageReceived;
 
 		public PersistGlobalExecutionIdMiddleware(PersistGlobalExecutionIdOptions options = null)
 		{
-			ExecutionIdFunc = options?.ExecutionIdFunc ?? (context => context.GetGlobalExecutionId());
+			this._executionIdFunc = options?.ExecutionIdFunc ?? (context => context.GetGlobalExecutionId());
 		}
 
 		public override Task InvokeAsync(IPipeContext context, CancellationToken token = new CancellationToken())
 		{
-			var globalExecutionId = GetGlobalExecutionId(context);
-			PersistInProcess(globalExecutionId);
-			return Next.InvokeAsync(context, token);
+			string globalExecutionId = this.GetGlobalExecutionId(context);
+			this.PersistInProcess(globalExecutionId);
+			return this.Next.InvokeAsync(context, token);
 		}
 
 		protected virtual string GetGlobalExecutionId(IPipeContext context)
 		{
-			return ExecutionIdFunc(context);
+			return this._executionIdFunc(context);
 		}
 
 		protected virtual void PersistInProcess(string id)

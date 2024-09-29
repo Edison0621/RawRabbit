@@ -1,4 +1,5 @@
 ﻿using System;
+using BenchmarkDotNet.Reports;
 using BenchmarkDotNet.Running;
 using Xunit;
 
@@ -9,21 +10,21 @@ namespace RawRabbit.PerformanceTest
 		[Fact]
 		public void PubSubBenchmarks()
 		{
-			var result = BenchmarkRunner.Run<PubSubBenchmarks>();
+			Summary result = BenchmarkRunner.Run<PubSubBenchmarks>();
 			Assert.NotEqual(TimeSpan.Zero, result.TotalTime);
 		}
 
 		[Fact]
 		public void RpcBenchmarks()
 		{
-			var result = BenchmarkRunner.Run<RpcBenchmarks>();
+			Summary result = BenchmarkRunner.Run<RpcBenchmarks>();
 			Assert.NotEqual(TimeSpan.Zero, result.TotalTime);
 		}
 
 		[Fact]
 		public void MessageContextBenchmarks()
 		{
-			var result = BenchmarkRunner.Run<MessageContextBenchmarks>();
+			Summary result = BenchmarkRunner.Run<MessageContextBenchmarks>();
 			Assert.NotEqual(TimeSpan.Zero, result.TotalTime);
 		}
 	}

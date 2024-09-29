@@ -8,6 +8,7 @@ using RawRabbit.Instantiation;
 using RawRabbit.IntegrationTests.TestMessages;
 using RawRabbit.Pipe;
 using Xunit;
+#pragma warning disable CS1998 // Async method lacks 'await' operators and will run synchronously
 
 namespace RawRabbit.IntegrationTests.Enrichers
 {
@@ -16,11 +17,11 @@ namespace RawRabbit.IntegrationTests.Enrichers
 		[Fact]
 		public async Task Should_Send_Context_On_Rpc()
 		{
-			using (var requester = RawRabbitFactory.CreateTestClient(new RawRabbitOptions
+			using (Instantiation.Disposable.BusClient requester = RawRabbitFactory.CreateTestClient(new RawRabbitOptions
 			{
 				Plugins = p => p.UseMessageContext(context => new MessageContext {GlobalRequestId = Guid.NewGuid()})
 			}))
-			using (var responder = RawRabbitFactory.CreateTestClient())
+			using (Instantiation.Disposable.BusClient responder = RawRabbitFactory.CreateTestClient())
 			{
 				/* Setup */
 				MessageContext receivedContext = null;
@@ -43,12 +44,12 @@ namespace RawRabbit.IntegrationTests.Enrichers
 		public async Task Should_Send_Context_On_Pub_Sub()
 		{
 			using (
-				var publisher =
+				Instantiation.Disposable.BusClient publisher =
 					RawRabbitFactory.CreateTestClient(new RawRabbitOptions {Plugins = p => p.UseMessageContext<MessageContext>()}))
-			using (var subscriber = RawRabbitFactory.CreateTestClient())
+			using (Instantiation.Disposable.BusClient subscriber = RawRabbitFactory.CreateTestClient())
 			{
 				/* Setup */
-				var contextTsc = new TaskCompletionSource<MessageContext>();
+				TaskCompletionSource<MessageContext> contextTsc = new TaskCompletionSource<MessageContext>();
 				await subscriber.SubscribeAsync<BasicMessage, MessageContext>((request, context) =>
 				{
 					contextTsc.TrySetResult(context);
@@ -67,12 +68,12 @@ namespace RawRabbit.IntegrationTests.Enrichers
 		public async Task Should_Override_With_Explicit_Context_On_Pub_Sub()
 		{
 			using (
-				var publisher =
+				Instantiation.Disposable.BusClient publisher =
 					RawRabbitFactory.CreateTestClient(new RawRabbitOptions {Plugins = p => p.UseMessageContext<MessageContext>()}))
-			using (var subscriber = RawRabbitFactory.CreateTestClient())
+			using (Instantiation.Disposable.BusClient subscriber = RawRabbitFactory.CreateTestClient())
 			{
 				/* Setup */
-				var contextTsc = new TaskCompletionSource<TestMessageContext>();
+				TaskCompletionSource<TestMessageContext> contextTsc = new TaskCompletionSource<TestMessageContext>();
 				await subscriber.SubscribeAsync<BasicMessage, TestMessageContext>((request, context) =>
 				{
 					contextTsc.TrySetResult(context);
@@ -90,15 +91,15 @@ namespace RawRabbit.IntegrationTests.Enrichers
 		[Fact]
 		public async Task Shoud_Create_Context_From_Supplied_Factory_Method()
 		{
-			var contextProp = "Created from factory method";
-			using (var publisher = RawRabbitFactory.CreateTestClient(new RawRabbitOptions
+			string contextProp = "Created from factory method";
+			using (Instantiation.Disposable.BusClient publisher = RawRabbitFactory.CreateTestClient(new RawRabbitOptions
 			{
 				Plugins = p => p.UseMessageContext(context => new TestMessageContext {Prop = contextProp})
 			}))
-			using (var subscriber = RawRabbitFactory.CreateTestClient())
+			using (Instantiation.Disposable.BusClient subscriber = RawRabbitFactory.CreateTestClient())
 			{
 				/* Setup */
-				var contextTsc = new TaskCompletionSource<TestMessageContext>();
+				TaskCompletionSource<TestMessageContext> contextTsc = new TaskCompletionSource<TestMessageContext>();
 				await subscriber.SubscribeAsync<BasicMessage, TestMessageContext>((request, context) =>
 				{
 					contextTsc.TrySetResult(context);
@@ -117,7 +118,7 @@ namespace RawRabbit.IntegrationTests.Enrichers
 		[Fact]
 		public async Task Should_Not_Forward_Context_By_Default()
 		{
-			var withMsgContext = new RawRabbitOptions
+			RawRabbitOptions withMsgContext = new RawRabbitOptions
 			{
 				Plugins = p => p.UseMessageContext(context =>
 					new MessageContext
@@ -125,12 +126,12 @@ namespace RawRabbit.IntegrationTests.Enrichers
 						GlobalRequestId = Guid.NewGuid()
 					})
 			};
-			using (var publisher = RawRabbitFactory.CreateTestClient(withMsgContext))
-			using (var subscriber = RawRabbitFactory.CreateTestClient(withMsgContext))
+			using (Instantiation.Disposable.BusClient publisher = RawRabbitFactory.CreateTestClient(withMsgContext))
+			using (Instantiation.Disposable.BusClient subscriber = RawRabbitFactory.CreateTestClient(withMsgContext))
 			{
 				/* Setup */
-				var firstContextTsc = new TaskCompletionSource<MessageContext>();
-				var secondContextTsc = new TaskCompletionSource<MessageContext>();
+				TaskCompletionSource<MessageContext> firstContextTsc = new TaskCompletionSource<MessageContext>();
+				TaskCompletionSource<MessageContext> secondContextTsc = new TaskCompletionSource<MessageContext>();
 				await subscriber.SubscribeAsync<FirstMessage, MessageContext>((request, context) =>
 				{
 					firstContextTsc.TrySetResult(context);
@@ -155,7 +156,7 @@ namespace RawRabbit.IntegrationTests.Enrichers
 		[Fact]
 		public async Task Should_Forward_Context_On_Publish_With_Context_Forwarding()
 		{
-			var withMsgContext = new RawRabbitOptions
+			RawRabbitOptions withMsgContext = new RawRabbitOptions
 			{
 				Plugins = p => p
 					.UseContextForwarding()
@@ -165,12 +166,12 @@ namespace RawRabbit.IntegrationTests.Enrichers
 							GlobalRequestId = Guid.NewGuid()
 						})
 			};
-			using (var publisher = RawRabbitFactory.CreateTestClient(withMsgContext))
-			using (var subscriber = RawRabbitFactory.CreateTestClient(withMsgContext))
+			using (Instantiation.Disposable.BusClient publisher = RawRabbitFactory.CreateTestClient(withMsgContext))
+			using (Instantiation.Disposable.BusClient subscriber = RawRabbitFactory.CreateTestClient(withMsgContext))
 			{
 				/* Setup */
-				var firstContextTsc = new TaskCompletionSource<MessageContext>();
-				var secondContextTsc = new TaskCompletionSource<MessageContext>();
+				TaskCompletionSource<MessageContext> firstContextTsc = new TaskCompletionSource<MessageContext>();
+				TaskCompletionSource<MessageContext> secondContextTsc = new TaskCompletionSource<MessageContext>();
 				await subscriber.SubscribeAsync<FirstMessage, MessageContext>((request, context) =>
 				{
 					firstContextTsc.TrySetResult(context);
@@ -195,7 +196,7 @@ namespace RawRabbit.IntegrationTests.Enrichers
 		[Fact]
 		public async Task Should_Forward_Context_For_Pub_Sub_And_Rpc()
 		{
-			var withMsgContext = new RawRabbitOptions
+			RawRabbitOptions withMsgContext = new RawRabbitOptions
 			{
 				Plugins = p => p
 					.UseContextForwarding()
@@ -205,12 +206,12 @@ namespace RawRabbit.IntegrationTests.Enrichers
 							GlobalRequestId = Guid.NewGuid()
 						})
 			};
-			using (var firstClient = RawRabbitFactory.CreateTestClient(withMsgContext))
-			using (var secondClient = RawRabbitFactory.CreateTestClient(withMsgContext))
+			using (Instantiation.Disposable.BusClient firstClient = RawRabbitFactory.CreateTestClient(withMsgContext))
+			using (Instantiation.Disposable.BusClient secondClient = RawRabbitFactory.CreateTestClient(withMsgContext))
 			{
 				/* Setup */
-				var firstContextTsc = new TaskCompletionSource<MessageContext>();
-				var secondContextTsc = new TaskCompletionSource<MessageContext>();
+				TaskCompletionSource<MessageContext> firstContextTsc = new TaskCompletionSource<MessageContext>();
+				TaskCompletionSource<MessageContext> secondContextTsc = new TaskCompletionSource<MessageContext>();
 				await secondClient.SubscribeAsync<FirstMessage, MessageContext>((request, context) =>
 				{
 					firstContextTsc.TrySetResult(context);
@@ -235,11 +236,11 @@ namespace RawRabbit.IntegrationTests.Enrichers
 		[Fact]
 		public async Task Should_Be_Able_To_Have_Any_Object_As_Message_Context()
 		{
-			using (var publisher = RawRabbitFactory.CreateTestClient())
-			using (var subscriber = RawRabbitFactory.CreateTestClient())
+			using (Instantiation.Disposable.BusClient publisher = RawRabbitFactory.CreateTestClient())
+			using (Instantiation.Disposable.BusClient subscriber = RawRabbitFactory.CreateTestClient())
 			{
 				/* Setup */
-				var contextTsc = new TaskCompletionSource<BasicDeliverEventArgs>();
+				TaskCompletionSource<BasicDeliverEventArgs> contextTsc = new TaskCompletionSource<BasicDeliverEventArgs>();
 				await subscriber.SubscribeAsync<BasicMessage, BasicDeliverEventArgs>((request, args) =>
 				{
 					contextTsc.TrySetResult(args);
@@ -257,19 +258,19 @@ namespace RawRabbit.IntegrationTests.Enrichers
 		[Fact]
 		public async Task Should_Use_Subscriber_Declared_Context()
 		{
-			using (var publisher = RawRabbitFactory.CreateTestClient(new RawRabbitOptions
+			using (Instantiation.Disposable.BusClient publisher = RawRabbitFactory.CreateTestClient(new RawRabbitOptions
 			{
 				Plugins = p => p.UseMessageContext<TestMessageContext>().UseContextForwarding() 
 			}))
-			using (var subscriber = RawRabbitFactory.CreateTestClient(new RawRabbitOptions
+			using (Instantiation.Disposable.BusClient subscriber = RawRabbitFactory.CreateTestClient(new RawRabbitOptions
 			{
 				Plugins = p => p.UseMessageContext<TestMessageContext>().UseContextForwarding()
 			}))
 			{
 				/* Setup */
-				var firstTcs = new TaskCompletionSource<TestMessageContext>();
-				var secondTcs = new TaskCompletionSource<BasicDeliverEventArgs>();
-				var thirdTcs = new TaskCompletionSource<TestMessageContext>();
+				TaskCompletionSource<TestMessageContext> firstTcs = new TaskCompletionSource<TestMessageContext>();
+				TaskCompletionSource<BasicDeliverEventArgs> secondTcs = new TaskCompletionSource<BasicDeliverEventArgs>();
+				TaskCompletionSource<TestMessageContext> thirdTcs = new TaskCompletionSource<TestMessageContext>();
 				await subscriber.SubscribeAsync<FirstMessage, TestMessageContext>(async (request, ctx) =>
 				{
 					firstTcs.TrySetResult(ctx);

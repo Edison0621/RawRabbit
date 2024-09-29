@@ -1,5 +1,4 @@
-﻿using RawRabbit.Common;
-using RawRabbit.Enrichers.GlobalExecutionId.Middleware;
+﻿using RawRabbit.Enrichers.GlobalExecutionId.Middleware;
 using RawRabbit.Instantiation;
 using RawRabbit.Pipe;
 using RawRabbit.Pipe.Middleware;

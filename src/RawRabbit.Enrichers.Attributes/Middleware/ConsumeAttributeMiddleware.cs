@@ -19,38 +19,38 @@ namespace RawRabbit.Enrichers.Attributes.Middleware
 	public class ConsumeAttributeMiddleware : StagedMiddleware
 	{
 		public override string StageMarker => Pipe.StageMarker.ConsumeConfigured;
-		protected Func<IPipeContext, ConsumerConfiguration> ConsumeConfigFunc;
-		protected Func<IPipeContext, Type> MessageType;
+		protected readonly Func<IPipeContext, ConsumerConfiguration> _consumeConfigFunc;
+		protected readonly Func<IPipeContext, Type> _messageType;
 
 		public ConsumeAttributeMiddleware(ConsumeAttributeOptions options = null)
 		{
-			ConsumeConfigFunc = options?.PublishConfigFunc ?? (context => context.GetConsumerConfiguration());
-			MessageType = options?.MessageTypeFunc ?? (context => context.GetMessageType());
+			this._consumeConfigFunc = options?.PublishConfigFunc ?? (context => context.GetConsumerConfiguration());
+			this._messageType = options?.MessageTypeFunc ?? (context => context.GetMessageType());
 		}
 
 		public override Task InvokeAsync(IPipeContext context, CancellationToken token = new CancellationToken())
 		{
-			var consumeConfig = GetConsumerConfig(context);
-			var messageType = GetMessageType(context);
-			UpdateExchangeConfig(consumeConfig, messageType);
-			UpdateRoutingConfig(consumeConfig, messageType);
-			UpdateQueueConfig(consumeConfig, messageType);
-			return Next.InvokeAsync(context, token);
+			ConsumerConfiguration consumeConfig = this.GetConsumerConfig(context);
+			Type messageType = this.GetMessageType(context);
+			this.UpdateExchangeConfig(consumeConfig, messageType);
+			this.UpdateRoutingConfig(consumeConfig, messageType);
+			this.UpdateQueueConfig(consumeConfig, messageType);
+			return this.Next.InvokeAsync(context, token);
 		}
 
 		protected virtual ConsumerConfiguration GetConsumerConfig(IPipeContext context)
 		{
-			return ConsumeConfigFunc?.Invoke(context);
+			return this._consumeConfigFunc?.Invoke(context);
 		}
 
 		protected virtual Type GetMessageType(IPipeContext context)
 		{
-			return MessageType?.Invoke(context);
+			return this._messageType?.Invoke(context);
 		}
 
 		protected virtual void UpdateExchangeConfig(ConsumerConfiguration config, Type messageType)
 		{
-			var attribute = GetAttribute<ExchangeAttribute>(messageType);
+			ExchangeAttribute attribute = this.GetAttribute<ExchangeAttribute>(messageType);
 			if (attribute == null)
 			{
 				return;
@@ -68,13 +68,13 @@ namespace RawRabbit.Enrichers.Attributes.Middleware
 			{
 				return;
 			}
-			if (attribute.NullableDurability.HasValue)
+			if (attribute._nullableDurability.HasValue)
 			{
-				config.Exchange.Durable = attribute.NullableDurability.Value;
+				config.Exchange.Durable = attribute._nullableDurability.Value;
 			}
-			if (attribute.NullableAutoDelete.HasValue)
+			if (attribute._nullableAutoDelete.HasValue)
 			{
-				config.Exchange.AutoDelete = attribute.NullableAutoDelete.Value;
+				config.Exchange.AutoDelete = attribute._nullableAutoDelete.Value;
 			}
 			if (attribute.Type != ExchangeType.Unknown)
 			{
@@ -84,12 +84,12 @@ namespace RawRabbit.Enrichers.Attributes.Middleware
 
 		protected virtual void UpdateRoutingConfig(ConsumerConfiguration config, Type messageType)
 		{
-			var routingAttr = GetAttribute<RoutingAttribute>(messageType);
+			RoutingAttribute routingAttr = this.GetAttribute<RoutingAttribute>(messageType);
 			if (routingAttr == null)
 			{
 				return;
 			}
-			if (routingAttr?.RoutingKey != null)
+			if (routingAttr.RoutingKey != null)
 			{
 				config.Consume.RoutingKey = routingAttr.RoutingKey;
 			}
@@ -97,7 +97,7 @@ namespace RawRabbit.Enrichers.Attributes.Middleware
 			{
 				config.Consume.PrefetchCount = routingAttr.PrefetchCount;
 			}
-			if (routingAttr.NullableAutoAck.HasValue)
+			if (routingAttr._nullableAutoAck.HasValue)
 			{
 				config.Consume.AutoAck = routingAttr.AutoAck;
 			}
@@ -105,7 +105,7 @@ namespace RawRabbit.Enrichers.Attributes.Middleware
 
 		protected virtual void UpdateQueueConfig(ConsumerConfiguration config, Type messageType)
 		{
-			var attribute = GetAttribute<QueueAttribute>(messageType);
+			QueueAttribute attribute = this.GetAttribute<QueueAttribute>(messageType);
 			if (attribute == null)
 			{
 				return;
@@ -122,15 +122,15 @@ namespace RawRabbit.Enrichers.Attributes.Middleware
 			{
 				return;
 			}
-			if (attribute.NullableDurability.HasValue)
+			if (attribute._nullableDurability.HasValue)
 			{
 				config.Queue.Durable = attribute.Durable;
 			}
-			if (attribute.NullableExclusitivy.HasValue)
+			if (attribute._nullableExclusitivy.HasValue)
 			{
 				config.Queue.Exclusive = attribute.Exclusive;
 			}
-			if (attribute.NullableAutoDelete.HasValue)
+			if (attribute._nullableAutoDelete.HasValue)
 			{
 				config.Queue.AutoDelete= attribute.AutoDelete;
 			}
@@ -154,7 +154,7 @@ namespace RawRabbit.Enrichers.Attributes.Middleware
 
 		protected virtual TAttribute GetAttribute<TAttribute>(Type type) where TAttribute : Attribute
 		{
-			var attr = type.GetTypeInfo().GetCustomAttribute<TAttribute>();
+			TAttribute attr = type.GetTypeInfo().GetCustomAttribute<TAttribute>();
 			return attr;
 		}
 	}

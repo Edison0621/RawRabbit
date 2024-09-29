@@ -14,8 +14,8 @@ namespace RawRabbit.Compatibility.Legacy.Configuration.Subscribe
 
 		public SubscriptionConfiguration()
 		{
-			Exchange = new ExchangeConfiguration();
-			Queue = new QueueConfiguration();
+			this.Exchange = new ExchangeConfiguration();
+			this.Queue = new QueueConfiguration();
 		}
 	}
 }

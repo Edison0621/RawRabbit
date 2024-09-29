@@ -15,7 +15,7 @@ namespace RawRabbit
 
 		public static async Task<IBasicConsumer> CreateConsumerAsync(this IBusClient client, ConsumeConfiguration config = null, CancellationToken ct = default(CancellationToken))
 		{
-			var result = await client.InvokeAsync(ConsumerAction, context =>
+			IPipeContext result = await client.InvokeAsync(ConsumerAction, context =>
 			{
 				context.Properties.Add(PipeKey.ConsumeConfiguration, config);
 			},ct);

@@ -82,24 +82,24 @@ namespace RawRabbit.Configuration
 
 		public RawRabbitConfiguration()
 		{
-			RequestTimeout = TimeSpan.FromSeconds(10);
-			PublishConfirmTimeout = TimeSpan.FromSeconds(1);
-			PersistentDeliveryMode = true;
-			AutoCloseConnection = true;
-			AutomaticRecovery = true;
-			TopologyRecovery = true;
-			RouteWithGlobalId = true;
-			RecoveryInterval = TimeSpan.FromSeconds(10);
-			GracefulShutdown = TimeSpan.FromSeconds(10);
-			Ssl = new SslOption { Enabled = false };
-			Hostnames = new List<string>();
-			Exchange = new GeneralExchangeConfiguration
+			this.RequestTimeout = TimeSpan.FromSeconds(10);
+			this.PublishConfirmTimeout = TimeSpan.FromSeconds(1);
+			this.PersistentDeliveryMode = true;
+			this.AutoCloseConnection = true;
+			this.AutomaticRecovery = true;
+			this.TopologyRecovery = true;
+			this.RouteWithGlobalId = true;
+			this.RecoveryInterval = TimeSpan.FromSeconds(10);
+			this.GracefulShutdown = TimeSpan.FromSeconds(10);
+			this.Ssl = new SslOption { Enabled = false };
+			this.Hostnames = new List<string>();
+			this.Exchange = new GeneralExchangeConfiguration
 			{
 				AutoDelete = false,
 				Durable = true,
 				Type = ExchangeType.Topic
 			};
-			Queue = new GeneralQueueConfiguration
+			this.Queue = new GeneralQueueConfiguration
 			{
 				Exclusive = false,
 				AutoDelete = false,

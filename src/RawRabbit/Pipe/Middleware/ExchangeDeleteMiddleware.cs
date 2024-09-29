@@ -14,24 +14,24 @@ namespace RawRabbit.Pipe.Middleware
 
 	public class ExchangeDeleteMiddleware : Middleware
 	{
-		protected Func<IPipeContext, IModel> ChannelFunc;
-		protected Func<IPipeContext, string> ExchangeNameFunc;
-		protected Func<IPipeContext, bool> IfUsedFunc;
+		protected readonly Func<IPipeContext, IModel> _channelFunc;
+		protected readonly Func<IPipeContext, string> _exchangeNameFunc;
+		protected readonly Func<IPipeContext, bool> _ifUsedFunc;
 
 		public ExchangeDeleteMiddleware(ExchangeDeleteOptions options)
 		{
-			ChannelFunc = options?.ChannelFunc ?? (context => context.GetTransientChannel());
-			ExchangeNameFunc = options?.ExchangeNameFunc ?? (context => string.Empty);
-			IfUsedFunc = options?.IfUsedFunc ?? (context => false);
+			this._channelFunc = options?.ChannelFunc ?? (context => context.GetTransientChannel());
+			this._exchangeNameFunc = options?.ExchangeNameFunc ?? (context => string.Empty);
+			this._ifUsedFunc = options?.IfUsedFunc ?? (context => false);
 		}
 
 		public override async Task InvokeAsync(IPipeContext context, CancellationToken token = new CancellationToken())
 		{
-			var channel = GetChannel(context);
-			var exchangeName = GetExchangeName(context);
-			var ifUsed = GetIfUsed(context);
-			DeleteEchange(channel, exchangeName, ifUsed);
-			await Next.InvokeAsync(context, token);
+			IModel channel = this.GetChannel(context);
+			string exchangeName = this.GetExchangeName(context);
+			bool ifUsed = this.GetIfUsed(context);
+			this.DeleteEchange(channel, exchangeName, ifUsed);
+			await this.Next.InvokeAsync(context, token);
 		}
 
 		protected virtual void DeleteEchange(IModel channel, string exchangeName, bool ifUsed)
@@ -41,17 +41,17 @@ namespace RawRabbit.Pipe.Middleware
 
 		protected virtual IModel GetChannel(IPipeContext context)
 		{
-			return ChannelFunc?.Invoke(context);
+			return this._channelFunc?.Invoke(context);
 		}
 
 		protected virtual string GetExchangeName(IPipeContext context)
 		{
-			return ExchangeNameFunc?.Invoke(context);
+			return this._exchangeNameFunc?.Invoke(context);
 		}
 
 		protected virtual bool GetIfUsed(IPipeContext context)
 		{
-			return IfUsedFunc.Invoke(context);
+			return this._ifUsedFunc.Invoke(context);
 		}
 	}
 }

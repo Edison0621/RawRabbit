@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Threading;
 using System.Threading.Tasks;
+using RawRabbit.Operations.Request.Configuration;
 using RawRabbit.Operations.Request.Context;
 using RawRabbit.Operations.Request.Core;
 using RawRabbit.Pipe;
@@ -14,33 +15,33 @@ namespace RawRabbit.Operations.Request.Middleware
 
 	public class RequestTimeoutMiddleware : Pipe.Middleware.Middleware
 	{
-		protected Func<IPipeContext, TimeSpan> TimeSpanFunc;
+		protected readonly Func<IPipeContext, TimeSpan> _timeSpanFunc;
 
 		public RequestTimeoutMiddleware(RequestTimeoutOptions options = null)
 		{
-			TimeSpanFunc = options?.TimeSpanFunc ?? (context => context.GetRequestTimeout());
+			this._timeSpanFunc = options?.TimeSpanFunc ?? (context => context.GetRequestTimeout());
 		}
 
-		public override async Task InvokeAsync(IPipeContext context, CancellationToken token)
+		public override async Task InvokeAsync(IPipeContext context, CancellationToken token = default(CancellationToken))
 		{
 			if (token != default(CancellationToken))
 			{
-				await Next.InvokeAsync(context, token);
+				await this.Next.InvokeAsync(context, token);
 				return;
 			}
 
-			var timeout = GetTimeoutTimeSpan(context);
-			var ctc = new CancellationTokenSource(timeout);
-			var timeoutTsc = new TaskCompletionSource<bool>();
+			TimeSpan timeout = this.GetTimeoutTimeSpan(context);
+			CancellationTokenSource ctc = new CancellationTokenSource(timeout);
+			TaskCompletionSource<bool> timeoutTsc = new TaskCompletionSource<bool>();
 
 			ctc.Token.Register(() =>
 			{
-				var correlationId = context?.GetBasicProperties()?.CorrelationId;
-				var cfg = context?.GetRequestConfiguration();
+				string correlationId = context?.GetBasicProperties()?.CorrelationId;
+				RequestConfiguration cfg = context?.GetRequestConfiguration();
 				timeoutTsc.TrySetException(new TimeoutException($"The request '{correlationId}' with routing key '{cfg?.Request.RoutingKey}' timed out after {timeout:g}."));
 			});
 
-			var pipeTask = Next
+			Task pipeTask = this.Next
 				.InvokeAsync(context, ctc.Token)
 				.ContinueWith(t =>
 				{
@@ -59,7 +60,7 @@ namespace RawRabbit.Operations.Request.Middleware
 
 		protected virtual TimeSpan GetTimeoutTimeSpan(IPipeContext context)
 		{
-			return TimeSpanFunc(context);
+			return this._timeSpanFunc(context);
 		}
 	}
 
@@ -75,7 +76,7 @@ namespace RawRabbit.Operations.Request.Middleware
 
 		public static TimeSpan GetRequestTimeout(this IPipeContext context)
 		{
-			var fallback = context.GetClientConfiguration().RequestTimeout;
+			TimeSpan fallback = context.GetClientConfiguration().RequestTimeout;
 			return context.Get(RequestTimeout, fallback);
 		}
 	}

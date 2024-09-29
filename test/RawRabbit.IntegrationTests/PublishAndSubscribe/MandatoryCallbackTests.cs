@@ -2,7 +2,6 @@
 using System.Threading.Tasks;
 using RabbitMQ.Client.Events;
 using RawRabbit.IntegrationTests.TestMessages;
-using RawRabbit.Pipe;
 using Xunit;
 
 namespace RawRabbit.IntegrationTests.PublishAndSubscribe
@@ -12,10 +11,10 @@ namespace RawRabbit.IntegrationTests.PublishAndSubscribe
 		[Fact]
 		public async Task Should_Invoke_Mandatory_Callback_If_Message_Is_Undelivered()
 		{
-			using (var publisher = RawRabbitFactory.CreateTestClient())
+			using (Instantiation.Disposable.BusClient publisher = RawRabbitFactory.CreateTestClient())
 			{
 				/* Setup */
-				var callbackTcs = new TaskCompletionSource<BasicReturnEventArgs>();
+				TaskCompletionSource<BasicReturnEventArgs> callbackTcs = new TaskCompletionSource<BasicReturnEventArgs>();
 
 				/* Test */
 				await publisher.PublishAsync(new BasicMessage {Prop = "Hello, world!"}, ctx => ctx
@@ -35,12 +34,12 @@ namespace RawRabbit.IntegrationTests.PublishAndSubscribe
 		[Fact]
 		public async Task Should_Not_Invoke_Mandatory_Callback_If_Message_Is_Undelivered()
 		{
-			using (var publisher = RawRabbitFactory.CreateTestClient())
-			using (var subscriber = RawRabbitFactory.CreateTestClient())
+			using (Instantiation.Disposable.BusClient publisher = RawRabbitFactory.CreateTestClient())
+			using (Instantiation.Disposable.BusClient subscriber = RawRabbitFactory.CreateTestClient())
 			{
 				/* Setup */
-				var deliveredTcs = new TaskCompletionSource<BasicMessage>();
-				var callbackTcs = new TaskCompletionSource<BasicReturnEventArgs>();
+				TaskCompletionSource<BasicMessage> deliveredTcs = new TaskCompletionSource<BasicMessage>();
+				TaskCompletionSource<BasicReturnEventArgs> callbackTcs = new TaskCompletionSource<BasicReturnEventArgs>();
 				await subscriber.SubscribeAsync<BasicMessage>(message =>
 				{
 					deliveredTcs.TrySetResult(message);

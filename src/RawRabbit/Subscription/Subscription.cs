@@ -21,29 +21,31 @@ namespace RawRabbit.Subscription
 
 		public Subscription(IBasicConsumer consumer, string queueName)
 		{
-			Active = true;
-			_consumer = consumer;
-			var basicConsumer = consumer as DefaultBasicConsumer;
+			this.Active = true;
+			this._consumer = consumer;
+			DefaultBasicConsumer basicConsumer = consumer as DefaultBasicConsumer;
 			if (basicConsumer == null)
 			{
 				return;
 			}
-			QueueName = queueName;
-			ConsumerTag = basicConsumer.ConsumerTag;
+
+			this.QueueName = queueName;
+			this.ConsumerTag = basicConsumer.ConsumerTag;
 		}
 
 		public void Dispose()
 		{
-			if (!_consumer.Model.IsOpen)
+			if (!this._consumer.Model.IsOpen)
 			{
 				return;
 			}
-			if (!Active)
+			if (!this.Active)
 			{
 				return;
 			}
-			Active = false;
-			_consumer.CancelAsync();
+
+			this.Active = false;
+			this._consumer.CancelAsync();
 		}
 	}
 }

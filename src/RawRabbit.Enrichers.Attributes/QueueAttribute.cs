@@ -5,28 +5,28 @@ namespace RawRabbit.Enrichers.Attributes
 	[AttributeUsage(AttributeTargets.Class)]
 	public class QueueAttribute : Attribute
 	{
-		internal bool? NullableDurability;
-		internal bool? NullableExclusitivy;
-		internal bool? NullableAutoDelete;
+		internal bool? _nullableDurability;
+		internal bool? _nullableExclusitivy;
+		internal bool? _nullableAutoDelete;
 
 		public string Name { get; set; }
 
 		public bool Durable
 		{
-			get { return NullableDurability.GetValueOrDefault(); }
-			set { NullableDurability = value; }
+			get { return this._nullableDurability.GetValueOrDefault(); }
+			set { this._nullableDurability = value; }
 		}
 
 		public bool Exclusive
 		{
-			get { return NullableExclusitivy.GetValueOrDefault(); }
-			set { NullableExclusitivy = value; }
+			get { return this._nullableExclusitivy.GetValueOrDefault(); }
+			set { this._nullableExclusitivy = value; }
 		}
 
 		public bool AutoDelete
 		{
-			get { return NullableAutoDelete.GetValueOrDefault(); }
-			set { NullableAutoDelete = value; }
+			get { return this._nullableAutoDelete.GetValueOrDefault(); }
+			set { this._nullableAutoDelete = value; }
 		}
 		public int MessageTtl { get; set; }
 		public byte MaxPriority { get; set; }

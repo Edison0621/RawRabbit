@@ -33,13 +33,13 @@ namespace RawRabbit.Operations.StateMachine
 
 		public static object[] GetLazyCorrelationArgs(this IPipeContext context)
 		{
-			var func = context.Get<Func<IPipeContext, Func<IPipeContext, object[]>>>(StateMachineKey.LazyCorrelationFuncArgs);
+			Func<IPipeContext, Func<IPipeContext, object[]>> func = context.Get<Func<IPipeContext, Func<IPipeContext, object[]>>>(StateMachineKey.LazyCorrelationFuncArgs);
 			return func?.Invoke(context)?.Invoke(context);
 		}
 
 		public static object[] GetLazyHandlerArgs(this IPipeContext context)
 		{
-			var func =  context.Get<Func<IPipeContext, Func<IPipeContext, object[]>>>(StateMachineKey.LazyHandlerArgsFunc);
+			Func<IPipeContext, Func<IPipeContext, object[]>> func =  context.Get<Func<IPipeContext, Func<IPipeContext, object[]>>>(StateMachineKey.LazyHandlerArgsFunc);
 			return func?.Invoke(context)?.Invoke(context);
 		}
 

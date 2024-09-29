@@ -25,25 +25,25 @@ namespace RawRabbit.Pipe
 	public class PipeBuilder : IExtendedPipeBuilder
 	{
 		private readonly IDependencyResolver _resolver;
-		protected List<MiddlewareInfo> Pipe;
+		protected readonly List<MiddlewareInfo> _pipe;
 		private readonly Action<IPipeBuilder> _additional;
 
 		public PipeBuilder(IDependencyResolver resolver)
 		{
-			_resolver = resolver;
-			_additional = _resolver.GetService<Action<IPipeBuilder>>() ?? (builder => {});
-			Pipe = new List<MiddlewareInfo>();
+			this._resolver = resolver;
+			this._additional = this._resolver.GetService<Action<IPipeBuilder>>() ?? (builder => {});
+			this._pipe = new List<MiddlewareInfo>();
 		}
 
 		public IPipeBuilder Use(Func<IPipeContext, Func<Task>, Task> handler)
 		{
-			Use<UseHandlerMiddleware>(handler);
+			this.Use<UseHandlerMiddleware>(handler);
 			return this;
 		}
 
 		public IPipeBuilder Use<TMiddleWare>(params object[] args) where TMiddleWare : Middleware.Middleware
 		{
-			Pipe.Add(new MiddlewareInfo
+			this._pipe.Add(new MiddlewareInfo
 			{
 				Type = typeof(TMiddleWare),
 				ConstructorArgs = args
@@ -53,16 +53,16 @@ namespace RawRabbit.Pipe
 
 		public IPipeBuilder Replace<TCurrent, TNew>(Predicate<object[]> predicate = null, params object[] args) where TCurrent : Middleware.Middleware where TNew : Middleware.Middleware
 		{
-			return Replace<TCurrent, TNew>(predicate, oldArgs => args);
-;		}
+			return this.Replace<TCurrent, TNew>(predicate, oldArgs => args);
+		}
 
 		public IPipeBuilder Replace<TCurrent, TNew>(Predicate<object[]> predicate = null, Func<object[], object[]> argsFunc = null) where TCurrent : Middleware.Middleware where TNew : Middleware.Middleware
 		{
 			predicate = predicate ?? (objects => true);
-			var matching = Pipe.Where(c => c.Type == typeof(TCurrent) && predicate(c.ConstructorArgs));
-			foreach (var middlewareInfo in matching)
+			IEnumerable<MiddlewareInfo> matching = this._pipe.Where(c => c.Type == typeof(TCurrent) && predicate(c.ConstructorArgs));
+			foreach (MiddlewareInfo middlewareInfo in matching)
 			{
-				var args = argsFunc?.Invoke(middlewareInfo.ConstructorArgs);
+				object[] args = argsFunc?.Invoke(middlewareInfo.ConstructorArgs);
 				middlewareInfo.Type = typeof(TNew);
 				middlewareInfo.ConstructorArgs = args;
 			}
@@ -72,57 +72,57 @@ namespace RawRabbit.Pipe
 		public IPipeBuilder Remove<TMiddleware>(Predicate<object[]> predicate = null) where TMiddleware : Middleware.Middleware
 		{
 			predicate = predicate ?? (objects => true);
-			var matching = Pipe.Where(c => c.Type == typeof(TMiddleware) && predicate(c.ConstructorArgs)).ToList();
-			foreach (var match in matching)
+			List<MiddlewareInfo> matching = this._pipe.Where(c => c.Type == typeof(TMiddleware) && predicate(c.ConstructorArgs)).ToList();
+			foreach (MiddlewareInfo match in matching)
 			{
-				Pipe.Remove(match);
+				this._pipe.Remove(match);
 			}
 			return this;
 		}
 
 		public virtual Middleware.Middleware Build()
 		{
-			_additional.Invoke(this);
+			this._additional.Invoke(this);
 
-			var stagedMwInfo = Pipe
+			List<MiddlewareInfo> stagedMwInfo = this._pipe
 				.Where(info => typeof(StagedMiddleware).GetTypeInfo().IsAssignableFrom(info.Type))
 				.ToList();
-			var stagedMiddleware = stagedMwInfo
-				.Select(CreateInstance)
+			List<StagedMiddleware> stagedMiddleware = stagedMwInfo
+				.Select(this.CreateInstance)
 				.OfType<StagedMiddleware>()
 				.ToList();
 
-			var sortedMws = new List<Middleware.Middleware>();
-			foreach (var mwInfo in Pipe)
+			List<Middleware.Middleware> sortedMws = new List<Middleware.Middleware>();
+			foreach (MiddlewareInfo mwInfo in this._pipe)
 			{
 				if (typeof(StagedMiddleware).GetTypeInfo().IsAssignableFrom(mwInfo.Type))
 				{
 					continue;
 				}
 
-				var middleware = CreateInstance(mwInfo);
+				Middleware.Middleware middleware = this.CreateInstance(mwInfo);
 				sortedMws.Add(middleware);
 
-				var stageMarkerMw = middleware as StageMarkerMiddleware;
+				StageMarkerMiddleware stageMarkerMw = middleware as StageMarkerMiddleware;
 				if (stageMarkerMw != null)
 				{
-					var thisStageMws = stagedMiddleware
-						.Where(mw => mw.StageMarker == stageMarkerMw.Stage)
+					List<Middleware.Middleware> thisStageMws = stagedMiddleware
+						.Where(mw => mw.StageMarker == stageMarkerMw._stage)
 						.ToList<Middleware.Middleware>();
 					sortedMws.AddRange(thisStageMws);
 				}
 			}
 
-			return Build(sortedMws);
+			return this.Build(sortedMws);
 		}
 
 		protected virtual Middleware.Middleware Build(IList<Middleware.Middleware> middlewares)
 		{
 			Middleware.Middleware next = new NoOpMiddleware();
-			for (var i = middlewares.Count - 1; i >= 0; i--)
+			for (int i = middlewares.Count - 1; i >= 0; i--)
 			{
 				Middleware.Middleware cancellation = new CancellationMiddleware();
-				var current = middlewares[i];
+				Middleware.Middleware current = middlewares[i];
 				current.Next = cancellation;
 				cancellation.Next = next;
 				next = current;
@@ -132,7 +132,7 @@ namespace RawRabbit.Pipe
 
 		protected virtual Middleware.Middleware CreateInstance(MiddlewareInfo middlewareInfo)
 		{
-			return _resolver.GetService(middlewareInfo.Type, middlewareInfo.ConstructorArgs) as Middleware.Middleware;
+			return this._resolver.GetService(middlewareInfo.Type, middlewareInfo.ConstructorArgs) as Middleware.Middleware;
 		}
 	}
 }

@@ -4,7 +4,7 @@
 	{
 		public static Ackable<TType> AsAckable<TType>(this Ackable<object> ackable)
 		{
-			return new Ackable<TType>((TType)ackable.Content, ackable.Channel, type => ackable.DeliveryTagFunc(type));
+			return new Ackable<TType>((TType)ackable.Content, ackable._channel, type => ackable._deliveryTagFunc(type));
 		}
 	}
 }

@@ -7,28 +7,28 @@ namespace RawRabbit.Serialization
 	public class JsonSerializer : StringSerializerBase
 	{
 		private readonly Newtonsoft.Json.JsonSerializer _json;
-		private const string _applicationJson = "application/json";
-		public override string ContentType => _applicationJson;
+		private const string ApplicationJson = "application/json";
+		public override string ContentType => ApplicationJson;
 
 		public JsonSerializer(Newtonsoft.Json.JsonSerializer json)
 		{
-			_json = json;
+			this._json = json;
 		}
 
 		public override string SerializeToString(object obj)
 		{
-			if (obj == null)
+			switch (obj)
 			{
-				return string.Empty;
+				case null:
+					return string.Empty;
+				case string str:
+					return str;
 			}
-			if (obj is string str)
-			{
-				return str;
-			}
+
 			string serialized;
-			using (var sw = new StringWriter())
+			using (StringWriter sw = new StringWriter())
 			{
-				_json.Serialize(sw, obj);
+				this._json.Serialize(sw, obj);
 				serialized = sw.GetStringBuilder().ToString();
 			}
 			return serialized;
@@ -41,9 +41,9 @@ namespace RawRabbit.Serialization
 				return str;
 			}
 			object obj;
-			using (var jsonReader = new JsonTextReader(new StringReader(str)))
+			using (JsonTextReader jsonReader = new JsonTextReader(new StringReader(str)))
 			{
-				obj = _json.Deserialize(jsonReader, type);
+				obj = this._json.Deserialize(jsonReader, type);
 			}
 			return obj;
 		}

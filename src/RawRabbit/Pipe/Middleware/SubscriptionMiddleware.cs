@@ -13,39 +13,39 @@ namespace RawRabbit.Pipe.Middleware
 		public Action<IPipeContext, ISubscription> SaveInContext { get; set; }
 	}
 
-	public class SubscriptionMiddleware : Pipe.Middleware.Middleware
+	public class SubscriptionMiddleware : Middleware
 	{
-		protected ISubscriptionRepository Repo;
-		protected Func<IPipeContext, string> QueueNameFunc;
-		protected Func<IPipeContext, IBasicConsumer> ConsumerFunc;
-		protected Action<IPipeContext, ISubscription> SaveInContext;
+		protected readonly ISubscriptionRepository _repo;
+		protected readonly Func<IPipeContext, string> _queueNameFunc;
+		protected readonly Func<IPipeContext, IBasicConsumer> _consumerFunc;
+		protected readonly Action<IPipeContext, ISubscription> _saveInContext;
 
 		public SubscriptionMiddleware(ISubscriptionRepository repo, SubscriptionOptions options = null)
 		{
-			Repo = repo;
-			QueueNameFunc = options?.QueueNameFunc ?? (context => context.GetConsumerConfiguration()?.Consume.QueueName);
-			ConsumerFunc = options?.ConsumeFunc ?? (context => context.GetConsumer());
-			SaveInContext = options?.SaveInContext ?? ((ctx, subscription) => ctx.Properties.Add(PipeKey.Subscription, subscription));
+			this._repo = repo;
+			this._queueNameFunc = options?.QueueNameFunc ?? (context => context.GetConsumerConfiguration()?.Consume.QueueName);
+			this._consumerFunc = options?.ConsumeFunc ?? (context => context.GetConsumer());
+			this._saveInContext = options?.SaveInContext ?? ((ctx, subscription) => ctx.Properties.Add(PipeKey.Subscription, subscription));
 		}
 
-		public override async Task InvokeAsync(IPipeContext context, CancellationToken token)
+		public override async Task InvokeAsync(IPipeContext context, CancellationToken token = default(CancellationToken))
 		{
-			var consumer = GetConsumer(context);
-			var queueName = GetQueueName(context);
-			var subscription = CreateSubscription(consumer, queueName);
-			SaveSubscriptionInContext(context, subscription);
-			SaveSubscriptionInRepo(subscription);
-			await Next.InvokeAsync(context, token);
+			IBasicConsumer consumer = this.GetConsumer(context);
+			string queueName = this.GetQueueName(context);
+			ISubscription subscription = this.CreateSubscription(consumer, queueName);
+			this.SaveSubscriptionInContext(context, subscription);
+			this.SaveSubscriptionInRepo(subscription);
+			await this.Next.InvokeAsync(context, token);
 		}
 
 		protected virtual IBasicConsumer GetConsumer(IPipeContext context)
 		{
-			return ConsumerFunc(context);
+			return this._consumerFunc(context);
 		}
 
 		protected virtual string GetQueueName(IPipeContext context)
 		{
-			return QueueNameFunc(context);
+			return this._queueNameFunc(context);
 		}
 
 		protected virtual ISubscription CreateSubscription(IBasicConsumer consumer, string queueName)
@@ -55,12 +55,12 @@ namespace RawRabbit.Pipe.Middleware
 
 		protected virtual void SaveSubscriptionInContext(IPipeContext context, ISubscription subscription)
 		{
-			SaveInContext(context, subscription);
+			this._saveInContext(context, subscription);
 		}
 
 		protected virtual void SaveSubscriptionInRepo(ISubscription subscription)
 		{
-			Repo.Add(subscription);
+			this._repo.Add(subscription);
 		}
 	}
 }

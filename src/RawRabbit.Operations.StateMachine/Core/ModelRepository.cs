@@ -19,19 +19,19 @@ namespace RawRabbit.Operations.StateMachine.Core
 			Func<Guid, Task<Model>> get = null,
 			Func<Model, Task> addOrUpdate = null)
 		{
-			_get = get;
-			_addOrUpdate = addOrUpdate;
-			if (_get == null && _addOrUpdate == null)
+			this._get = get;
+			this._addOrUpdate = addOrUpdate;
+			if (this._get == null && this._addOrUpdate == null)
 			{
-				var fallback = new ConcurrentDictionary<Guid, Model>();
-				_get = id =>
+				ConcurrentDictionary<Guid, Model> fallback = new ConcurrentDictionary<Guid, Model>();
+				this._get = id =>
 				{
 					Model model;
 					return fallback.TryGetValue(id, out model)
 						? Task.FromResult(model)
 						: Task.FromResult<Model>(null);
 				};
-				_addOrUpdate = model =>
+				this._addOrUpdate = model =>
 				{
 					fallback.AddOrUpdate(model.Id, guid => model, (id, m) => model);
 					return Task.FromResult(0);
@@ -41,12 +41,12 @@ namespace RawRabbit.Operations.StateMachine.Core
 
 		public Task<Model> GetAsync(Guid id)
 		{
-			return _get(id);
+			return this._get(id);
 		}
 
 		public Task AddOrUpdateAsync(Model model)
 		{
-			return _addOrUpdate(model);
+			return this._addOrUpdate(model);
 		}
 	}
 }

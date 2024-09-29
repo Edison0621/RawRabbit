@@ -8,12 +8,12 @@ namespace RawRabbit.Operations.Respond.Acknowledgement
 
 		public Nack(bool requeue = true)
 		{
-			Requeue = requeue;
+			this.Requeue = requeue;
 		}
 
 		public override Common.Acknowledgement AsUntyped()
 		{
-			return new Nack(Requeue);
+			return new Nack(this.Requeue);
 		}
 	}
 }

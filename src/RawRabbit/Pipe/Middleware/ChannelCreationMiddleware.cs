@@ -15,40 +15,40 @@ namespace RawRabbit.Pipe.Middleware
 
 	public class ChannelCreationMiddleware : Middleware
 	{
-		protected readonly IChannelFactory ChannelFactory;
-		protected Predicate<IPipeContext> CreatePredicate;
-		protected Func<IChannelFactory, CancellationToken, Task<IModel>> CreateFunc;
-		protected Action<IPipeContext, IModel> PostExecuteAction;
+		protected readonly IChannelFactory _channelFactory;
+		protected readonly Predicate<IPipeContext> _createPredicate;
+		protected readonly Func<IChannelFactory, CancellationToken, Task<IModel>> _createFunc;
+		protected readonly Action<IPipeContext, IModel> _postExecuteAction;
 
 		public ChannelCreationMiddleware(IChannelFactory channelFactory, ChannelCreationOptions options = null)
 		{
-			ChannelFactory = channelFactory;
-			CreatePredicate = options?.CreatePredicate ?? (context => !context.Properties.ContainsKey(PipeKey.Channel));
-			CreateFunc = options?.CreateFunc ?? ((factory, token) => factory.CreateChannelAsync(token));
-			PostExecuteAction = options?.PostExecuteAction;
+			this._channelFactory = channelFactory;
+			this._createPredicate = options?.CreatePredicate ?? (context => !context.Properties.ContainsKey(PipeKey.Channel));
+			this._createFunc = options?.CreateFunc ?? ((factory, token) => factory.CreateChannelAsync(token));
+			this._postExecuteAction = options?.PostExecuteAction;
 		}
 
 		public override async Task InvokeAsync(IPipeContext context, CancellationToken token = default(CancellationToken))
 		{
-			if (ShouldCreateChannel(context))
+			if (this.ShouldCreateChannel(context))
 			{
-				var channel = await GetOrCreateChannelAsync(ChannelFactory, token);
+				IModel channel = await this.GetOrCreateChannelAsync(this._channelFactory, token);
 				context.Properties.TryAdd(PipeKey.Channel, channel);
-				PostExecuteAction?.Invoke(context, channel);
+				this._postExecuteAction?.Invoke(context, channel);
 			}
 
-			await Next.InvokeAsync(context, token);
+			await this.Next.InvokeAsync(context, token);
 
 		}
 
 		protected virtual Task<IModel> GetOrCreateChannelAsync(IChannelFactory factory, CancellationToken token)
 		{
-			return CreateFunc(factory, token);
+			return this._createFunc(factory, token);
 		}
 
 		protected virtual bool ShouldCreateChannel(IPipeContext context)
 		{
-			return CreatePredicate(context);
+			return this._createPredicate(context);
 		}
 	}
 }

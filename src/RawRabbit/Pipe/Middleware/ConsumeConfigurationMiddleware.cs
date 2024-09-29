@@ -17,71 +17,71 @@ namespace RawRabbit.Pipe.Middleware
 
 	public class ConsumeConfigurationMiddleware : Middleware
 	{
-		protected IConsumeConfigurationFactory ConfigFactory;
-		protected Func<IPipeContext, string> QueueFunc;
-		protected Func<IPipeContext, string> ExchangeFunc;
-		protected Func<IPipeContext, string> RoutingKeyFunc;
-		protected Func<IPipeContext, Type> MessageTypeFunc;
-		protected Func<IPipeContext, Action<IConsumeConfigurationBuilder>> ConfigActionFunc;
+		protected readonly IConsumeConfigurationFactory _configFactory;
+		protected readonly Func<IPipeContext, string> _queueFunc;
+		protected readonly Func<IPipeContext, string> _exchangeFunc;
+		protected readonly Func<IPipeContext, string> _routingKeyFunc;
+		protected readonly Func<IPipeContext, Type> _messageTypeFunc;
+		protected readonly Func<IPipeContext, Action<IConsumeConfigurationBuilder>> _configActionFunc;
 		private readonly ILog _logger = LogProvider.For<ConsumeConfigurationMiddleware>();
 
 		public ConsumeConfigurationMiddleware(IConsumeConfigurationFactory configFactory, ConsumeConfigurationOptions options = null)
 		{
-			ConfigFactory = configFactory;
-			QueueFunc = options?.QueueFunc ?? (context => context.GetQueueDeclaration()?.Name);
-			ExchangeFunc = options?.ExchangeFunc ?? (context => context.GetExchangeDeclaration()?.Name);
-			RoutingKeyFunc = options?.RoutingKeyFunc ?? (context => context.GetRoutingKey());
-			MessageTypeFunc = options?.MessageTypeFunc ?? (context => context.GetMessageType());
-			ConfigActionFunc = options?.ConfigActionFunc ?? (context => context.Get<Action<IConsumeConfigurationBuilder>>(PipeKey.ConfigurationAction));
+			this._configFactory = configFactory;
+			this._queueFunc = options?.QueueFunc ?? (context => context.GetQueueDeclaration()?.Name);
+			this._exchangeFunc = options?.ExchangeFunc ?? (context => context.GetExchangeDeclaration()?.Name);
+			this._routingKeyFunc = options?.RoutingKeyFunc ?? (context => context.GetRoutingKey());
+			this._messageTypeFunc = options?.MessageTypeFunc ?? (context => context.GetMessageType());
+			this._configActionFunc = options?.ConfigActionFunc ?? (context => context.Get<Action<IConsumeConfigurationBuilder>>(PipeKey.ConfigurationAction));
 		}
 
-		public override async Task InvokeAsync(IPipeContext context, CancellationToken token)
+		public override async Task InvokeAsync(IPipeContext context, CancellationToken token = default(CancellationToken))
 		{
-			var config = ExtractConfigFromMessageType(context) ?? ExtractConfigFromStrings(context);
+			ConsumeConfiguration config = this.ExtractConfigFromMessageType(context) ?? this.ExtractConfigFromStrings(context);
 
-			var action = GetConfigurationAction(context);
+			Action<IConsumeConfigurationBuilder> action = this.GetConfigurationAction(context);
 			if (action != null)
 			{
-				_logger.Info("Configuration action for {queueName} found.", config?.QueueName);
-				var builder = new ConsumeConfigurationBuilder(config);
+				this._logger.Info("Configuration action for {queueName} found.", config?.QueueName);
+				ConsumeConfigurationBuilder builder = new ConsumeConfigurationBuilder(config);
 				action(builder);
 				config = builder.Config;
 			}
 
 			context.Properties.TryAdd(PipeKey.ConsumeConfiguration, config);
 
-			await Next.InvokeAsync(context, token);
+			await this.Next.InvokeAsync(context, token);
 		}
 
 		protected virtual Type GetMessageType(IPipeContext context)
 		{
-			return MessageTypeFunc(context);
+			return this._messageTypeFunc(context);
 		}
 
 		protected Action<IConsumeConfigurationBuilder> GetConfigurationAction(IPipeContext context)
 		{
-			return ConfigActionFunc(context);
+			return this._configActionFunc(context);
 		}
 
 		protected virtual ConsumeConfiguration ExtractConfigFromStrings(IPipeContext context)
 		{
-			var routingKey = RoutingKeyFunc(context);
-			var queueName = QueueFunc(context);
-			var exchangeName = ExchangeFunc(context);
-			_logger.Debug("Consuming from queue {queueName} on {exchangeName} with routing key {routingKey}", queueName, exchangeName, routingKey);
-			return ConfigFactory.Create(queueName, exchangeName, routingKey);
+			string routingKey = this._routingKeyFunc(context);
+			string queueName = this._queueFunc(context);
+			string exchangeName = this._exchangeFunc(context);
+			this._logger.Debug("Consuming from queue {queueName} on {exchangeName} with routing key {routingKey}", queueName, exchangeName, routingKey);
+			return this._configFactory.Create(queueName, exchangeName, routingKey);
 		}
 
 		protected virtual ConsumeConfiguration ExtractConfigFromMessageType(IPipeContext context)
 		{
-			var messageType = MessageTypeFunc(context);
+			Type messageType = this._messageTypeFunc(context);
 			if (messageType != null)
 			{
-				_logger.Debug("Found message type {messageType} in context. Creating consume config based on it.", messageType.Name);
+				this._logger.Debug("Found message type {messageType} in context. Creating consume config based on it.", messageType.Name);
 			}
 			return messageType == null
 				? null
-				: ConfigFactory.Create(messageType);
+				: this._configFactory.Create(messageType);
 		}
 	}
 

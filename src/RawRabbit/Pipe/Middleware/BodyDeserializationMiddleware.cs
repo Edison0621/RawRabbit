@@ -18,93 +18,94 @@ namespace RawRabbit.Pipe.Middleware
 
 	public class BodyDeserializationMiddleware : Middleware
 	{
-		protected readonly ISerializer Serializer;
-		protected Func<IPipeContext, Type> MessageTypeFunc;
-		protected Func<IPipeContext, byte[]> BodyBytesFunc;
+		protected readonly ISerializer _serializer;
+		protected readonly Func<IPipeContext, Type> _messageTypeFunc;
+		protected readonly Func<IPipeContext, byte[]> _bodyBytesFunc;
 		protected Func<IPipeContext, string> BodyContentTypeFunc { get; set; }
 		protected Func<IPipeContext, bool> ActivateContentTypeCheck { get; set; }
-		protected Action<IPipeContext, object> PersistAction;
+		protected readonly Action<IPipeContext, object> _persistAction;
 		private readonly ILog _logger = LogProvider.For<BodyDeserializationMiddleware>();
 
 		public BodyDeserializationMiddleware(ISerializer serializer, MessageDeserializationOptions options = null)
 		{
-			Serializer = serializer;
-			MessageTypeFunc = options?.BodyTypeFunc ?? (context => context.GetMessageType());
-			BodyBytesFunc = options?.BodyFunc ?? (context =>context.GetDeliveryEventArgs()?.Body);
-			PersistAction = options?.PersistAction ?? ((context, msg) => context.Properties.TryAdd(PipeKey.Message, msg));
-			BodyContentTypeFunc = options?.BodyContentTypeFunc ?? (context => context.GetDeliveryEventArgs()?.BasicProperties.ContentType);
-			ActivateContentTypeCheck = options?.ActivateContentTypeCheck ?? (context => context.GetContentTypeCheckActivated());
+			this._serializer = serializer;
+			this._messageTypeFunc = options?.BodyTypeFunc ?? (context => context.GetMessageType());
+			this._bodyBytesFunc = options?.BodyFunc ?? (context =>context.GetDeliveryEventArgs()?.Body);
+			this._persistAction = options?.PersistAction ?? ((context, msg) => context.Properties.TryAdd(PipeKey.Message, msg));
+			this.BodyContentTypeFunc = options?.BodyContentTypeFunc ?? (context => context.GetDeliveryEventArgs()?.BasicProperties.ContentType);
+			this.ActivateContentTypeCheck = options?.ActivateContentTypeCheck ?? (context => context.GetContentTypeCheckActivated());
 		}
 
-		public override Task InvokeAsync(IPipeContext context, CancellationToken token)
+		public override Task InvokeAsync(IPipeContext context, CancellationToken token = default(CancellationToken))
 		{
-			if (ContentTypeCheckActivated(context))
+			if (this.ContentTypeCheckActivated(context))
 			{
-				var msgContentType = GetMessageContentType(context);
-				if (!CanSerializeMessage(msgContentType))
+				string msgContentType = this.GetMessageContentType(context);
+				if (!this.CanSerializeMessage(msgContentType))
 				{
-					throw new SerializationException($"Registered serializer supports {Serializer.ContentType}, received message uses {msgContentType}.");
+					throw new SerializationException($"Registered serializer supports {this._serializer.ContentType}, received message uses {msgContentType}.");
 				}
 			}
-			var message = GetMessage(context);
-			SaveInContext(context, message);
-			return Next.InvokeAsync(context, token);
+			object message = this.GetMessage(context);
+			this.SaveInContext(context, message);
+			return this.Next.InvokeAsync(context, token);
 		}
 
 		protected virtual bool ContentTypeCheckActivated(IPipeContext context)
 		{
-			return ActivateContentTypeCheck?.Invoke(context) ?? false;
+			return this.ActivateContentTypeCheck?.Invoke(context) ?? false;
 		}
 
 		protected virtual bool CanSerializeMessage(string msgContentType)
 		{
 			if (string.IsNullOrEmpty(msgContentType))
 			{
-				_logger.Debug("Received message has no content type defined. Assuming it can be processed.");
+				this._logger.Debug("Received message has no content type defined. Assuming it can be processed.");
 				return true;
 			}
-			return string.Equals(msgContentType, Serializer.ContentType, StringComparison.CurrentCultureIgnoreCase);
+			return string.Equals(msgContentType, this._serializer.ContentType, StringComparison.CurrentCultureIgnoreCase);
 		}
 
 		protected virtual string GetMessageContentType(IPipeContext context)
 		{
-			return BodyContentTypeFunc?.Invoke(context);
+			return this.BodyContentTypeFunc?.Invoke(context);
 		}
 
 		protected virtual object GetMessage(IPipeContext context)
 		{
-			var bodyBytes = GetBodyBytes(context);
-			var messageType = GetMessageType(context);
-			return Serializer.Deserialize(messageType, bodyBytes);
+			byte[] bodyBytes = this.GetBodyBytes(context);
+			Type messageType = this.GetMessageType(context);
+			return this._serializer.Deserialize(messageType, bodyBytes);
 		}
 
 		protected virtual Type GetMessageType(IPipeContext context)
 		{
-			var msgType = MessageTypeFunc(context);
+			Type msgType = this._messageTypeFunc(context);
 			if (msgType == null)
 			{
-				_logger.Warn("Unable to find message type in Pipe context.");
+				this._logger.Warn("Unable to find message type in Pipe context.");
 			}
 			return msgType;
 		}
 
 		protected virtual byte[] GetBodyBytes(IPipeContext context)
 		{
-			var bodyBytes = BodyBytesFunc(context);
+			byte[] bodyBytes = this._bodyBytesFunc(context);
 			if (bodyBytes == null)
 			{
-				_logger.Warn("Unable to find Body (bytes) in Pipe context");
+				this._logger.Warn("Unable to find Body (bytes) in Pipe context");
 			}
 			return bodyBytes;
 		}
 
 		protected virtual void SaveInContext(IPipeContext context, object message)
 		{
-			if (PersistAction == null)
+			if (this._persistAction == null)
 			{
-				_logger.Warn("No persist action defined. Message will not be saved in Pipe context.");
+				this._logger.Warn("No persist action defined. Message will not be saved in Pipe context.");
 			}
-			PersistAction?.Invoke(context, message);
+
+			this._persistAction?.Invoke(context, message);
 		}
 	}
 

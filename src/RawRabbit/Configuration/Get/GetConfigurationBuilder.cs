@@ -6,22 +6,22 @@
 
 		public GetConfigurationBuilder(GetConfiguration config = null)
 		{
-			Configuration = config ?? new GetConfiguration();
+			this.Configuration = config ?? new GetConfiguration();
 		}
 		public IGetConfigurationBuilder FromQueue(string queueName)
 		{
-			Configuration.QueueName = queueName;
+			this.Configuration.QueueName = queueName;
 			return this;
 		}
 
 		public IGetConfigurationBuilder WithNoAck(bool noAck = true)
 		{
-			return WithAutoAck(noAck);
+			return this.WithAutoAck(noAck);
 		}
 
 		public IGetConfigurationBuilder WithAutoAck(bool autoAck = true)
 		{
-			Configuration.AutoAck = autoAck;
+			this.Configuration.AutoAck = autoAck;
 			return this;
 		}
 	}

@@ -2,7 +2,6 @@
 using System.Threading;
 using System.Threading.Tasks;
 using RabbitMQ.Client;
-using RawRabbit.Common;
 using RawRabbit.Serialization;
 
 namespace RawRabbit.Pipe.Middleware
@@ -18,74 +17,74 @@ namespace RawRabbit.Pipe.Middleware
 
 	public class HeaderSerializationMiddleware : StagedMiddleware
 	{
-		protected readonly ISerializer Serializer;
-		protected Func<IPipeContext, IBasicProperties> BasicPropsFunc;
-		protected Func<IPipeContext, object> RetrieveItemFunc;
-		protected Func<IPipeContext, object> CreateItemFunc;
-		protected Predicate<IPipeContext> ExecutePredicate;
-		protected Func<IPipeContext, string> HeaderKeyFunc;
+		protected readonly ISerializer _serializer;
+		protected readonly Func<IPipeContext, IBasicProperties> _basicPropsFunc;
+		protected readonly Func<IPipeContext, object> _retrieveItemFunc;
+		protected readonly Func<IPipeContext, object> _createItemFunc;
+		protected readonly Predicate<IPipeContext> _executePredicate;
+		protected readonly Func<IPipeContext, string> _headerKeyFunc;
 
 		public HeaderSerializationMiddleware(ISerializer serializer, HeaderSerializationOptions options = null)
 		{
-			Serializer = serializer;
-			ExecutePredicate = options?.ExecutePredicate ?? (context => true);
-			BasicPropsFunc = options?.BasicPropsFunc ?? (context => context.GetBasicProperties());
-			RetrieveItemFunc = options?.RetrieveItemFunc ?? (context => null);
-			CreateItemFunc = options?.CreateItemFunc ?? (context => null);
-			CreateItemFunc = options?.CreateItemFunc ?? (context => null);
-			HeaderKeyFunc = options?.HeaderKeyFunc ?? (context => null);
+			this._serializer = serializer;
+			this._executePredicate = options?.ExecutePredicate ?? (context => true);
+			this._basicPropsFunc = options?.BasicPropsFunc ?? (context => context.GetBasicProperties());
+			this._retrieveItemFunc = options?.RetrieveItemFunc ?? (context => null);
+			this._createItemFunc = options?.CreateItemFunc ?? (context => null);
+			this._createItemFunc = options?.CreateItemFunc ?? (context => null);
+			this._headerKeyFunc = options?.HeaderKeyFunc ?? (context => null);
 		}
 
 		public override async Task InvokeAsync(IPipeContext context, CancellationToken token = default(CancellationToken))
 		{
-			if (!ShouldExecute(context))
+			if (!this.ShouldExecute(context))
 			{
-				await Next.InvokeAsync(context, token);
+				await this.Next.InvokeAsync(context, token);
 				return;
 			}
-			var properties = GetBasicProperties(context);
-			var headerKey = GetHeaderKey(context);
+			IBasicProperties properties = this.GetBasicProperties(context);
+			string headerKey = this.GetHeaderKey(context);
 			if (properties.Headers.ContainsKey(headerKey))
 			{
-				await Next.InvokeAsync(context, token);
+				await this.Next.InvokeAsync(context, token);
 				return;
 			}
 
-			var item = GetHeaderItem(context) ?? CreateHeaderItem(context);
-			var serializedItem = SerializeItem(item, context);
+			object item = this.GetHeaderItem(context) ?? this.CreateHeaderItem(context);
+			byte[] serializedItem = this.SerializeItem(item, context);
 			properties.Headers.TryAdd(headerKey, serializedItem);
 
-			await Next.InvokeAsync(context, token);
+			await this.Next.InvokeAsync(context, token);
 		}
 
 		protected virtual bool ShouldExecute(IPipeContext context)
 		{
-			return ExecutePredicate.Invoke(context);
+			return this._executePredicate.Invoke(context);
 		}
 
 		protected virtual IBasicProperties GetBasicProperties(IPipeContext context)
 		{
-			return BasicPropsFunc?.Invoke(context);
+			return this._basicPropsFunc?.Invoke(context);
 		}
 
 		protected virtual object GetHeaderItem(IPipeContext context)
 		{
-			return RetrieveItemFunc?.Invoke(context);
+			return this._retrieveItemFunc?.Invoke(context);
 		}
 
 		protected virtual object CreateHeaderItem(IPipeContext context)
 		{
-			return CreateItemFunc?.Invoke(context);
+			return this._createItemFunc?.Invoke(context);
 		}
 
 		protected virtual byte[] SerializeItem(object item, IPipeContext context)
 		{
-			return Serializer.Serialize(item);
+			return this._serializer.Serialize(item);
 		}
 
 		protected virtual string GetHeaderKey(IPipeContext context)
 		{
-			return HeaderKeyFunc?.Invoke(context);
+			return this._headerKeyFunc?.Invoke(context);
 		}
 
 		public override string StageMarker => Pipe.StageMarker.BasicPropertiesCreated;

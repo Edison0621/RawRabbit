@@ -9,9 +9,9 @@ namespace RawRabbit.Compatibility.Legacy.Configuration.Queue
 		{
 			get
 			{
-				var fullQueueName =  string.IsNullOrEmpty(NameSuffix)
-					? QueueName
-					: $"{QueueName}_{NameSuffix}";
+				string fullQueueName =  string.IsNullOrEmpty(this.NameSuffix)
+					? this.QueueName
+					: $"{this.QueueName}_{this.NameSuffix}";
 
 				return fullQueueName.Length > 254
 					? string.Concat("...", fullQueueName.Substring(fullQueueName.Length - 250))
@@ -29,16 +29,16 @@ namespace RawRabbit.Compatibility.Legacy.Configuration.Queue
 
 		public QueueConfiguration()
 		{
-			Arguments = new Dictionary<string, object>();
+			this.Arguments = new Dictionary<string, object>();
 		}
 
 		public QueueConfiguration(GeneralQueueConfiguration cfg) : this()
 		{
-			Durable = cfg.Durable;
-			AutoDelete = cfg.AutoDelete;
-			Exclusive = cfg.Exclusive;
+			this.Durable = cfg.Durable;
+			this.AutoDelete = cfg.AutoDelete;
+			this.Exclusive = cfg.Exclusive;
 		}
 
-		public static QueueConfiguration Default => new QueueConfiguration { };
+		public static QueueConfiguration Default => new QueueConfiguration();
 	}
 }

@@ -9,8 +9,8 @@ namespace RawRabbit.Enrichers.QueueSuffix
 		{
 			builder.UseQueueSuffix(new QueueSuffixOptions
 			{
-				CustomSuffixFunc = context => Environment.MachineName.ToLower(),
-				ActiveFunc = context => context.GetHostnameQueueSuffixFlag()
+				_customSuffixFunc = context => Environment.MachineName.ToLower(),
+				_activeFunc = context => context.GetHostnameQueueSuffixFlag()
 			});
 
 			return builder;

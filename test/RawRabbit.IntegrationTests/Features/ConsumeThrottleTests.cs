@@ -1,7 +1,7 @@
 ﻿using System;
 using System.Collections.Concurrent;
+using System.Collections.Generic;
 using System.Linq;
-using System.Threading;
 using System.Threading.Tasks;
 using RawRabbit.IntegrationTests.TestMessages;
 using RawRabbit.Pipe;
@@ -14,11 +14,11 @@ namespace RawRabbit.IntegrationTests.Features
 		[Fact]
 		public async Task Should_Throttle_With_Provided_Action()
 		{
-			using (var subscriber = RawRabbitFactory.CreateTestClient())
-			using (var publisher = RawRabbitFactory.CreateTestClient())
+			using (Instantiation.Disposable.BusClient subscriber = RawRabbitFactory.CreateTestClient())
+			using (Instantiation.Disposable.BusClient publisher = RawRabbitFactory.CreateTestClient())
 			{
 				/* Setup */
-				var doneTsc = new TaskCompletionSource<bool>();
+				TaskCompletionSource<bool> doneTsc = new TaskCompletionSource<bool>();
 				await subscriber.SubscribeAsync<BasicMessage>(
 					message => Task.FromResult(0),
 					c => c.UseThrottledConsume((func, token) => doneTsc.TrySetResult(true)));
@@ -35,15 +35,15 @@ namespace RawRabbit.IntegrationTests.Features
 		[Fact]
 		public async Task Should_Throttle_With_Provided_Semaphore()
 		{
-			using (var subscriber = RawRabbitFactory.CreateTestClient())
-			using (var publisher = RawRabbitFactory.CreateTestClient())
+			using (Instantiation.Disposable.BusClient subscriber = RawRabbitFactory.CreateTestClient())
+			using (Instantiation.Disposable.BusClient publisher = RawRabbitFactory.CreateTestClient())
 			{
 				/* Setup */
 				const int messageCount = 6;
 				const int concurrencyLevel = 2;
 				const int waitTimeMs = concurrencyLevel / messageCount * 100;
-				var doneTsc = new TaskCompletionSource<bool>();
-				var concurrentEntryTimes = new ConcurrentQueue<DateTime>();
+				TaskCompletionSource<bool> doneTsc = new TaskCompletionSource<bool>();
+				ConcurrentQueue<DateTime> concurrentEntryTimes = new ConcurrentQueue<DateTime>();
 				await subscriber.SubscribeAsync<BasicMessage>(async message =>
 				{
 					concurrentEntryTimes.Enqueue(DateTime.Now);
@@ -55,17 +55,17 @@ namespace RawRabbit.IntegrationTests.Features
 				}, c => c.UseConsumerConcurrency(concurrencyLevel));
 
 				/* Test */
-				for (var i = 0; i < messageCount; i++)
+				for (int i = 0; i < messageCount; i++)
 				{
 					await publisher.PublishAsync(new BasicMessage());
 				}
 				await doneTsc.Task;
 
 				/* Assert */
-				var entryTimes = concurrentEntryTimes.ToList();
-				for (var i = concurrencyLevel; i < messageCount-1; i++)
+				List<DateTime> entryTimes = concurrentEntryTimes.ToList();
+				for (int i = concurrencyLevel; i < messageCount-1; i++)
 				{
-					var timeDiff = entryTimes[i] - entryTimes[i - 1];
+					TimeSpan timeDiff = entryTimes[i] - entryTimes[i - 1];
 					Assert.True(timeDiff.TotalMilliseconds >= 0, $"Entry {entryTimes[i]} is before previous exit {entryTimes[i - 1]}");
 				}
 			}
@@ -74,14 +74,14 @@ namespace RawRabbit.IntegrationTests.Features
 		[Fact]
 		public async Task Should_Not_Throttle_If_No_Semaphore_Provided()
 		{
-			using (var subscriber = RawRabbitFactory.CreateTestClient())
-			using (var publisher = RawRabbitFactory.CreateTestClient())
+			using (Instantiation.Disposable.BusClient subscriber = RawRabbitFactory.CreateTestClient())
+			using (Instantiation.Disposable.BusClient publisher = RawRabbitFactory.CreateTestClient())
 			{
 				/* Setup */
 				const int messageCount = 6;
-				var doneTsc = new TaskCompletionSource<bool>();
-				var concurrentEntryTimes = new ConcurrentQueue<DateTime>();
-				var concurrentExitTimes = new ConcurrentQueue<DateTime>();
+				TaskCompletionSource<bool> doneTsc = new TaskCompletionSource<bool>();
+				ConcurrentQueue<DateTime> concurrentEntryTimes = new ConcurrentQueue<DateTime>();
+				ConcurrentQueue<DateTime> concurrentExitTimes = new ConcurrentQueue<DateTime>();
 				await subscriber.SubscribeAsync<BasicMessage>(async message =>
 				{
 					concurrentEntryTimes.Enqueue(DateTime.Now);
@@ -94,16 +94,16 @@ namespace RawRabbit.IntegrationTests.Features
 				});
 
 				/* Test */
-				for (var i = 0; i < messageCount; i++)
+				for (int i = 0; i < messageCount; i++)
 				{
 					await publisher.PublishAsync(new BasicMessage());
 				}
 				await doneTsc.Task;
 
 				/* Assert */
-				var entryTimes = concurrentEntryTimes.ToList();
-				var exitTimes = concurrentExitTimes.ToList();
-				for (var i = 1; i < messageCount - 1; i++)
+				List<DateTime> entryTimes = concurrentEntryTimes.ToList();
+				List<DateTime> exitTimes = concurrentExitTimes.ToList();
+				for (int i = 1; i < messageCount - 1; i++)
 				{
 					Assert.True(
 						entryTimes[i] < exitTimes[i - 1],

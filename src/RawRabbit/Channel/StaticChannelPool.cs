@@ -16,9 +16,9 @@ namespace RawRabbit.Channel
 
 	public class StaticChannelPool : IDisposable, IChannelPool
 	{
-		protected readonly LinkedList<IModel> Pool;
-		protected readonly List<IRecoverable> Recoverables;
-		protected readonly ConcurrentChannelQueue ChannelRequestQueue;
+		protected readonly LinkedList<IModel> _pool;
+		protected readonly List<IRecoverable> _recoverables;
+		protected readonly ConcurrentChannelQueue _channelRequestQueue;
 		private readonly object _workLock = new object();
 		private LinkedListNode<IModel> _current;
 		private readonly ILog _logger = LogProvider.For<StaticChannelPool>();
@@ -26,75 +26,76 @@ namespace RawRabbit.Channel
 		public StaticChannelPool(IEnumerable<IModel> seed)
 		{
 			seed = seed.ToList();
-			Pool = new LinkedList<IModel>(seed);
-			Recoverables = new List<IRecoverable>();
-			ChannelRequestQueue = new ConcurrentChannelQueue();
-			ChannelRequestQueue.Queued += (sender, args) => StartServeChannels();
-			foreach (var channel in seed)
+			this._pool = new LinkedList<IModel>(seed);
+			this._recoverables = new List<IRecoverable>();
+			this._channelRequestQueue = new ConcurrentChannelQueue();
+			this._channelRequestQueue._queued += (sender, args) => this.StartServeChannels();
+			foreach (IModel channel in seed)
 			{
-				ConfigureRecovery(channel);
+				this.ConfigureRecovery(channel);
 			}
 		}
 
 		private void StartServeChannels()
 		{
-			if (ChannelRequestQueue.IsEmpty || Pool.Count == 0)
+			if (this._channelRequestQueue.IsEmpty || this._pool.Count == 0)
 			{
-				_logger.Debug("Unable to serve channels. The pool consists of {channelCount} channels and {channelRequests} requests for channels.");
+				this._logger.Debug("Unable to serve channels. The pool consists of {channelCount} channels and {channelRequests} requests for channels.");
 				return;
 			}
 
-			if (!Monitor.TryEnter(_workLock))
+			if (!Monitor.TryEnter(this._workLock))
 			{
-				_logger.Debug("Unable to aquire work lock for service channels.");
+				this._logger.Debug("Unable to aquire work lock for service channels.");
 				return;
 			}
 
 			try
 			{
-				_logger.Debug("Starting serving channels.");
+				this._logger.Debug("Starting serving channels.");
 				do
 				{
-					_current = _current?.Next ?? Pool.First;
-					if (_current == null)
+					this._current = this._current?.Next ?? this._pool.First;
+					if (this._current == null)
 					{
-						_logger.Debug("Unable to server channels. Pool empty.");
+						this._logger.Debug("Unable to server channels. Pool empty.");
 						return;
 					}
-					if (_current.Value.IsClosed)
+					if (this._current.Value.IsClosed)
 					{
-						Pool.Remove(_current);
-						if (Pool.Count != 0)
+						this._pool.Remove(this._current);
+						if (this._pool.Count != 0)
 						{
 							continue;
 						}
-						if (Recoverables.Count == 0)
+						if (this._recoverables.Count == 0)
 						{
 							throw new ChannelAvailabilityException("No open channels in pool and no recoverable channels");
 						}
-						_logger.Info("No open channels in pool, but {recoveryCount} waiting for recovery", Recoverables.Count);
+
+						this._logger.Info("No open channels in pool, but {recoveryCount} waiting for recovery", this._recoverables.Count);
 						return;
 					}
-					if (ChannelRequestQueue.TryDequeue(out var cTsc))
+					if (this._channelRequestQueue.TryDequeue(out TaskCompletionSource<IModel> cTsc))
 					{
-						cTsc.TrySetResult(_current.Value);
+						cTsc.TrySetResult(this._current.Value);
 					}
-				} while (!ChannelRequestQueue.IsEmpty);
+				} while (!this._channelRequestQueue.IsEmpty);
 			}
 			catch (Exception e)
 			{
-				_logger.Info(e, "An unhandled exception occured when serving channels.");
+				this._logger.Info(e, "An unhandled exception occured when serving channels.");
 			}
 			finally
 			{
-				Monitor.Exit(_workLock);
+				Monitor.Exit(this._workLock);
 			}
 		}
 
 		protected virtual int GetActiveChannelCount()
 		{
-			return Enumerable
-				.Concat<object>(Pool, Recoverables)
+			return this._pool
+				.Concat<object>(this._recoverables)
 				.Distinct()
 				.Count();
 		}
@@ -103,49 +104,51 @@ namespace RawRabbit.Channel
 		{
 			if (!(channel is IRecoverable recoverable))
 			{
-				_logger.Debug("Channel {channelNumber} is not recoverable. Recovery disabled for this channel.", channel.ChannelNumber);
+				this._logger.Debug("Channel {channelNumber} is not recoverable. Recovery disabled for this channel.", channel.ChannelNumber);
 				return;
 			}
 			if (channel.IsClosed && channel.CloseReason != null && channel.CloseReason.Initiator == ShutdownInitiator.Application)
 			{
-				_logger.Debug("{Channel {channelNumber} is closed by the application. Channel will remain closed and not be part of the channel pool", channel.ChannelNumber);
+				this._logger.Debug("{Channel {channelNumber} is closed by the application. Channel will remain closed and not be part of the channel pool", channel.ChannelNumber);
 				return;
 			}
-			Recoverables.Add(recoverable);
+
+			this._recoverables.Add(recoverable);
 			recoverable.Recovery += (sender, args) =>
 			{
-				_logger.Info("Channel {channelNumber} has been recovered and will be re-added to the channel pool", channel.ChannelNumber);
-				if (Pool.Contains(channel))
+				this._logger.Info("Channel {channelNumber} has been recovered and will be re-added to the channel pool", channel.ChannelNumber);
+				if (this._pool.Contains(channel))
 				{
 					return;
 				}
-				Pool.AddLast(channel);
-				StartServeChannels();
+
+				this._pool.AddLast(channel);
+				this.StartServeChannels();
 			};
 			channel.ModelShutdown += (sender, args) =>
 			{
 				if (args.Initiator == ShutdownInitiator.Application)
 				{
-					_logger.Info("Channel {channelNumber} is being closed by the application. No recovery will be performed.", channel.ChannelNumber);
-					Recoverables.Remove(recoverable);
+					this._logger.Info("Channel {channelNumber} is being closed by the application. No recovery will be performed.", channel.ChannelNumber);
+					this._recoverables.Remove(recoverable);
 				}
 			};
 		}
 
 		public virtual Task<IModel> GetAsync(CancellationToken ct = default(CancellationToken))
 		{
-			var channelTcs = ChannelRequestQueue.Enqueue();
+			TaskCompletionSource<IModel> channelTcs = this._channelRequestQueue.Enqueue();
 			ct.Register(() => channelTcs.TrySetCanceled());
 			return channelTcs.Task;
 		}
 
 		public virtual void Dispose()
 		{
-			foreach (var channel in Pool)
+			foreach (IModel channel in this._pool)
 			{
 				channel?.Dispose();
 			}
-			foreach (var recoverable in Recoverables)
+			foreach (IRecoverable recoverable in this._recoverables)
 			{
 				(recoverable as IModel)?.Dispose();
 			}

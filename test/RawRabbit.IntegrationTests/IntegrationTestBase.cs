@@ -5,23 +5,23 @@ namespace RawRabbit.IntegrationTests
 {
 	public class IntegrationTestBase : IDisposable
 	{
-		protected IModel TestChannel => _testChannel.Value;
+		protected IModel TestChannel => this._testChannel.Value;
 		private readonly Lazy<IModel> _testChannel;
 		private IConnection _connection;
 		
 		public IntegrationTestBase()
 		{
-			_testChannel = new Lazy<IModel>(() =>
+			this._testChannel = new Lazy<IModel>(() =>
 			{
-				_connection = new ConnectionFactory { HostName = "localhost" }.CreateConnection();
-				return _connection.CreateModel();
+				this._connection = new ConnectionFactory { HostName = "localhost" }.CreateConnection();
+				return this._connection.CreateModel();
 			});
 		}
 
 		public virtual void Dispose()
 		{
-			TestChannel?.Dispose();
-			_connection?.Dispose();
+			this.TestChannel?.Dispose();
+			this._connection?.Dispose();
 		}
 	}
 }

@@ -13,110 +13,110 @@ namespace RawRabbit.IntegrationTests.StateMachine.Generic
 
 		public GenericProcess(IBusClient client, GenericProcessModel model = null) : base(model)
 		{
-			_client = client;
+			this._client = client;
 		}
 
 		protected override void ConfigureState(StateMachine<State, Trigger> process)
 		{
-			_cancel = process.SetTriggerParameters<string>(Trigger.Cancel);
-			_pause = process.SetTriggerParameters<string>(Trigger.Pausing);
+			this._cancel = process.SetTriggerParameters<string>(Trigger.Cancel);
+			this._pause = process.SetTriggerParameters<string>(Trigger.Pausing);
 
 			process
 				.Configure(State.Created)
-				.PermitIf(Trigger.Start, State.InProgress, IsAssigned)
+				.PermitIf(Trigger.Start, State.InProgress, this.IsAssigned)
 				.Permit(Trigger.Cancel, State.Aborted);
 
 			process
 				.Configure(State.InProgress)
-				.OnEntryAsync(() => SendUpdateMessage())
+				.OnEntryAsync(() => this.SendUpdateMessage())
 				.Permit(Trigger.Completion, State.Completed)
 				.Permit(Trigger.Pausing, State.Paused)
 				.Permit(Trigger.Cancel, State.Aborted);
 
 			process
 				.Configure(State.Paused)
-				.OnEntryFromAsync(_pause, SendUpdateMessage)
-				.PermitIf(Trigger.Resuming, State.InProgress, IsAssigned)
+				.OnEntryFromAsync(this._pause, this.SendUpdateMessage)
+				.PermitIf(Trigger.Resuming, State.InProgress, this.IsAssigned)
 				.Permit(Trigger.Cancel, State.Aborted);
 
 			process
 				.Configure(State.Aborted)
-				.OnEntryFromAsync(_cancel, SendAbortMessage);
+				.OnEntryFromAsync(this._cancel, this.SendAbortMessage);
 
 			process
 				.Configure(State.Completed)
-				.OnEntryAsync(SendCompletionMessage);
+				.OnEntryAsync(this.SendCompletionMessage);
 		}
 
 		private Task SendCompletionMessage()
 		{
-			return _client.PublishAsync(new ProcessCompeted
+			return this._client.PublishAsync(new ProcessCompeted
 			{
-				TaskId = Model.Id
+				TaskId = this._model.Id
 			});
 		}
 
 		private Task SendAbortMessage(string reason)
 		{
-			return _client.PublishAsync(new ProcessAborted
+			return this._client.PublishAsync(new ProcessAborted
 			{
-				TaskId = Model.Id,
+				TaskId = this._model.Id,
 				Reason = reason
 			});
 		}
 
 		private bool IsAssigned()
 		{
-			return !string.IsNullOrWhiteSpace(Model.Assignee);
+			return !string.IsNullOrWhiteSpace(this._model.Assignee);
 		}
 
 		private Task SendUpdateMessage(string message = null)
 		{
-			return _client.PublishAsync(new ProcessUpdated
+			return this._client.PublishAsync(new ProcessUpdated
 			{
-				TaskId = Model.Id,
-				State = Model.State,
-				Assignee = Model.Assignee,
+				TaskId = this._model.Id,
+				State = this._model.State,
+				Assignee = this._model.Assignee,
 				Message = message
 			});
 		}
 
 		public Task StartAsync(string assignee)
 		{
-			Model.Assignee = assignee;
-			return StateMachine.FireAsync(Trigger.Start);
+			this._model.Assignee = assignee;
+			return this._stateMachine.FireAsync(Trigger.Start);
 		}
 
 		public Task PauseAsync(string reason)
 		{
-			return StateMachine.FireAsync(_pause, reason);
+			return this._stateMachine.FireAsync(this._pause, reason);
 		}
 
 		public Task ResumeAsync()
 		{
-			return StateMachine.FireAsync(Trigger.Resuming);
+			return this._stateMachine.FireAsync(Trigger.Resuming);
 		}
 
 		public void Abort(string reason)
 		{
-			StateMachine.Fire(_cancel, reason);
+			this._stateMachine.Fire(this._cancel, reason);
 		}
 
 		public Task CreateAsync(string process, DateTime deadline)
 		{
-			Model.Name = process;
-			Model.Deadline = deadline;
-			Model.Id = Guid.NewGuid();
-			return _client.PublishAsync(new TaskCreated
+			this._model.Name = process;
+			this._model.Deadline = deadline;
+			this._model.Id = Guid.NewGuid();
+			return this._client.PublishAsync(new TaskCreated
 			{
 				Name = process,
-				TaskId = Model.Id
+				TaskId = this._model.Id
 			});
 		}
 
 		public Task CompleteAsync()
 		{
-			return StateMachine.FireAsync(Trigger.Completion);
+			return this._stateMachine.FireAsync(Trigger.Completion);
 		}
 
 		public override GenericProcessModel Initialize()

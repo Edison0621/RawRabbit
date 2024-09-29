@@ -2,7 +2,6 @@
 using System.Threading;
 using System.Threading.Tasks;
 using RabbitMQ.Client;
-using RawRabbit.Common;
 using RawRabbit.Pipe;
 using RawRabbit.Pipe.Middleware;
 
@@ -17,39 +16,39 @@ namespace RawRabbit.Enrichers.GlobalExecutionId.Middleware
 
 	public class PublishHeaderAppenderMiddleware : StagedMiddleware
 	{
-		protected Func<IPipeContext, IBasicProperties> BasicPropsFunc;
-		protected Func<IPipeContext, string> GlobalExecutionIdFunc;
-		protected Action<IBasicProperties, string> AppendAction;
+		protected readonly Func<IPipeContext, IBasicProperties> _basicPropsFunc;
+		protected readonly Func<IPipeContext, string> _globalExecutionIdFunc;
+		protected readonly Action<IBasicProperties, string> _appendAction;
 		public override string StageMarker => Pipe.StageMarker.BasicPropertiesCreated;
 
 		public PublishHeaderAppenderMiddleware(PublishHeaderAppenderOptions options = null)
 		{
-			BasicPropsFunc = options?.BasicPropsFunc ?? (context => context.GetBasicProperties());
-			GlobalExecutionIdFunc = options?.GlobalExecutionIdFunc ?? (context => context.GetGlobalExecutionId());
-			AppendAction = options?.AppendHeaderAction ?? ((props, id) => props.Headers.TryAdd(PropertyHeaders.GlobalExecutionId, id));
+			this._basicPropsFunc = options?.BasicPropsFunc ?? (context => context.GetBasicProperties());
+			this._globalExecutionIdFunc = options?.GlobalExecutionIdFunc ?? (context => context.GetGlobalExecutionId());
+			this._appendAction = options?.AppendHeaderAction ?? ((props, id) => props.Headers.TryAdd(PropertyHeaders.GlobalExecutionId, id));
 		}
 
 		public override Task InvokeAsync(IPipeContext context, CancellationToken token = new CancellationToken())
 		{
-			var props = GetBasicProps(context);
-			var id = GetGlobalExecutionId(context);
-			AddIdToHeader(props, id);
-			return Next.InvokeAsync(context, token);
+			IBasicProperties props = this.GetBasicProps(context);
+			string id = this.GetGlobalExecutionId(context);
+			this.AddIdToHeader(props, id);
+			return this.Next.InvokeAsync(context, token);
 		}
 
 		protected virtual IBasicProperties GetBasicProps(IPipeContext context)
 		{
-			return BasicPropsFunc?.Invoke(context);
+			return this._basicPropsFunc?.Invoke(context);
 		}
 
 		protected virtual string GetGlobalExecutionId(IPipeContext context)
 		{
-			return GlobalExecutionIdFunc?.Invoke(context);
+			return this._globalExecutionIdFunc?.Invoke(context);
 		}
 
 		protected virtual void AddIdToHeader(IBasicProperties props, string globalExecutionId)
 		{
-			AppendAction?.Invoke(props, globalExecutionId);
+			this._appendAction?.Invoke(props, globalExecutionId);
 		}
 	}
 }

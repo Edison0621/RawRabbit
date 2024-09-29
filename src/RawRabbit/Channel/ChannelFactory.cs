@@ -14,30 +14,29 @@ namespace RawRabbit.Channel
 	public class ChannelFactory : IChannelFactory
 	{
 		private readonly ILog _logger = LogProvider.For<ChannelFactory>();
-		protected readonly IConnectionFactory ConnectionFactory;
-		protected readonly RawRabbitConfiguration ClientConfig;
-		protected readonly ConcurrentBag<IModel> Channels;
-		protected IConnection Connection;
+		protected readonly IConnectionFactory _connectionFactory;
+		protected readonly RawRabbitConfiguration _clientConfig;
+		protected readonly ConcurrentBag<IModel> _channels;
+		protected IConnection _connection;
 
 		public ChannelFactory(IConnectionFactory connectionFactory, RawRabbitConfiguration config)
 		{
-			ConnectionFactory = connectionFactory;
-			ClientConfig = config;
-			Channels = new ConcurrentBag<IModel>();
+			this._connectionFactory = connectionFactory;
+			this._clientConfig = config;
+			this._channels = new ConcurrentBag<IModel>();
 		}
 
 		public virtual Task ConnectAsync(CancellationToken token = default(CancellationToken))
 		{
 			try
 			{
-				_logger.Debug("Creating a new connection for {hostNameCount} hosts.", ClientConfig.Hostnames.Count);
-				Connection = ConnectionFactory.CreateConnection(ClientConfig.Hostnames, ClientConfig.ClientProvidedName);
-				Connection.ConnectionShutdown += (sender, args) =>
-					_logger.Warn("Connection was shutdown by {Initiator}. ReplyText {ReplyText}", args.Initiator, args.ReplyText);
+				this._logger.Debug("Creating a new connection for {hostNameCount} hosts.", this._clientConfig.Hostnames.Count);
+				this._connection = this._connectionFactory.CreateConnection(this._clientConfig.Hostnames, this._clientConfig.ClientProvidedName);
+				this._connection.ConnectionShutdown += (sender, args) => this._logger.Warn("Connection was shutdown by {Initiator}. ReplyText {ReplyText}", args.Initiator, args.ReplyText);
 			}
 			catch (BrokerUnreachableException e)
 			{
-				_logger.Info("Unable to connect to broker", e);
+				this._logger.Info("Unable to connect to broker", e);
 				throw;
 			}
 			return Task.FromResult(true);
@@ -45,43 +44,46 @@ namespace RawRabbit.Channel
 
 		public virtual async Task<IModel> CreateChannelAsync(CancellationToken token = default(CancellationToken))
 		{
-			var connection = await GetConnectionAsync(token);
+			IConnection connection = await this.GetConnectionAsync(token);
 			token.ThrowIfCancellationRequested();
-			var channel = connection.CreateModel();
-			Channels.Add(channel);
+			IModel channel = connection.CreateModel();
+			this._channels.Add(channel);
 			return channel;
 		}
 
 		protected virtual async Task<IConnection> GetConnectionAsync(CancellationToken token = default(CancellationToken))
 		{
 			token.ThrowIfCancellationRequested();
-			if (Connection == null)
+			if (this._connection == null)
 			{
-				await ConnectAsync(token);
+				await this.ConnectAsync(token);
 			}
-			if (Connection.IsOpen)
-			{
-				_logger.Debug("Existing connection is open and will be used.");
-				return Connection;
-			}
-			_logger.Info("The existing connection is not open.");
 
-			if (Connection.CloseReason != null &&Connection.CloseReason.Initiator == ShutdownInitiator.Application)
+			// ReSharper disable once PossibleNullReferenceException
+			if (this._connection.IsOpen)
 			{
-				_logger.Info("Connection is closed with Application as initiator. It will not be recovered.");
-				Connection.Dispose();
+				this._logger.Debug("Existing connection is open and will be used.");
+				return this._connection;
+			}
+
+			this._logger.Info("The existing connection is not open.");
+
+			if (this._connection.CloseReason != null && this._connection.CloseReason.Initiator == ShutdownInitiator.Application)
+			{
+				this._logger.Info("Connection is closed with Application as initiator. It will not be recovered.");
+				this._connection.Dispose();
 				throw new ChannelAvailabilityException("Closed connection initiated by the Application. A new connection will not be created, and no channel can be created.");
 			}
 
-			if (!(Connection is IRecoverable recoverable))
+			if (!(this._connection is IRecoverable recoverable))
 			{
-				_logger.Info("Connection is not recoverable");
-				Connection.Dispose();
+				this._logger.Info("Connection is not recoverable");
+				this._connection.Dispose();
 				throw new ChannelAvailabilityException("The non recoverable connection is closed. A channel can not be created.");
 			}
 
-			_logger.Debug("Connection is recoverable. Waiting for 'Recovery' event to be triggered. ");
-			var recoverTcs = new TaskCompletionSource<IConnection>();
+			this._logger.Debug("Connection is recoverable. Waiting for 'Recovery' event to be triggered. ");
+			TaskCompletionSource<IConnection> recoverTcs = new TaskCompletionSource<IConnection>();
 			token.Register(() => recoverTcs.TrySetCanceled());
 
 			EventHandler<EventArgs> completeTask = null;
@@ -91,7 +93,8 @@ namespace RawRabbit.Channel
 				{
 					return;
 				}
-				_logger.Info("Connection has been recovered!");
+
+				this._logger.Info("Connection has been recovered!");
 				recoverTcs.TrySetResult(recoverable as IConnection);
 				recoverable.Recovery -= completeTask;
 			};
@@ -102,11 +105,12 @@ namespace RawRabbit.Channel
 
 		public void Dispose()
 		{
-			foreach (var channel in Channels)
+			foreach (IModel channel in this._channels)
 			{
 				channel?.Dispose();
 			}
-			Connection?.Dispose();
+
+			this._connection?.Dispose();
 		}
 	}
 }

@@ -17,10 +17,10 @@ namespace RawRabbit.Channel
 
 		public AutoScalingChannelPool(IChannelFactory factory, AutoScalingOptions options)
 		{
-			_factory = factory;
-			_options = options;
+			this._factory = factory;
+			this._options = options;
 			ValidateOptions(options);
-			SetupScaling();
+			this.SetupScaling();
 		}
 
 		private static void ValidateOptions(AutoScalingOptions options)
@@ -41,15 +41,15 @@ namespace RawRabbit.Channel
 
 		public override async Task<IModel> GetAsync(CancellationToken ct = default(CancellationToken))
 		{
-			var activeChannels = GetActiveChannelCount();
-			if (activeChannels  < _options.MinimunPoolSize)
+			int activeChannels = this.GetActiveChannelCount();
+			if (activeChannels  < this._options.MinimunPoolSize)
 			{
-				_logger.Debug("Pool currently has {channelCount}, which is lower than the minimal pool size {minimalPoolSize}. Creating channels.", activeChannels, _options.MinimunPoolSize);
-				var delta = _options.MinimunPoolSize - Pool.Count;
-				for (var i = 0; i < delta; i++)
+				this._logger.Debug("Pool currently has {channelCount}, which is lower than the minimal pool size {minimalPoolSize}. Creating channels.", activeChannels, this._options.MinimunPoolSize);
+				int delta = this._options.MinimunPoolSize - this._pool.Count;
+				for (int i = 0; i < delta; i++)
 				{
-					var channel = await _factory.CreateChannelAsync(ct);
-					Add(channel);
+					IModel channel = await this._factory.CreateChannelAsync(ct);
+					this.Add(channel);
 				}
 			}
 
@@ -58,54 +58,55 @@ namespace RawRabbit.Channel
 
 		public void SetupScaling()
 		{
-			if (_options.RefreshInterval == TimeSpan.MaxValue || _options.RefreshInterval == TimeSpan.MinValue)
+			if (this._options.RefreshInterval == TimeSpan.MaxValue || this._options.RefreshInterval == TimeSpan.MinValue)
 			{
 				return;
 			}
 
-			_timer = new Timer(state =>
+			this._timer = new Timer(state =>
 			{
-				var workPerChannel = Pool.Count == 0 ? int.MaxValue : ChannelRequestQueue.Count / Pool.Count;
-				var scaleUp = Pool.Count < _options.MaximumPoolSize;
-				var scaleDown = _options.MinimunPoolSize < Pool.Count;
+				int workPerChannel = this._pool.Count == 0 ? int.MaxValue : this._channelRequestQueue.Count / this._pool.Count;
+				bool scaleUp = this._pool.Count < this._options.MaximumPoolSize;
+				bool scaleDown = this._options.MinimunPoolSize < this._pool.Count;
 
-				_logger.Debug("Channel pool currently has {channelCount} channels open and a total workload of {totalWorkload}", Pool.Count, ChannelRequestQueue.Count);
-				if (scaleUp && _options.DesiredAverageWorkload < workPerChannel)
+				this._logger.Debug("Channel pool currently has {channelCount} channels open and a total workload of {totalWorkload}", this._pool.Count, this._channelRequestQueue.Count);
+				if (scaleUp && this._options.DesiredAverageWorkload < workPerChannel)
 				{
-					_logger.Debug("The estimated workload is {averageWorkload} operations/channel, which is higher than the desired workload ({desiredAverageWorkload}). Creating channel.", workPerChannel, _options.DesiredAverageWorkload);
+					this._logger.Debug("The estimated workload is {averageWorkload} operations/channel, which is higher than the desired workload ({desiredAverageWorkload}). Creating channel.", workPerChannel, this._options.DesiredAverageWorkload);
 
-					var channelCancellation = new CancellationTokenSource(_options.RefreshInterval);
-					_factory
+					CancellationTokenSource channelCancellation = new CancellationTokenSource(this._options.RefreshInterval);
+					this._factory
 						.CreateChannelAsync(channelCancellation.Token)
 						.ContinueWith(tChannel =>
 						{
 							if (tChannel.Status == TaskStatus.RanToCompletion)
 							{
-								Add(tChannel.Result);
+								this.Add(tChannel.Result);
 							}
 						}, CancellationToken.None);
 					return;
 				}
 
-				if (scaleDown && workPerChannel < _options.DesiredAverageWorkload)
+				if (scaleDown && workPerChannel < this._options.DesiredAverageWorkload)
 				{
-					_logger.Debug("The estimated workload is {averageWorkload} operations/channel, which is lower than the desired workload ({desiredAverageWorkload}). Creating channel.", workPerChannel, _options.DesiredAverageWorkload);
-					var toRemove = Pool.FirstOrDefault();
-					Pool.Remove(toRemove);
+					this._logger.Debug("The estimated workload is {averageWorkload} operations/channel, which is lower than the desired workload ({desiredAverageWorkload}). Creating channel.", workPerChannel, this._options.DesiredAverageWorkload);
+					IModel toRemove = this._pool.FirstOrDefault();
+					this._pool.Remove(toRemove);
 					Timer disposeTimer = null;
 					disposeTimer = new Timer(o =>
 					{
 						(o as IModel)?.Dispose();
+						// ReSharper disable once AccessToModifiedClosure
 						disposeTimer?.Dispose();
-					}, toRemove, _options.GracefulCloseInterval, new TimeSpan(-1));
+					}, toRemove, this._options.GracefulCloseInterval, new TimeSpan(-1));
 				}
-			}, null, _options.RefreshInterval, _options.RefreshInterval);
+			}, null, this._options.RefreshInterval, this._options.RefreshInterval);
 		}
 
 		public override void Dispose()
 		{
 			base.Dispose();
-			_timer?.Dispose();
+			this._timer?.Dispose();
 		}
 	}
 

@@ -15,61 +15,61 @@ namespace RawRabbit.Pipe.Middleware
 
 	public class QueueBindMiddleware : Middleware
 	{
-		protected readonly ITopologyProvider TopologyProvider;
-		protected Func<IPipeContext, string> QueueNameFunc;
-		protected Func<IPipeContext, string> ExchangeNameFunc;
-		protected Func<IPipeContext, string> RoutingKeyFunc;
+		protected readonly ITopologyProvider _topologyProvider;
+		protected readonly Func<IPipeContext, string> _queueNameFunc;
+		protected readonly Func<IPipeContext, string> _exchangeNameFunc;
+		protected readonly Func<IPipeContext, string> _routingKeyFunc;
 		private readonly ILog _logger = LogProvider.For<QueueBindMiddleware>();
 
 		public QueueBindMiddleware(ITopologyProvider topologyProvider, QueueBindOptions options = null)
 		{
-			TopologyProvider = topologyProvider;
-			QueueNameFunc = options?.QueueNameFunc ?? (context => context.GetConsumeConfiguration()?.QueueName);
-			ExchangeNameFunc = options?.ExchangeNameFunc ?? (context => context.GetConsumeConfiguration()?.ExchangeName);
-			RoutingKeyFunc = options?.RoutingKeyFunc ?? (context => context.GetConsumeConfiguration()?.RoutingKey);
+			this._topologyProvider = topologyProvider;
+			this._queueNameFunc = options?.QueueNameFunc ?? (context => context.GetConsumeConfiguration()?.QueueName);
+			this._exchangeNameFunc = options?.ExchangeNameFunc ?? (context => context.GetConsumeConfiguration()?.ExchangeName);
+			this._routingKeyFunc = options?.RoutingKeyFunc ?? (context => context.GetConsumeConfiguration()?.RoutingKey);
 		}
 
-		public override async Task InvokeAsync(IPipeContext context, CancellationToken token)
+		public override async Task InvokeAsync(IPipeContext context, CancellationToken token = default(CancellationToken))
 		{
-			var queueName = GetQueueName(context);
-			var exchangeName = GetExchangeName(context);
-			var routingKey = GetRoutingKey(context);
+			string queueName = this.GetQueueName(context);
+			string exchangeName = this.GetExchangeName(context);
+			string routingKey = this.GetRoutingKey(context);
 
-			await BindQueueAsync(queueName, exchangeName, routingKey, context, token);
-			await Next.InvokeAsync(context, token);
+			await this.BindQueueAsync(queueName, exchangeName, routingKey, context, token);
+			await this.Next.InvokeAsync(context, token);
 		}
 
 		protected virtual Task BindQueueAsync(string queue, string exchange, string routingKey, IPipeContext context, CancellationToken ct)
 		{
-			return TopologyProvider.BindQueueAsync(queue, exchange, routingKey, context.GetConsumeConfiguration()?.Arguments);
+			return this._topologyProvider.BindQueueAsync(queue, exchange, routingKey, context.GetConsumeConfiguration()?.Arguments);
 		}
 
 		protected virtual string GetRoutingKey(IPipeContext context)
 		{
-			var routingKey = RoutingKeyFunc(context);
+			string routingKey = this._routingKeyFunc(context);
 			if (routingKey == null)
 			{
-				_logger.Warn("Routing key not found in Pipe context.");
+				this._logger.Warn("Routing key not found in Pipe context.");
 			}
 			return routingKey;
 		}
 
 		protected virtual string GetExchangeName(IPipeContext context)
 		{
-			var exchange = ExchangeNameFunc(context);
+			string exchange = this._exchangeNameFunc(context);
 			if (exchange == null)
 			{
-				_logger.Warn("Exchange name not found in Pipe context.");
+				this._logger.Warn("Exchange name not found in Pipe context.");
 			}
 			return exchange;
 		}
 
 		protected virtual string GetQueueName(IPipeContext context)
 		{
-			var queue = QueueNameFunc(context);
+			string queue = this._queueNameFunc(context);
 			if (queue == null)
 			{
-				_logger.Warn("Queue name not found in Pipe context.");
+				this._logger.Warn("Queue name not found in Pipe context.");
 			}
 			return queue;
 		}

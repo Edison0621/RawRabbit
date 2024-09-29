@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Threading.Tasks;
 using RawRabbit.Channel.Abstraction;
 using RawRabbit.Common;
@@ -20,30 +21,30 @@ namespace RawRabbit.Instantiation
 
 		public InstanceFactory(IDependencyResolver resolver)
 		{
-			_resolver = resolver;
+			this._resolver = resolver;
 		}
 
 		public IBusClient Create()
 		{
-			return new BusClient(_resolver.GetService<IPipeBuilderFactory>(), _resolver.GetService<IPipeContextFactory>(), _resolver.GetService<IChannelFactory>());
+			return new BusClient(this._resolver.GetService<IPipeBuilderFactory>(), this._resolver.GetService<IPipeContextFactory>(), this._resolver.GetService<IChannelFactory>());
 		}
 
 		public void Dispose()
 		{
-			var diposer = _resolver.GetService<IResourceDisposer>();
+			IResourceDisposer diposer = this._resolver.GetService<IResourceDisposer>();
 			diposer?.Dispose();
 		}
 
 		public async Task ShutdownAsync(TimeSpan? graceful = null)
 		{
-			var subscriptions = _resolver.GetService<ISubscriptionRepository>().GetAll();
-			foreach (var subscription in subscriptions)
+			List<ISubscription> subscriptions = this._resolver.GetService<ISubscriptionRepository>().GetAll();
+			foreach (ISubscription subscription in subscriptions)
 			{
 				subscription?.Dispose();
 			}
-			graceful = graceful ?? _resolver.GetService<RawRabbitConfiguration>().GracefulShutdown;
+			graceful = graceful ?? this._resolver.GetService<RawRabbitConfiguration>().GracefulShutdown;
 			await Task.Delay(graceful.Value);
-			Dispose();
+			this.Dispose();
 		}
 	}
 }

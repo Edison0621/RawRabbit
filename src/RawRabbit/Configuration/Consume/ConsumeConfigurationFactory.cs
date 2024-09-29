@@ -10,20 +10,20 @@ namespace RawRabbit.Configuration.Consume
 
 		public ConsumeConfigurationFactory(INamingConventions conventions)
 		{
-			_conventions = conventions;
+			this._conventions = conventions;
 		}
 
 		public ConsumeConfiguration Create<TMessage>()
 		{
-			return Create(typeof(TMessage));
+			return this.Create(typeof(TMessage));
 		}
 
 		public ConsumeConfiguration Create(Type messageType)
 		{
-			var queueName = _conventions.QueueNamingConvention(messageType);
-			var exchangeName = _conventions.ExchangeNamingConvention(messageType);
-			var routingKey = _conventions.RoutingKeyConvention(messageType);
-			return Create(queueName, exchangeName, routingKey);
+			string queueName = this._conventions.QueueNamingConvention(messageType);
+			string exchangeName = this._conventions.ExchangeNamingConvention(messageType);
+			string routingKey = this._conventions.RoutingKeyConvention(messageType);
+			return this.Create(queueName, exchangeName, routingKey);
 		}
 
 		public ConsumeConfiguration Create(string queueName, string exchangeName, string routingKey)

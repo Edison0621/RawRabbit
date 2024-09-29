@@ -11,7 +11,7 @@
 
 		public Nack(bool requeue = true)
 		{
-			Requeue = requeue;
+			this.Requeue = requeue;
 		}
 	}
 
@@ -21,7 +21,7 @@
 
 		public Reject(bool requeue = true)
 		{
-			Requeue = requeue;
+			this.Requeue = requeue;
 		}
 	}
 }

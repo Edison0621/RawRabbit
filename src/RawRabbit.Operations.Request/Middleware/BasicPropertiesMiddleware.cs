@@ -1,6 +1,9 @@
 ﻿using System;
+using System.Globalization;
 using RabbitMQ.Client;
+using RawRabbit.Configuration;
 using RawRabbit.Configuration.Consume;
+using RawRabbit.Configuration.Consumer;
 using RawRabbit.Operations.Request.Core;
 using RawRabbit.Pipe;
 using RawRabbit.Pipe.Middleware;
@@ -15,9 +18,9 @@ namespace RawRabbit.Operations.Request.Middleware
 
 		protected override void ModifyBasicProperties(IPipeContext context, IBasicProperties props)
 		{
-			var correlationId = context.GetCorrelationId() ?? Guid.NewGuid().ToString();
-			var consumeCfg = context.GetResponseConfiguration();
-			var clientCfg = context.GetClientConfiguration();
+			string correlationId = context.GetCorrelationId() ?? Guid.NewGuid().ToString();
+			ConsumerConfiguration consumeCfg = context.GetResponseConfiguration();
+			RawRabbitConfiguration clientCfg = context.GetClientConfiguration();
 
 			if (consumeCfg.Consume.IsDirectReplyTo() || consumeCfg.Exchange == null)
 			{
@@ -29,7 +32,7 @@ namespace RawRabbit.Operations.Request.Middleware
 			}
 
 			props.CorrelationId = correlationId;
-			props.Expiration = clientCfg.RequestTimeout.TotalMilliseconds.ToString();
+			props.Expiration = clientCfg.RequestTimeout.TotalMilliseconds.ToString(CultureInfo.InvariantCulture);
 		}
 	}
 }

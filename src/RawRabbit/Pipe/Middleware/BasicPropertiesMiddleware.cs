@@ -17,47 +17,47 @@ namespace RawRabbit.Pipe.Middleware
 
 	public class BasicPropertiesMiddleware : Middleware
 	{
-		protected ISerializer Serializer;
-		protected Func<IPipeContext, IBasicProperties> GetOrCreatePropsFunc;
-		protected Action<IPipeContext, IBasicProperties> PropertyModifier;
-		protected Action<IPipeContext, IBasicProperties> PostCreateAction;
+		protected readonly ISerializer _serializer;
+		protected readonly Func<IPipeContext, IBasicProperties> _getOrCreatePropsFunc;
+		protected readonly Action<IPipeContext, IBasicProperties> _propertyModifier;
+		protected readonly Action<IPipeContext, IBasicProperties> _postCreateAction;
 
 		public BasicPropertiesMiddleware(ISerializer serializer, BasicPropertiesOptions options = null)
 		{
-			Serializer = serializer;
-			PropertyModifier = options?.PropertyModier ?? ((ctx, props) => ctx.Get<Action<IBasicProperties>>(PipeKey.BasicPropertyModifier)?.Invoke(props));
-			PostCreateAction = options?.PostCreateAction;
-			GetOrCreatePropsFunc = options?.GetOrCreatePropsFunc ?? (ctx => ctx.GetBasicProperties() ?? new BasicProperties
+			this._serializer = serializer;
+			this._propertyModifier = options?.PropertyModier ?? ((ctx, props) => ctx.Get<Action<IBasicProperties>>(PipeKey.BasicPropertyModifier)?.Invoke(props));
+			this._postCreateAction = options?.PostCreateAction;
+			this._getOrCreatePropsFunc = options?.GetOrCreatePropsFunc ?? (ctx => ctx.GetBasicProperties() ?? new BasicProperties
 			{
 				MessageId = Guid.NewGuid().ToString(),
 				Headers = new Dictionary<string, object>(),
 				Persistent = ctx.GetClientConfiguration().PersistentDeliveryMode,
-				ContentType = Serializer.ContentType
+				ContentType = this._serializer.ContentType
 			});
 		}
 
-		public override Task InvokeAsync(IPipeContext context, CancellationToken token)
+		public override Task InvokeAsync(IPipeContext context, CancellationToken token = default(CancellationToken))
 		{
-			var props = GetOrCreateBasicProperties(context);
-			ModifyBasicProperties(context, props);
-			InvokePostCreateAction(context, props);
+			IBasicProperties props = this.GetOrCreateBasicProperties(context);
+			this.ModifyBasicProperties(context, props);
+			this.InvokePostCreateAction(context, props);
 			context.Properties.TryAdd(PipeKey.BasicProperties, props);
-			return Next.InvokeAsync(context, token);
+			return this.Next.InvokeAsync(context, token);
 		}
 
 		protected virtual void ModifyBasicProperties(IPipeContext context, IBasicProperties props)
 		{
-			PropertyModifier?.Invoke(context, props);
+			this._propertyModifier?.Invoke(context, props);
 		}
 
 		protected virtual void InvokePostCreateAction(IPipeContext context, IBasicProperties props)
 		{
-			PostCreateAction?.Invoke(context, props);
+			this._postCreateAction?.Invoke(context, props);
 		}
 
 		protected virtual IBasicProperties GetOrCreateBasicProperties(IPipeContext context)
 		{
-			return GetOrCreatePropsFunc(context);
+			return this._getOrCreatePropsFunc(context);
 		}
 	}
 }

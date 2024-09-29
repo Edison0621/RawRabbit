@@ -14,7 +14,7 @@ namespace RawRabbit
 
 		public static async Task<IModel> CreateChannelAsync(this IBusClient busClient, ChannelCreationOptions options = null, CancellationToken token = default(CancellationToken))
 		{
-			var context = await busClient.InvokeAsync(CreateChannelPipe, token: token);
+			IPipeContext context = await busClient.InvokeAsync(CreateChannelPipe, token: token);
 			return context.GetChannel();
 		}
 	}

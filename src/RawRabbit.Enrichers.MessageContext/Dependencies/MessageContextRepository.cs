@@ -1,4 +1,5 @@
-﻿using System.Threading;
+﻿// ReSharper disable All
+using System.Threading;
 
 #if NET451
 using System.Runtime.Remoting.Messaging;
@@ -24,13 +25,13 @@ namespace RawRabbit.Enrichers.MessageContext.Dependencies
 		public MessageContextRepository()
 		{
 #if NETSTANDARD1_5
-			_msgContext = new AsyncLocal<object>();
+			this._msgContext = new AsyncLocal<object>();
 #endif
 		}
 		public object Get()
 		{
 #if NETSTANDARD1_5
-			return _msgContext?.Value;
+			return this._msgContext?.Value;
 #elif NET451
 			return CallContext.LogicalGetData(MessageContext) as object;
 #endif
@@ -39,7 +40,7 @@ namespace RawRabbit.Enrichers.MessageContext.Dependencies
 		public void Set(object context)
 		{
 #if NETSTANDARD1_5
-			_msgContext.Value = context;
+			this._msgContext.Value = context;
 #elif NET451
 			CallContext.LogicalSetData(MessageContext, context);
 #endif

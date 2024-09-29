@@ -12,22 +12,22 @@ namespace RawRabbit.Enrichers.MessageContext.Middleware
 
 		public PublishForwardingMiddleware(IMessageContextRepository repo)
 		{
-			_repo = repo;
+			this._repo = repo;
 		}
 
-		public override Task InvokeAsync(IPipeContext context, CancellationToken token)
+		public override Task InvokeAsync(IPipeContext context, CancellationToken token = default(CancellationToken))
 		{
-			var messageContext = _repo.Get();
+			object messageContext = this._repo.Get();
 			if (messageContext == null)
 			{
-				return Next.InvokeAsync(context, token);
+				return this.Next.InvokeAsync(context, token);
 			}
 			if (context.Properties.ContainsKey(PipeKey.MessageContext))
 			{
 				context.Properties.Remove(PipeKey.MessageContext);
 			}
 			context.Properties.Add(PipeKey.MessageContext, messageContext);
-			return Next.InvokeAsync(context, token);
+			return this.Next.InvokeAsync(context, token);
 		}
 
 		public override string StageMarker => Pipe.StageMarker.Initialized;

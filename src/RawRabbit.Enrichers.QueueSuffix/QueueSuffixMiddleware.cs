@@ -10,53 +10,54 @@ namespace RawRabbit.Enrichers.QueueSuffix
 {
 	public class QueueSuffixMiddleware : StagedMiddleware
 	{
-		protected Func<IPipeContext, bool> ActivatedFlagFunc;
-		protected Func<IPipeContext, QueueDeclaration> QueueDeclareFunc;
-		protected Func<IPipeContext, string> CustomSuffixFunc;
-		protected Func<IPipeContext, ConsumeConfiguration> ConsumeCfgFunc;
-		protected Action<QueueDeclaration, string> AppendSuffixAction;
-		protected Func<string, bool> SkipSuffixFunc;
-		protected Func<IPipeContext, string> ContextSuffixOverride;
+		protected readonly Func<IPipeContext, bool> _activatedFlagFunc;
+		protected readonly Func<IPipeContext, QueueDeclaration> _queueDeclareFunc;
+		protected readonly Func<IPipeContext, string> _customSuffixFunc;
+		protected readonly Func<IPipeContext, ConsumeConfiguration> _consumeCfgFunc;
+		protected readonly Action<QueueDeclaration, string> _appendSuffixAction;
+		protected readonly Func<string, bool> _skipSuffixFunc;
+		protected readonly Func<IPipeContext, string> _contextSuffixOverride;
 
 		public override string StageMarker => Pipe.StageMarker.ConsumeConfigured;
 
 		public QueueSuffixMiddleware(QueueSuffixOptions options = null)
 		{
-			ActivatedFlagFunc = options?.ActiveFunc ?? (context => context.GetCustomQueueSuffixActivated());
-			CustomSuffixFunc = options?.CustomSuffixFunc ?? (context => context.GetCustomQueueSuffix());
-			QueueDeclareFunc = options?.QueueDeclareFunc ?? (context => context.GetQueueDeclaration());
-			AppendSuffixAction = options?.AppendSuffixAction ?? ((queue, suffix) => queue.Name = $"{queue.Name}_{suffix}");
-			ConsumeCfgFunc = options?.ConsumeConfigFunc ?? (context => context.GetConsumeConfiguration());
-			SkipSuffixFunc = options?.SkipSuffixFunc ?? (string.IsNullOrWhiteSpace);
-			ContextSuffixOverride = options?.ContextSuffixOverrideFunc ?? (context => null);
+			this._activatedFlagFunc = options?._activeFunc ?? (context => context.GetCustomQueueSuffixActivated());
+			this._customSuffixFunc = options?._customSuffixFunc ?? (context => context.GetCustomQueueSuffix());
+			this._queueDeclareFunc = options?._queueDeclareFunc ?? (context => context.GetQueueDeclaration());
+			this._appendSuffixAction = options?._appendSuffixAction ?? ((queue, suffix) => queue.Name = $"{queue.Name}_{suffix}");
+			this._consumeCfgFunc = options?._consumeConfigFunc ?? (context => context.GetConsumeConfiguration());
+			this._skipSuffixFunc = options?._skipSuffixFunc ?? (string.IsNullOrWhiteSpace);
+			this._contextSuffixOverride = options?._contextSuffixOverrideFunc ?? (context => null);
 		}
 
-		public override Task InvokeAsync(IPipeContext context, CancellationToken token)
+		public override Task InvokeAsync(IPipeContext context, CancellationToken token = default(CancellationToken))
 		{
-			var activated = GetActivatedFlag(context);
+			bool activated = this.GetActivatedFlag(context);
 			if (!activated)
 			{
-				return Next.InvokeAsync(context, token);
+				return this.Next.InvokeAsync(context, token);
 			}
-			var declaration = GetQueueDeclaration(context);
+			QueueDeclaration declaration = this.GetQueueDeclaration(context);
 			if (declaration == null)
 			{
-				return Next.InvokeAsync(context, token);
+				return this.Next.InvokeAsync(context, token);
 			}
-			var suffix = GetCustomQueueSuffix(context);
-			if (SkipSuffix(suffix))
+			string suffix = this.GetCustomQueueSuffix(context);
+			if (this.SkipSuffix(suffix))
 			{
-				return Next.InvokeAsync(context, token);
+				return this.Next.InvokeAsync(context, token);
 			}
-			AppendSuffix(declaration, suffix);
-			var consumeConfig = GetConsumeConfig(context);
-			AlignConsumerConfig(consumeConfig, declaration);
-			return Next.InvokeAsync(context, token);
+
+			this.AppendSuffix(declaration, suffix);
+			ConsumeConfiguration consumeConfig = this.GetConsumeConfig(context);
+			this.AlignConsumerConfig(consumeConfig, declaration);
+			return this.Next.InvokeAsync(context, token);
 		}
 
 		protected virtual bool SkipSuffix(string suffix)
 		{
-			return SkipSuffixFunc.Invoke(suffix);
+			return this._skipSuffixFunc.Invoke(suffix);
 		}
 
 		protected virtual void AlignConsumerConfig(ConsumeConfiguration consumeConfig, QueueDeclaration declaration)
@@ -70,37 +71,37 @@ namespace RawRabbit.Enrichers.QueueSuffix
 
 		protected virtual bool GetActivatedFlag(IPipeContext context)
 		{
-			return ActivatedFlagFunc.Invoke(context);
+			return this._activatedFlagFunc.Invoke(context);
 		}
 
 		protected virtual QueueDeclaration GetQueueDeclaration(IPipeContext context)
 		{
-			return QueueDeclareFunc?.Invoke(context);
+			return this._queueDeclareFunc?.Invoke(context);
 		}
 
 		protected virtual string GetCustomQueueSuffix(IPipeContext context)
 		{
-			var suffixOverride = GetContextSuffixOverride(context);
+			string suffixOverride = this.GetContextSuffixOverride(context);
 			if (!string.IsNullOrWhiteSpace(suffixOverride))
 			{
 				return suffixOverride;
 			}
-			return CustomSuffixFunc?.Invoke(context);
+			return this._customSuffixFunc?.Invoke(context);
 		}
 
 		protected virtual string GetContextSuffixOverride(IPipeContext context)
 		{
-			return ContextSuffixOverride?.Invoke(context);
+			return this._contextSuffixOverride?.Invoke(context);
 		}
 
 		protected virtual void AppendSuffix(QueueDeclaration queue, string suffix)
 		{
-			AppendSuffixAction?.Invoke(queue, suffix);
+			this._appendSuffixAction?.Invoke(queue, suffix);
 		}
 
 		protected virtual ConsumeConfiguration GetConsumeConfig(IPipeContext context)
 		{
-			return ConsumeCfgFunc(context);
+			return this._consumeCfgFunc(context);
 		}
 	}
 }

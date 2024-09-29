@@ -14,39 +14,40 @@ namespace RawRabbit.Pipe.Middleware
 
 	public class ExceptionHandlingMiddleware : Middleware
 	{
-		protected Func<Exception, IPipeContext, CancellationToken, Task> HandlingFunc;
-		public Middleware InnerPipe;
+		protected readonly Func<Exception, IPipeContext, CancellationToken, Task> _handlingFunc;
+		public readonly Middleware _innerPipe;
 		private readonly ILog _logger = LogProvider.For<ExceptionHandlingMiddleware>();
 
 		public ExceptionHandlingMiddleware(IPipeBuilderFactory factory, ExceptionHandlingOptions options = null)
 		{
-			HandlingFunc = options?.HandlingFunc ?? ((exception, context, token) => Task.FromResult(0));
-			InnerPipe = factory.Create(options?.InnerPipe);
+			this._handlingFunc = options?.HandlingFunc ?? ((exception, context, token) => Task.FromResult(0));
+			this._innerPipe = factory.Create(options?.InnerPipe);
 		}
 
-		public override async Task InvokeAsync(IPipeContext context, CancellationToken token)
+		public override async Task InvokeAsync(IPipeContext context, CancellationToken token = default(CancellationToken))
 		{
 			try
 			{
-				await InnerPipe.InvokeAsync(context, token);
-				await Next.InvokeAsync(context, token);
+				await this._innerPipe.InvokeAsync(context, token);
+				await this.Next.InvokeAsync(context, token);
 			}
 			catch (Exception e)
 			{
-				_logger.Error(e, "Exception thrown. Will be handled by Exception Handler");
-				await OnExceptionAsync(e, context, token);
+				this._logger.Error(e, "Exception thrown. Will be handled by Exception Handler");
+				await this.OnExceptionAsync(e, context, token);
 			}
 		}
 
 		protected virtual Task OnExceptionAsync(Exception exception, IPipeContext context, CancellationToken token)
 		{
-			return HandlingFunc(exception, context, token);
+			return this._handlingFunc(exception, context, token);
 		}
 
 		protected static Exception UnwrapInnerException(Exception exception)
 		{
 			if (exception is AggregateException && exception.InnerException != null)
 			{
+				// ReSharper disable once TailRecursiveCall
 				return UnwrapInnerException(exception.InnerException);
 			}
 			return exception;

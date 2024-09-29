@@ -7,7 +7,7 @@ namespace RawRabbit.DependencyInjection.ServiceCollection
 	{
 		public static IServiceCollection AddRawRabbit(this IServiceCollection collection, RawRabbitOptions options = null)
 		{
-			var adapter = new ServiceCollectionAdapter(collection);
+			ServiceCollectionAdapter adapter = new ServiceCollectionAdapter(collection);
 			adapter.AddRawRabbit(options);
 			options?.DependencyInjection?.Invoke(adapter);
 			return collection;

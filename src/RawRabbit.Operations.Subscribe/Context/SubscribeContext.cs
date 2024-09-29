@@ -8,7 +8,7 @@ namespace RawRabbit.Operations.Subscribe.Context
 	{
 		public SubscribeContext(IPipeContext context)
 		{
-			Properties = context.Properties;
+			this.Properties = context.Properties;
 		}
 	}
 }

@@ -1,6 +1,7 @@
 ﻿using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
+using Polly;
 using RabbitMQ.Client;
 using RawRabbit.Consumer;
 using RawRabbit.Pipe;
@@ -15,7 +16,7 @@ namespace RawRabbit.Enrichers.Polly.Middleware
 
 		protected override Task<IBasicConsumer> GetOrCreateConsumerAsync(IPipeContext context, CancellationToken token)
 		{
-			var policy = context.GetPolicy(PolicyKeys.QueueDeclare);
+			Policy policy = context.GetPolicy(PolicyKeys.QueueDeclare);
 			return policy.ExecuteAsync(
 				action: ct => base.GetOrCreateConsumerAsync(context, ct),
 				cancellationToken: token,
@@ -23,7 +24,7 @@ namespace RawRabbit.Enrichers.Polly.Middleware
 				{
 					[RetryKey.PipeContext] = context,
 					[RetryKey.CancellationToken] = token,
-					[RetryKey.ConsumerFactory] = ConsumerFactory,
+					[RetryKey.ConsumerFactory] = this._consumerFactory,
 				}
 			);
 		}

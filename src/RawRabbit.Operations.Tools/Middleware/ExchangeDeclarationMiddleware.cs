@@ -14,38 +14,38 @@ namespace RawRabbit.Operations.Tools.Middleware
 
 	public class ExchangeDeclarationMiddleware : Pipe.Middleware.Middleware
 	{
-		protected readonly IExchangeDeclarationFactory CfgFactory;
-		protected Func<IPipeContext, ExchangeDeclaration> ExchangeDeclarationFunc;
-		protected Action<IPipeContext, ExchangeDeclaration> SaveToContextAction;
+		protected readonly IExchangeDeclarationFactory _cfgFactory;
+		protected readonly Func<IPipeContext, ExchangeDeclaration> _exchangeDeclarationFunc;
+		protected readonly Action<IPipeContext, ExchangeDeclaration> _saveToContextAction;
 
 		public ExchangeDeclarationMiddleware(IExchangeDeclarationFactory cfgFactory, ExchangeDeclarationOptions options = null)
 		{
-			CfgFactory = cfgFactory;
-			ExchangeDeclarationFunc = options?.ExchangeDeclarationFunc ?? (ctx => ctx.GetExchangeDeclaration());
-			SaveToContextAction = options?.SaveToContextAction ?? ((ctx, d) => ctx.Properties.TryAdd(PipeKey.ExchangeDeclaration, d)); 
+			this._cfgFactory = cfgFactory;
+			this._exchangeDeclarationFunc = options?.ExchangeDeclarationFunc ?? (ctx => ctx.GetExchangeDeclaration());
+			this._saveToContextAction = options?.SaveToContextAction ?? ((ctx, d) => ctx.Properties.TryAdd(PipeKey.ExchangeDeclaration, d)); 
 		}
 
 		public override Task InvokeAsync(IPipeContext context, CancellationToken token = default(CancellationToken))
 		{
-			var queueDeclaration = GetQueueDeclaration(context);
-			SaveToContext(context, queueDeclaration);
-			return Next.InvokeAsync(context, token);
+			ExchangeDeclaration queueDeclaration = this.GetQueueDeclaration(context);
+			this.SaveToContext(context, queueDeclaration);
+			return this.Next.InvokeAsync(context, token);
 		}
 
 		protected virtual ExchangeDeclaration GetQueueDeclaration(IPipeContext context)
 		{
-			var declaration = ExchangeDeclarationFunc?.Invoke(context);
+			ExchangeDeclaration declaration = this._exchangeDeclarationFunc?.Invoke(context);
 			if (declaration != null)
 			{
 				return declaration;
 			}
-			var messageType = context.GetMessageType();
-			return CfgFactory.Create(messageType);
+			Type messageType = context.GetMessageType();
+			return this._cfgFactory.Create(messageType);
 		}
 
 		protected virtual void SaveToContext(IPipeContext context, ExchangeDeclaration declaration)
 		{
-			SaveToContextAction?.Invoke(context, declaration);
+			this._saveToContextAction?.Invoke(context, declaration);
 		}
 	}
 }

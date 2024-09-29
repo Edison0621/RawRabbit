@@ -8,7 +8,7 @@ namespace RawRabbit.Pipe
 	{
 		public static TPipeContext UseConsumerConcurrency<TPipeContext>(this TPipeContext context, uint concurrency) where TPipeContext : IPipeContext
 		{
-			var semaphore = new SemaphoreSlim((int)concurrency, (int)concurrency);
+			SemaphoreSlim semaphore = new SemaphoreSlim((int)concurrency, (int)concurrency);
 			return UseConsumeSemaphore(context, semaphore);
 		}
 

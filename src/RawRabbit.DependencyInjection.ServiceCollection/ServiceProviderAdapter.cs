@@ -9,25 +9,25 @@ namespace RawRabbit.DependencyInjection.ServiceCollection
 
 		public ServiceProviderAdapter(IServiceProvider provider)
 		{
-			_provider = provider;
+			this._provider = provider;
 		}
 
 		public ServiceProviderAdapter(IServiceCollection collection)
 		{
 			collection.AddSingleton<IDependencyResolver, ServiceProviderAdapter>(provider => this);
-			_provider = collection.BuildServiceProvider();
+			this._provider = collection.BuildServiceProvider();
 		}
 
 		public TService GetService<TService>(params object[] additional)
 		{
-			return (TService)GetService(typeof(TService), additional);
+			return (TService)this.GetService(typeof(TService), additional);
 		}
 
 		public object GetService(Type serviceType, params object[] additional)
 		{
 			additional = additional ?? new object[0];
-			var service = _provider.GetService(serviceType);
-			return service ?? ActivatorUtilities.CreateInstance(_provider, serviceType, additional);
+			object service = this._provider.GetService(serviceType);
+			return service ?? ActivatorUtilities.CreateInstance(this._provider, serviceType, additional);
 		}
 	}
 }

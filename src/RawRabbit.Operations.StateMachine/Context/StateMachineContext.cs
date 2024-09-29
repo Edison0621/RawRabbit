@@ -8,7 +8,7 @@ namespace RawRabbit.Operations.StateMachine.Context
 	{
 		public StateMachineContext(IPipeContext context)
 		{
-			Properties = context?.Properties;
+			this.Properties = context?.Properties;
 		}
 	}
 }

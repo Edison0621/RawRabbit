@@ -4,7 +4,6 @@ using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using RabbitMQ.Client;
-using RawRabbit.Channel.Abstraction;
 using RawRabbit.Common;
 using RawRabbit.Configuration;
 using RawRabbit.Logging;
@@ -15,6 +14,7 @@ using RawRabbit.Operations.MessageSequence.Trigger;
 using RawRabbit.Operations.StateMachine;
 using RawRabbit.Operations.StateMachine.Trigger;
 using RawRabbit.Pipe;
+using RawRabbit.Subscription;
 using Stateless;
 
 namespace RawRabbit.Operations.MessageSequence.StateMachine
@@ -28,18 +28,18 @@ namespace RawRabbit.Operations.MessageSequence.StateMachine
 		private Action _fireAction;
 		private readonly TriggerConfigurer _triggerConfigurer;
 		private readonly Queue<StepDefinition> _stepDefinitions;
-		private readonly List<Subscription.ISubscription> _subscriptions;
+		private readonly List<ISubscription> _subscriptions;
 		private readonly ILog _logger = LogProvider.For<MessageSequence>();
 		private IModel _channel;
 
 		public MessageSequence(IBusClient client, INamingConventions naming, RawRabbitConfiguration clientCfg, SequenceModel model = null) : base(model)
 		{
-			_client = client;
-			_naming = naming;
-			_clientCfg = clientCfg;
-			_triggerConfigurer = new TriggerConfigurer();
-			_stepDefinitions = new Queue<StepDefinition>();
-			_subscriptions = new List<Subscription.ISubscription>();
+			this._client = client;
+			this._naming = naming;
+			this._clientCfg = clientCfg;
+			this._triggerConfigurer = new TriggerConfigurer();
+			this._stepDefinitions = new Queue<StepDefinition>();
+			this._subscriptions = new List<ISubscription>();
 		}
 
 		protected override void ConfigureState(StateMachine<SequenceState, Type> machine)
@@ -64,68 +64,68 @@ namespace RawRabbit.Operations.MessageSequence.StateMachine
 		{
 			if (globalMessageId != Guid.Empty)
 			{
-				_logger.Info("Setting Global Message Id to {globalMessageId}", globalMessageId);
-				Model.Id = globalMessageId;
+				this._logger.Info("Setting Global Message Id to {globalMessageId}", globalMessageId);
+				this._model.Id = globalMessageId;
 			}
-			return PublishAsync(message, context => { });
+			return this.PublishAsync(message, context => { });
 		}
 
 		public IMessageSequenceBuilder PublishAsync<TMessage>(TMessage message, Action<IPipeContext> context, CancellationToken ct = new CancellationToken())
 			where TMessage : new()
 		{
-			_logger.Info("Initializing Message Sequence that starts with {messageType}.", typeof(TMessage).Name);
+			this._logger.Info("Initializing Message Sequence that starts with {messageType}.", typeof(TMessage).Name);
 
-			var entryTrigger = StateMachine.SetTriggerParameters<TMessage>(typeof(TMessage));
+			StateMachine<SequenceState, Type>.TriggerWithParameters<TMessage> entryTrigger = this._stateMachine.SetTriggerParameters<TMessage>(typeof(TMessage));
 
-			StateMachine
+			this._stateMachine
 				.Configure(SequenceState.Created)
 				.Permit(typeof(TMessage), SequenceState.Active);
 
-			StateMachine
+			this._stateMachine
 				.Configure(SequenceState.Active)
-				.OnEntryFromAsync(entryTrigger, msg => _client.PublishAsync(msg, c =>
+				.OnEntryFromAsync(entryTrigger, msg => this._client.PublishAsync(msg, c =>
 				{
-					c.Properties.Add(Enrichers.GlobalExecutionId.PipeKey.GlobalExecutionId, Model.Id.ToString());
+					c.Properties.Add(Enrichers.GlobalExecutionId.PipeKey.GlobalExecutionId, this._model.Id.ToString());
 					context?.Invoke(c);
 				}, ct));
 
-			_fireAction = () => StateMachine.FireAsync(entryTrigger, message);
+			this._fireAction = () => this._stateMachine.FireAsync(entryTrigger, message);
 			return this;
 		}
 
 		public IMessageSequenceBuilder When<TMessage, TMessageContext>(Func<TMessage, TMessageContext, Task> func, Action<IStepOptionBuilder> options = null)
 		{
-			var optionBuilder = new StepOptionBuilder();
+			StepOptionBuilder optionBuilder = new StepOptionBuilder();
 			options?.Invoke(optionBuilder);
-			_stepDefinitions.Enqueue(new StepDefinition
+			this._stepDefinitions.Enqueue(new StepDefinition
 			{
 				Type = typeof(TMessage),
 				AbortsExecution = optionBuilder.Configuration.AbortsExecution,
 				Optional =  optionBuilder.Configuration.Optional
 			});
 
-			var trigger = StateMachine.SetTriggerParameters<MessageAndContext<TMessage, TMessageContext>>(typeof(TMessage));
+			StateMachine<SequenceState, Type>.TriggerWithParameters<MessageAndContext<TMessage, TMessageContext>> trigger = this._stateMachine.SetTriggerParameters<MessageAndContext<TMessage, TMessageContext>>(typeof(TMessage));
 
-			StateMachine
+			this._stateMachine
 				.Configure(SequenceState.Active)
 				.InternalTransitionAsync(trigger, async (message, transition) =>
 				{
-					_logger.Debug("Received message of type {messageType} for sequence {sequenceId}.", transition.Trigger.Name, Model.Id);
-					var matchFound = false;
+					this._logger.Debug("Received message of type {messageType} for sequence {sequenceId}.", transition.Trigger.Name, this._model.Id);
+					bool matchFound = false;
 					do
 					{
-						if (_stepDefinitions.Peek() == null)
+						if (this._stepDefinitions.Peek() == null)
 						{
-							_logger.Info("No matching steps found for sequence. Perhaps {messageType} isn't a registered message for sequence {sequenceId}.", transition.Trigger.Name, Model.Id);
+							this._logger.Info("No matching steps found for sequence. Perhaps {messageType} isn't a registered message for sequence {sequenceId}.", transition.Trigger.Name, this._model.Id);
 							return;
 						}
-						var step = _stepDefinitions.Dequeue();
+						StepDefinition step = this._stepDefinitions.Dequeue();
 						if (step.Type != typeof(TMessage))
 						{
 							if (step.Optional)
 							{
-								_logger.Info("The step for {optionalMessageType} is optional. Skipping, as received message is of type {currentMessageType}.", step.Type.Name, typeof(TMessage).Name);
-								Model.Skipped.Add(new ExecutionResult
+								this._logger.Info("The step for {optionalMessageType} is optional. Skipping, as received message is of type {currentMessageType}.", step.Type.Name, typeof(TMessage).Name);
+								this._model.Skipped.Add(new ExecutionResult
 								{
 									Type = step.Type,
 									Time = DateTime.Now
@@ -133,7 +133,7 @@ namespace RawRabbit.Operations.MessageSequence.StateMachine
 							}
 							else
 							{
-								_logger.Info("The step for {messageType} is mandatory. Current message, {currentMessageType} will be dismissed.", step.Type.Name, typeof(TMessage).Name);
+								this._logger.Info("The step for {messageType} is mandatory. Current message, {currentMessageType} will be dismissed.", step.Type.Name, typeof(TMessage).Name);
 								return;
 							}
 						}
@@ -143,32 +143,32 @@ namespace RawRabbit.Operations.MessageSequence.StateMachine
 						}
 					} while (!matchFound);
 
-					_logger.Debug("Invoking message handler for {messageType}", typeof(TMessage).Name);
+					this._logger.Debug("Invoking message handler for {messageType}", typeof(TMessage).Name);
 					await func(message.Message, message.Context);
-					Model.Completed.Add(new ExecutionResult
+					this._model.Completed.Add(new ExecutionResult
 					{
 						Type = typeof(TMessage),
 						Time = DateTime.Now
 					});
 					if (optionBuilder.Configuration.AbortsExecution)
 					{
-						if (StateMachine.PermittedTriggers.Contains(typeof(CancelSequence)))
+						if (this._stateMachine.PermittedTriggers.Contains(typeof(CancelSequence)))
 						{
-							StateMachine.Fire(typeof(CancelSequence));
+							this._stateMachine.Fire(typeof(CancelSequence));
 						}
 					}
 				});
 
-			_triggerConfigurer
+			this._triggerConfigurer
 				.FromMessage<MessageSequence,TMessage, TMessageContext>(
-					(msg, ctx) => Model.Id,
-					(sequence, message, ctx) => StateMachine.FireAsync(trigger, new MessageAndContext<TMessage, TMessageContext> {Context = ctx, Message = message}),
+					(msg, ctx) => this._model.Id,
+					(sequence, message, ctx) => this._stateMachine.FireAsync(trigger, new MessageAndContext<TMessage, TMessageContext> {Context = ctx, Message = message}),
 					cfg => cfg
 						.FromDeclaredQueue(q => q
-							.WithNameSuffix(Model.Id.ToString())
+							.WithNameSuffix(this._model.Id.ToString())
 							.WithExclusivity()
 							.WithAutoDelete())
-						.Consume(c => c.WithRoutingKey($"{_naming.RoutingKeyConvention(typeof(TMessage))}.{Model.Id}")
+						.Consume(c => c.WithRoutingKey($"{this._naming.RoutingKeyConvention(typeof(TMessage))}.{this._model.Id}")
 					)
 				);
 			return this;
@@ -176,97 +176,99 @@ namespace RawRabbit.Operations.MessageSequence.StateMachine
 
 		MessageSequence<TMessage> IMessageSequenceBuilder.Complete<TMessage>()
 		{
-			var tsc = new TaskCompletionSource<TMessage>();
-			var sequence = new MessageSequence<TMessage>
+			TaskCompletionSource<TMessage> tsc = new TaskCompletionSource<TMessage>();
+			MessageSequence<TMessage> sequence = new MessageSequence<TMessage>
 			{
 				Task = tsc.Task
 			};
 
-			StateMachine
+			this._stateMachine
 				.Configure(SequenceState.Active)
 				.Permit(typeof(TMessage), SequenceState.Completed);
 
-			StateMachine
+			this._stateMachine
 				.Configure(SequenceState.Active)
 				.OnExit(() =>
 				{
-					_logger.Debug("Disposing subscriptions for Message Sequence '{sequenceId}'.", Model.Id);
-					foreach (var subscription in _subscriptions)
+					this._logger.Debug("Disposing subscriptions for Message Sequence '{sequenceId}'.", this._model.Id);
+					foreach (ISubscription subscription in this._subscriptions)
 					{
 						subscription.Dispose();
 					}
-					_channel.Dispose();
+
+					this._channel.Dispose();
 				});
 
-			var trigger = StateMachine.SetTriggerParameters<TMessage>(typeof(TMessage));
-			StateMachine
+			StateMachine<SequenceState, Type>.TriggerWithParameters<TMessage> trigger = this._stateMachine.SetTriggerParameters<TMessage>(typeof(TMessage));
+			this._stateMachine
 				.Configure(SequenceState.Completed)
 				.OnEntryFrom(trigger, message =>
 				{
-					_logger.Info("Sequence {sequenceId} completed with message '{messageType}'.", Model.Id, typeof(TMessage).Name);
-					sequence.Completed = Model.Completed;
-					sequence.Skipped = Model.Skipped;
+					this._logger.Info("Sequence {sequenceId} completed with message '{messageType}'.", this._model.Id, typeof(TMessage).Name);
+					sequence.Completed = this._model.Completed;
+					sequence.Skipped = this._model.Skipped;
 					tsc.TrySetResult(message);
 				});
 
-			StateMachine
+			this._stateMachine
 				.Configure(SequenceState.Canceled)
 				.OnEntry(() =>
 				{
-					sequence.Completed = Model.Completed;
-					sequence.Skipped = Model.Skipped;
+					sequence.Completed = this._model.Completed;
+					sequence.Skipped = this._model.Skipped;
 					sequence.Aborted = true;
 					tsc.TrySetResult(default(TMessage));
 				});
 
-			_triggerConfigurer
+			this._triggerConfigurer
 				.FromMessage<MessageSequence, TMessage>(
-					message => Model.Id,
-					(s, message) => StateMachine.Fire(trigger, message),
+					message => this._model.Id,
+					(s, message) => this._stateMachine.Fire(trigger, message),
 					cfg => cfg
 						.FromDeclaredQueue(q => q
-							.WithNameSuffix(Model.Id.ToString())
+							.WithNameSuffix(this._model.Id.ToString())
 							.WithExclusivity()
 							.WithAutoDelete())
-						.Consume(c => c.WithRoutingKey($"{_naming.RoutingKeyConvention(typeof(TMessage))}.{Model.Id}")
+						.Consume(c => c.WithRoutingKey($"{this._naming.RoutingKeyConvention(typeof(TMessage))}.{this._model.Id}")
 					)
 				);
 
-			_channel = _client.CreateChannelAsync().GetAwaiter().GetResult();
+			this._channel = this._client.CreateChannelAsync().GetAwaiter().GetResult();
 
-			foreach (var triggerCfg in _triggerConfigurer.TriggerConfiguration)
+			foreach (TriggerConfiguration triggerCfg in this._triggerConfigurer.TriggerConfiguration)
 			{
 				triggerCfg.Context += context =>
 				{
-					context.Properties.Add(StateMachineKey.ModelId, Model.Id);
+					context.Properties.Add(StateMachineKey.ModelId, this._model.Id);
 					context.Properties.Add(StateMachineKey.Machine, this);
-					context.Properties.TryAdd(PipeKey.Channel, _channel);
+					context.Properties.TryAdd(PipeKey.Channel, this._channel);
 				};
-				var ctx = _client.InvokeAsync(triggerCfg.Pipe, triggerCfg.Context).GetAwaiter().GetResult();
-				_subscriptions.Add(ctx.GetSubscription());
+				IPipeContext ctx = this._client.InvokeAsync(triggerCfg.Pipe, triggerCfg.Context).GetAwaiter().GetResult();
+				this._subscriptions.Add(ctx.GetSubscription());
 			}
 
 			Timer requestTimer = null;
 			requestTimer = new Timer(state =>
 			{
+				// ReSharper disable once AccessToModifiedClosure
 				requestTimer?.Dispose();
 				tsc.TrySetException(new TimeoutException(
-					$"Unable to complete sequence {Model.Id} in {_clientCfg.RequestTimeout:g}. Operation Timed out."));
-				if (StateMachine.PermittedTriggers.Contains(typeof(CancelSequence)))
+					$"Unable to complete sequence {this._model.Id} in {this._clientCfg.RequestTimeout:g}. Operation Timed out."));
+				if (this._stateMachine.PermittedTriggers.Contains(typeof(CancelSequence)))
 				{
-					StateMachine.Fire(typeof(CancelSequence));
+					this._stateMachine.Fire(typeof(CancelSequence));
 				}
-			}, null, _clientCfg.RequestTimeout, new TimeSpan(-1));
+			}, null, this._clientCfg.RequestTimeout, new TimeSpan(-1));
 
-			_fireAction();
+			this._fireAction();
 
 			return sequence;
 		}
 
-		private class CancelSequence { }
+		private sealed class CancelSequence { }
 
 		// Temp class until Stateless supports multiple trigger args
-		private class MessageAndContext<TMessage, TContext>
+		private sealed class MessageAndContext<TMessage, TContext>
 		{
 			public TMessage Message { get; set; }
 			public TContext Context { get; set; }

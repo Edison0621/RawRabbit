@@ -1,4 +1,5 @@
-﻿namespace RawRabbit.Operations.Respond.Acknowledgement
+﻿// ReSharper disable All
+namespace RawRabbit.Operations.Respond.Acknowledgement
 {
 	public abstract class TypedAcknowlegement<TResponse>
 	{

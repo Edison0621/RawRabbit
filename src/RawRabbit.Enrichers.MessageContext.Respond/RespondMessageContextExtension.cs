@@ -14,7 +14,7 @@ namespace RawRabbit
 {
 	public static class RespondMessageContextExtension
 	{
-		public static Action<IPipeBuilder> RespondPipe = RespondExtension.RespondPipe + (pipe =>
+		public static readonly Action<IPipeBuilder> RespondPipe = RespondExtension.RespondPipe + (pipe =>
 		{
 			pipe.Replace<ConsumerMessageHandlerMiddleware, ConsumerMessageHandlerMiddleware>(args: new ConsumeOptions
 			{
@@ -53,8 +53,11 @@ namespace RawRabbit
 					.Invoke(request, messageContext)
 					.ContinueWith<TypedAcknowlegement<TResponse>>(t =>
 					{
-						if (t.IsFaulted)
+						if (!t.IsFaulted) return new Ack<TResponse>(t.Result);
+
+						if (t.Exception != null)
 							throw t.Exception;
+
 						return new Ack<TResponse>(t.Result);
 					}, ct), context, ct);
 		}
@@ -71,8 +74,11 @@ namespace RawRabbit
 					Func<object[], Task<Acknowledgement>> genericHandler = args => (handler((TRequest) args[0], (TMessageContext) args[1])
 						.ContinueWith(tResponse =>
 						{
-							if (tResponse.IsFaulted)
+							if (!tResponse.IsFaulted) return tResponse.Result.AsUntyped();
+
+							if (tResponse.Exception != null)
 								throw tResponse.Exception;
+
 							return tResponse.Result.AsUntyped();
 						}, ct));
 					ctx.Properties.Add(RespondKey.IncomingMessageType, typeof(TRequest));

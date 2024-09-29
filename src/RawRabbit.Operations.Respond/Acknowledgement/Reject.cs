@@ -8,12 +8,12 @@ namespace RawRabbit.Operations.Respond.Acknowledgement
 
 		public Reject(bool requeue = true)
 		{
-			Requeue = requeue;
+			this.Requeue = requeue;
 		}
 
 		public override Common.Acknowledgement AsUntyped()
 		{
-			return new Reject(Requeue);
+			return new Reject(this.Requeue);
 		}
 	}
 }

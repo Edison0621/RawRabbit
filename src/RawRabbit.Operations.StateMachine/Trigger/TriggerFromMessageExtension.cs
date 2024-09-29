@@ -45,7 +45,7 @@ namespace RawRabbit.Operations.StateMachine.Trigger
 
 			return configurer.From(SubscribePipe, context =>
 			{
-				var stateMachineContext = new StateMachineContext(context);
+				StateMachineContext stateMachineContext = new StateMachineContext(context);
 				stateMachineContext.Properties.Add(StateMachineKey.Type, typeof(TStateMachine));
 				stateMachineContext.Properties.Add(StateMachineKey.CorrelationFunc, genericCorrFunc);
 				stateMachineContext.UseLazyCorrelationArgs(ctx => new[] { ctx.GetMessage()});

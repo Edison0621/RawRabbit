@@ -16,18 +16,18 @@ namespace RawRabbit.Instantiation.Disposable
 
 		public BusClient(IInstanceFactory instanceFactory)
 		{
-			_instanceFactory = instanceFactory;
-			_busClient = instanceFactory.Create();
+			this._instanceFactory = instanceFactory;
+			this._busClient = instanceFactory.Create();
 		}
 
 		public Task<IPipeContext> InvokeAsync(Action<IPipeBuilder> pipeCfg, Action<IPipeContext> contextCfg, CancellationToken token = new CancellationToken())
 		{
-			return _busClient.InvokeAsync(pipeCfg, contextCfg, token);
+			return this._busClient.InvokeAsync(pipeCfg, contextCfg, token);
 		}
 
 		public void Dispose()
 		{
-			(_instanceFactory as IDisposable)?.Dispose();
+			(this._instanceFactory as IDisposable)?.Dispose();
 		}
 	}
 }

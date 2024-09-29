@@ -1,5 +1,4 @@
 ﻿using System;
-using System.Threading.Tasks;
 
 namespace RawRabbit.Operations.MessageSequence.Model
 {
@@ -12,7 +11,7 @@ namespace RawRabbit.Operations.MessageSequence.Model
 
 		public StepDefinition()
 		{
-			Id = Guid.NewGuid();
+			this.Id = Guid.NewGuid();
 		}
 	}
 }

@@ -26,46 +26,46 @@ namespace RawRabbit.Operations.Request.Middleware
 		protected static readonly ConcurrentDictionary<IBasicConsumer, ConcurrentDictionary<string, TaskCompletionSource<BasicDeliverEventArgs>>> AllResponses =
 			new ConcurrentDictionary<IBasicConsumer, ConcurrentDictionary<string, TaskCompletionSource<BasicDeliverEventArgs>>>();
 		
-		protected readonly IConsumerFactory ConsumerFactory;
-		protected readonly Pipe.Middleware.Middleware ResponsePipe;
+		protected readonly IConsumerFactory _consumerFactory;
+		protected readonly Pipe.Middleware.Middleware _responsePipe;
 		private readonly ILog _logger = LogProvider.For<ResponseConsumeMiddleware>();
-		protected Func<IPipeContext, ConsumerConfiguration> ResponseConfigFunc;
-		protected Func<IPipeContext, string> CorrelationidFunc;
-		protected Func<IPipeContext, bool> DedicatedConsumerFunc;
+		protected readonly Func<IPipeContext, ConsumerConfiguration> _responseConfigFunc;
+		protected readonly Func<IPipeContext, string> _correlationidFunc;
+		protected readonly Func<IPipeContext, bool> _dedicatedConsumerFunc;
 
 		public ResponseConsumeMiddleware(IConsumerFactory consumerFactory, IPipeBuilderFactory factory, ResponseConsumerOptions options)
 		{
-			ResponseConfigFunc = options?.ResponseConfigFunc ?? (context => context.GetResponseConfiguration());
-			CorrelationidFunc = options?.CorrelationIdFunc ?? (context => context.GetBasicProperties()?.CorrelationId);
-			DedicatedConsumerFunc = options?.UseDedicatedConsumer ?? (context => context.GetDedicatedResponseConsumer());
-			ConsumerFactory = consumerFactory;
-			ResponsePipe = factory.Create(options.ResponseReceived);
+			this._responseConfigFunc = options?.ResponseConfigFunc ?? (context => context.GetResponseConfiguration());
+			this._correlationidFunc = options?.CorrelationIdFunc ?? (context => context.GetBasicProperties()?.CorrelationId);
+			this._dedicatedConsumerFunc = options?.UseDedicatedConsumer ?? (context => context.GetDedicatedResponseConsumer());
+			this._consumerFactory = consumerFactory;
+			this._responsePipe = factory.Create(options?.ResponseReceived);
 		}
 
-		public override async Task InvokeAsync(IPipeContext context, CancellationToken token)
+		public override async Task InvokeAsync(IPipeContext context, CancellationToken token = default(CancellationToken))
 		{
-			var respondCfg = GetResponseConfig(context);
-			var correlationId = GetCorrelationid(context);
-			var dedicatedConsumer = GetDedicatedConsumer(context);
-			var responseTsc = new TaskCompletionSource<BasicDeliverEventArgs>();
+			ConsumerConfiguration respondCfg = this.GetResponseConfig(context);
+			string correlationId = this.GetCorrelationid(context);
+			bool dedicatedConsumer = this.GetDedicatedConsumer(context);
+			TaskCompletionSource<BasicDeliverEventArgs> responseTsc = new TaskCompletionSource<BasicDeliverEventArgs>();
 
 			IBasicConsumer consumer;
 			if (dedicatedConsumer)
 			{
-				consumer = await ConsumerFactory.CreateConsumerAsync(token: token);
-				ConsumerFactory.ConfigureConsume(consumer, respondCfg.Consume);
+				consumer = await this._consumerFactory.CreateConsumerAsync(token: token);
+				this._consumerFactory.ConfigureConsume(consumer, respondCfg.Consume);
 			}
 			else
 			{
-				consumer = await ConsumerFactory.GetConfiguredConsumerAsync(respondCfg.Consume, token: token);
+				consumer = await this._consumerFactory.GetConfiguredConsumerAsync(respondCfg.Consume, token: token);
 			}
 
-			var responses = AllResponses.GetOrAdd(consumer, c =>
+			ConcurrentDictionary<string, TaskCompletionSource<BasicDeliverEventArgs>> responses = AllResponses.GetOrAdd(consumer, c =>
 				{
-					var pendings = new ConcurrentDictionary<string, TaskCompletionSource<BasicDeliverEventArgs>>();
+					ConcurrentDictionary<string, TaskCompletionSource<BasicDeliverEventArgs>> pendings = new ConcurrentDictionary<string, TaskCompletionSource<BasicDeliverEventArgs>>();
 					c.OnMessage((sender, args) =>
 					{
-						if (!pendings.TryRemove(args.BasicProperties.CorrelationId, out var tsc))
+						if (!pendings.TryRemove(args.BasicProperties.CorrelationId, out TaskCompletionSource<BasicDeliverEventArgs> tsc))
 							return;
 						tsc.TrySetResult(args);
 					});
@@ -74,41 +74,41 @@ namespace RawRabbit.Operations.Request.Middleware
 			);
 			context.Properties.Add(PipeKey.Consumer, consumer);
 			responses.TryAdd(correlationId, responseTsc);
-			await Next.InvokeAsync(context, token);
+			await this.Next.InvokeAsync(context, token);
 			token.Register(() => responseTsc.TrySetCanceled());
 			await responseTsc.Task;
-			_logger.Info("Message '{messageId}' for correlation id '{correlationId}' received.", responseTsc.Task.Result.BasicProperties.MessageId, correlationId);
+			this._logger.Info("Message '{messageId}' for correlation id '{correlationId}' received.", responseTsc.Task.Result.BasicProperties.MessageId, correlationId);
 			if (dedicatedConsumer)
 			{
-				_logger.Info("Disposing dedicated consumer on queue {queueName}", respondCfg.Consume.QueueName);
+				this._logger.Info("Disposing dedicated consumer on queue {queueName}", respondCfg.Consume.QueueName);
 				consumer.Model.Dispose();
 				AllResponses.TryRemove(consumer, out _);
 			}
 			context.Properties.Add(PipeKey.DeliveryEventArgs, responseTsc.Task.Result);
 			try
 			{
-				await ResponsePipe.InvokeAsync(context, token);
+				await this._responsePipe.InvokeAsync(context, token);
 			}
 			catch (Exception e)
 			{
-				_logger.Error(e, "Response pipe for message '{messageId}' executed unsuccessfully.", responseTsc.Task.Result.BasicProperties.MessageId);
+				this._logger.Error(e, "Response pipe for message '{messageId}' executed unsuccessfully.", responseTsc.Task.Result.BasicProperties.MessageId);
 				throw;
 			}
 		}
 
 		protected virtual ConsumerConfiguration GetResponseConfig(IPipeContext context)
 		{
-			return ResponseConfigFunc?.Invoke(context);
+			return this._responseConfigFunc?.Invoke(context);
 		}
 
 		protected virtual string GetCorrelationid(IPipeContext context)
 		{
-			return CorrelationidFunc?.Invoke(context);
+			return this._correlationidFunc?.Invoke(context);
 		}
 
 		protected virtual bool GetDedicatedConsumer(IPipeContext context)
 		{
-			return DedicatedConsumerFunc?.Invoke(context) ?? false;
+			return this._dedicatedConsumerFunc?.Invoke(context) ?? false;
 		}
 	}
 

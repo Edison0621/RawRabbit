@@ -15,34 +15,34 @@ namespace RawRabbit.Operations.Get.Middleware
 
 	public class GetConfigurationMiddleware : Pipe.Middleware.Middleware
 	{
-		protected Func<IPipeContext, GetConfiguration> CreateFunc;
-		protected Action<IPipeContext, GetConfiguration> PostExecutionAction;
-		protected Func<IPipeContext, Action<IGetConfigurationBuilder>> ConfigBuilderFunc;
+		protected readonly Func<IPipeContext, GetConfiguration> _createFunc;
+		protected readonly Action<IPipeContext, GetConfiguration> _postExecutionAction;
+		protected readonly Func<IPipeContext, Action<IGetConfigurationBuilder>> _configBuilderFunc;
 
 		public GetConfigurationMiddleware(GetConfigurationOptions options = null)
 		{
-			CreateFunc = options?.CreateFunc ?? (context => new GetConfiguration());
-			PostExecutionAction = options?.PostExecuteAction;
-			ConfigBuilderFunc = options?.ConfigBuilderFunc ?? (context => context.Get<Action<IGetConfigurationBuilder>>(PipeKey.ConfigurationAction));
+			this._createFunc = options?.CreateFunc ?? (context => new GetConfiguration());
+			this._postExecutionAction = options?.PostExecuteAction;
+			this._configBuilderFunc = options?.ConfigBuilderFunc ?? (context => context.Get<Action<IGetConfigurationBuilder>>(PipeKey.ConfigurationAction));
 		}
-		public override Task InvokeAsync(IPipeContext context, CancellationToken token)
+		public override Task InvokeAsync(IPipeContext context, CancellationToken token = default(CancellationToken))
 		{
-			var defaultCfg = CreateConfiguration(context);
-			var configAction = GetConfigurationAction(context);
-			var config = GetConfiguredConfiguration(defaultCfg, configAction);
-			PostExecutionAction?.Invoke(context, config);
+			GetConfiguration defaultCfg = this.CreateConfiguration(context);
+			Action<IGetConfigurationBuilder> configAction = this.GetConfigurationAction(context);
+			GetConfiguration config = this.GetConfiguredConfiguration(defaultCfg, configAction);
+			this._postExecutionAction?.Invoke(context, config);
 			context.Properties.TryAdd(GetPipeExtensions.GetConfiguration, config);
-			return Next.InvokeAsync(context, token);
+			return this.Next.InvokeAsync(context, token);
 		}
 
 		protected virtual GetConfiguration CreateConfiguration(IPipeContext context)
 		{
-			return CreateFunc(context);
+			return this._createFunc(context);
 		}
 
 		protected virtual Action<IGetConfigurationBuilder> GetConfigurationAction(IPipeContext context)
 		{
-			return ConfigBuilderFunc(context);
+			return this._configBuilderFunc(context);
 		}
 
 		protected virtual GetConfiguration GetConfiguredConfiguration(GetConfiguration configuration, Action<IGetConfigurationBuilder> action)
@@ -51,7 +51,7 @@ namespace RawRabbit.Operations.Get.Middleware
 			{
 				return configuration;
 			}
-			var builder = new GetConfigurationBuilder(configuration);
+			GetConfigurationBuilder builder = new GetConfigurationBuilder(configuration);
 			action.Invoke(builder);
 			return builder.Configuration;
 		}

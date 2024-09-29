@@ -1,7 +1,6 @@
 using System;
 using System.Threading.Tasks;
 using RabbitMQ.Client.Framing;
-using RawRabbit.Common;
 using RawRabbit.Compatibility.Legacy.Configuration;
 using RawRabbit.Compatibility.Legacy.Configuration.Publish;
 using RawRabbit.Compatibility.Legacy.Configuration.Request;
@@ -26,14 +25,14 @@ namespace RawRabbit.Compatibility.Legacy
 
 		public BusClient(RawRabbit.IBusClient client, IConfigurationEvaluator configEval)
 		{
-			_client = client;
-			_configEval = configEval;
+			this._client = client;
+			this._configEval = configEval;
 		}
 
 		public ISubscription SubscribeAsync<T>(Func<T, TMessageContext, Task> subscribeMethod, Action<ISubscriptionConfigurationBuilder> configuration = null)
 		{
-			var config = _configEval.GetConfiguration<T>(configuration);
-			var exchangeCfg = config.Exchange.AssumeInitialized
+			SubscriptionConfiguration config = this._configEval.GetConfiguration<T>(configuration);
+			ExchangeDeclaration exchangeCfg = config.Exchange.AssumeInitialized
 				? null
 				: new ExchangeDeclaration
 				{
@@ -43,7 +42,7 @@ namespace RawRabbit.Compatibility.Legacy
 					Name = config.Exchange.ExchangeName,
 					Arguments = config.Exchange.Arguments
 				};
-			var queueCfg = config.Queue.AssumeInitialized
+			QueueDeclaration queueCfg = config.Queue.AssumeInitialized
 				? null
 				: new QueueDeclaration
 				{
@@ -54,7 +53,7 @@ namespace RawRabbit.Compatibility.Legacy
 					Name = config.Queue.FullQueueName
 				};
 
-			var consumerCfg = new ConsumerConfiguration
+			ConsumerConfiguration consumerCfg = new ConsumerConfiguration
 			{
 				Exchange = exchangeCfg,
 				Queue = queueCfg,
@@ -76,7 +75,7 @@ namespace RawRabbit.Compatibility.Legacy
 				context.Properties.TryAdd(PipeKey.ExchangeDeclaration, consumerCfg.Exchange);
 			};
 
-			return _client
+			return this._client
 				.SubscribeAsync(subscribeMethod, ctxAction)
 				.ContinueWith(tContext => tContext.Result.GetSubscription())
 				.GetAwaiter()
@@ -85,8 +84,8 @@ namespace RawRabbit.Compatibility.Legacy
 
 		public Task PublishAsync<T>(T message = default(T), Guid globalMessageId = new Guid(), Action<IPublishConfigurationBuilder> configuration = null)
 		{
-			var config = _configEval.GetConfiguration<T>(configuration);
-			var exchangeCfg = config.Exchange.AssumeInitialized
+			PublishConfiguration config = this._configEval.GetConfiguration<T>(configuration);
+			ExchangeDeclaration exchangeCfg = config.Exchange.AssumeInitialized
 				? null
 				: new ExchangeDeclaration
 				{
@@ -97,7 +96,7 @@ namespace RawRabbit.Compatibility.Legacy
 					Arguments = config.Exchange.Arguments
 				};
 
-			var publisherCfg = new PublisherConfiguration
+			PublisherConfiguration publisherCfg = new PublisherConfiguration
 			{
 				Exchange = exchangeCfg,
 				ExchangeName = config.Exchange.ExchangeName,
@@ -115,13 +114,13 @@ namespace RawRabbit.Compatibility.Legacy
 				context.Properties.TryAdd(PipeKey.ExchangeDeclaration, exchangeCfg);
 				context.Properties.TryAdd(PipeKey.ReturnCallback, publisherCfg.ReturnCallback);
 			};
-			return _client.PublishAsync(message: message, context: ctxAction);
+			return this._client.PublishAsync(message: message, context: ctxAction);
 		}
 
 		public ISubscription RespondAsync<TRequest, TResponse>(Func<TRequest, TMessageContext, Task<TResponse>> onMessage, Action<IResponderConfigurationBuilder> configuration = null)
 		{
-			var config = _configEval.GetConfiguration<TRequest, TResponse>(configuration);
-			var exchangeCfg = config.Exchange.AssumeInitialized
+			ResponderConfiguration config = this._configEval.GetConfiguration<TRequest, TResponse>(configuration);
+			ExchangeDeclaration exchangeCfg = config.Exchange.AssumeInitialized
 				? null
 				: new ExchangeDeclaration
 				{
@@ -131,7 +130,7 @@ namespace RawRabbit.Compatibility.Legacy
 					Name = config.Exchange.ExchangeName,
 					Arguments = config.Exchange.Arguments
 				};
-			var queueCfg = config.Queue.AssumeInitialized
+			QueueDeclaration queueCfg = config.Queue.AssumeInitialized
 				? null
 				: new QueueDeclaration
 				{
@@ -142,7 +141,7 @@ namespace RawRabbit.Compatibility.Legacy
 					Name = config.Queue.FullQueueName
 				};
 
-			var respondCfg = new ConsumerConfiguration
+			ConsumerConfiguration respondCfg = new ConsumerConfiguration
 			{
 				Exchange = exchangeCfg,
 				Queue = queueCfg,
@@ -163,7 +162,7 @@ namespace RawRabbit.Compatibility.Legacy
 				context.Properties.Add(PipeKey.QueueDeclaration, respondCfg.Queue);
 				context.Properties.Add(PipeKey.ExchangeDeclaration, respondCfg.Exchange);
 			};
-			return _client
+			return this._client
 				.RespondAsync(onMessage, ctxAction)
 				.ContinueWith(tContext => tContext.Result.GetSubscription())
 				.GetAwaiter()
@@ -173,9 +172,9 @@ namespace RawRabbit.Compatibility.Legacy
 		public Task<TResponse> RequestAsync<TRequest, TResponse>(TRequest message = default(TRequest), Guid globalMessageId = new Guid(),
 			Action<IRequestConfigurationBuilder> configuration = null)
 		{
-			var config = _configEval.GetConfiguration<TRequest, TResponse>(configuration);
+			RequestConfiguration config = this._configEval.GetConfiguration<TRequest, TResponse>(configuration);
 
-			var exchangeCfg = config.Exchange.AssumeInitialized
+			ExchangeDeclaration exchangeCfg = config.Exchange.AssumeInitialized
 				? null
 				: new ExchangeDeclaration
 				{
@@ -184,7 +183,7 @@ namespace RawRabbit.Compatibility.Legacy
 					ExchangeType = config.Exchange.ExchangeType,
 					Name = config.Exchange.ExchangeName
 				};
-			var queueCfg = config.Queue.AssumeInitialized
+			QueueDeclaration queueCfg = config.Queue.AssumeInitialized
 				? null
 				: new QueueDeclaration
 				{
@@ -194,7 +193,7 @@ namespace RawRabbit.Compatibility.Legacy
 					Exclusive = config.Queue.Exclusive,
 					Name = config.Queue.FullQueueName
 				};
-			var requestConfig = new Operations.Request.Configuration.RequestConfiguration
+			Operations.Request.Configuration.RequestConfiguration requestConfig = new Operations.Request.Configuration.RequestConfiguration
 			{
 				Request = new PublisherConfiguration
 				{
@@ -225,12 +224,12 @@ namespace RawRabbit.Compatibility.Legacy
 				context.Properties.TryAdd(PipeKey.ConsumerConfiguration, requestConfig.Response);
 				context.Properties.TryAdd(PipeKey.ConsumeConfiguration, requestConfig.Response.Consume);
 			};
-			return _client.RequestAsync<TRequest, TResponse>(message, ctxAction);
+			return this._client.RequestAsync<TRequest, TResponse>(message, ctxAction);
 		}
 
 		public void Dispose()
 		{
-			(_client as IDisposable)?.Dispose();
+			(this._client as IDisposable)?.Dispose();
 		}
 	}
 }

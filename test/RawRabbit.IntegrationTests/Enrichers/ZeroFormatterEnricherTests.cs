@@ -1,9 +1,9 @@
-﻿using System;
-using System.Threading.Tasks;
+﻿using System.Threading.Tasks;
 using RawRabbit.Enrichers.ZeroFormatter;
 using RawRabbit.Instantiation;
 using Xunit;
 using ZeroFormatter;
+#pragma warning disable CS1587 // XML comment is not placed on a valid language element
 
 namespace RawRabbit.IntegrationTests.Enrichers
 {
@@ -12,11 +12,11 @@ namespace RawRabbit.IntegrationTests.Enrichers
 		[Fact]
 		public async Task Should_Publish_And_Subscribe_with_Zero_Formatter()
 		{
-			using (var client = RawRabbitFactory.CreateTestClient(new RawRabbitOptions { Plugins = p => p.UseZeroFormatter() }))
+			using (Instantiation.Disposable.BusClient client = RawRabbitFactory.CreateTestClient(new RawRabbitOptions { Plugins = p => p.UseZeroFormatter() }))
 			{
 				/** Setup **/
-				var tcs = new TaskCompletionSource<ZeroFormatterMessage>();
-				var message = new ZeroFormatterMessage
+				TaskCompletionSource<ZeroFormatterMessage> tcs = new TaskCompletionSource<ZeroFormatterMessage>();
+				ZeroFormatterMessage message = new ZeroFormatterMessage
 				{
 					Payload = "Zero formatter!"
 				};

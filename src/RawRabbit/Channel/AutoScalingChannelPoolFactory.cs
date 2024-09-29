@@ -18,22 +18,22 @@ namespace RawRabbit.Channel
 
 		public AutoScalingChannelPoolFactory(IChannelFactory factory, AutoScalingOptions options = null)
 		{
-			_factory = factory;
-			_options = options ?? AutoScalingOptions.Default;
-			_channelPools = new ConcurrentDictionary<string, Lazy<IChannelPool>>();
+			this._factory = factory;
+			this._options = options ?? AutoScalingOptions.Default;
+			this._channelPools = new ConcurrentDictionary<string, Lazy<IChannelPool>>();
 		}
 
 		public IChannelPool GetChannelPool(string name = null)
 		{
 			name = name ?? DefaultPoolName;
-			var pool = _channelPools.GetOrAdd(name, s => new Lazy<IChannelPool>(() => new AutoScalingChannelPool(_factory, _options)));
+			Lazy<IChannelPool> pool = this._channelPools.GetOrAdd(name, s => new Lazy<IChannelPool>(() => new AutoScalingChannelPool(this._factory, this._options)));
 			return pool.Value;
 		}
 
 		public void Dispose()
 		{
-			_factory?.Dispose();
-			foreach (var channelPool in _channelPools.Values)
+			this._factory?.Dispose();
+			foreach (Lazy<IChannelPool> channelPool in this._channelPools.Values)
 			{
 				(channelPool.Value as IDisposable)?.Dispose();
 			}

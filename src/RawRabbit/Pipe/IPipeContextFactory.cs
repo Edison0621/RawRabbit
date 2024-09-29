@@ -15,7 +15,7 @@ namespace RawRabbit.Pipe
 
 		public PipeContextFactory(RawRabbitConfiguration config)
 		{
-			_config = config;
+			this._config = config;
 		}
 
 		public IPipeContext CreateContext(params KeyValuePair<string, object>[] additional)
@@ -24,7 +24,7 @@ namespace RawRabbit.Pipe
 			{
 				Properties = new ConcurrentDictionary<string, object>(additional)
 				{
-					[PipeKey.ClientConfiguration] = _config
+					[PipeKey.ClientConfiguration] = this._config
 				}
 			};
 		}

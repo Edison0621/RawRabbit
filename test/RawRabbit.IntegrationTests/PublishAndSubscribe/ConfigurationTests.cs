@@ -1,7 +1,6 @@
 ﻿using System;
 using System.Threading.Tasks;
 using RabbitMQ.Client.Events;
-using RabbitMQ.Client.Framing;
 using RawRabbit.Common;
 using RawRabbit.Configuration.Exchange;
 using RawRabbit.Configuration.Queue;
@@ -10,7 +9,6 @@ using RawRabbit.Enrichers.QueueSuffix;
 using RawRabbit.Instantiation;
 using RawRabbit.IntegrationTests.TestMessages;
 using RawRabbit.Pipe;
-using RawRabbit.Pipe.Middleware;
 using Xunit;
 
 namespace RawRabbit.IntegrationTests.PublishAndSubscribe
@@ -20,17 +18,17 @@ namespace RawRabbit.IntegrationTests.PublishAndSubscribe
 		[Fact]
 		public async Task Should_Work_Without_Any_Additional_Configuration()
 		{
-			using (var publisher = RawRabbitFactory.CreateTestClient())
-			using (var subscriber = RawRabbitFactory.CreateTestClient())
+			using (Instantiation.Disposable.BusClient publisher = RawRabbitFactory.CreateTestClient())
+			using (Instantiation.Disposable.BusClient subscriber = RawRabbitFactory.CreateTestClient())
 			{
 				/* Setup */
-				var receivedTcs = new TaskCompletionSource<BasicMessage>();
+				TaskCompletionSource<BasicMessage> receivedTcs = new TaskCompletionSource<BasicMessage>();
 				await subscriber.SubscribeAsync<BasicMessage>(received =>
 				{
 					receivedTcs.TrySetResult(received);
 					return Task.FromResult(true);
 				});
-				var message = new BasicMessage {Prop = "Hello, world!"};
+				BasicMessage message = new BasicMessage {Prop = "Hello, world!"};
 
 				/* Test */
 				await publisher.PublishAsync(message);
@@ -44,17 +42,17 @@ namespace RawRabbit.IntegrationTests.PublishAndSubscribe
 		[Fact]
 		public async Task Should_Be_Able_To_Publish_With_Custom_Header()
 		{
-			using (var publisher = RawRabbitFactory.CreateTestClient())
-			using (var subscriber = RawRabbitFactory.CreateTestClient())
+			using (Instantiation.Disposable.BusClient publisher = RawRabbitFactory.CreateTestClient())
+			using (Instantiation.Disposable.BusClient subscriber = RawRabbitFactory.CreateTestClient())
 			{
 				/* Setup */
-				var receivedTcs = new TaskCompletionSource<BasicDeliverEventArgs>();
+				TaskCompletionSource<BasicDeliverEventArgs> receivedTcs = new TaskCompletionSource<BasicDeliverEventArgs>();
 				await subscriber.SubscribeAsync<BasicMessage, BasicDeliverEventArgs>((received, args) =>
 				{
 					receivedTcs.TrySetResult(args);
 					return Task.FromResult(true);
 				}, ctx => ctx.UseMessageContext(c => c.GetDeliveryEventArgs()));
-				var message = new BasicMessage { Prop = "Hello, world!" };
+				BasicMessage message = new BasicMessage { Prop = "Hello, world!" };
 
 				/* Test */
 				await publisher.PublishAsync(message, ctx => ctx
@@ -70,11 +68,11 @@ namespace RawRabbit.IntegrationTests.PublishAndSubscribe
 		[Fact]
 		public async Task Should_Honor_Exchange_Name_Configuration()
 		{
-			using (var publisher = RawRabbitFactory.CreateTestClient())
-			using (var subscriber = RawRabbitFactory.CreateTestClient())
+			using (Instantiation.Disposable.BusClient publisher = RawRabbitFactory.CreateTestClient())
+			using (Instantiation.Disposable.BusClient subscriber = RawRabbitFactory.CreateTestClient())
 			{
 				/* Setup */
-				var receivedTcs = new TaskCompletionSource<BasicMessage>();
+				TaskCompletionSource<BasicMessage> receivedTcs = new TaskCompletionSource<BasicMessage>();
 				await subscriber.SubscribeAsync<BasicMessage>(received =>
 				{
 					receivedTcs.TrySetResult(received);
@@ -86,7 +84,7 @@ namespace RawRabbit.IntegrationTests.PublishAndSubscribe
 						))
 				);
 
-				var message = new BasicMessage { Prop = "Hello, world!" };
+				BasicMessage message = new BasicMessage { Prop = "Hello, world!" };
 
 				/* Test */
 				await publisher.PublishAsync(message, ctx => ctx.UsePublishConfiguration(cfg => cfg.OnExchange("custom_exchange")));
@@ -100,11 +98,11 @@ namespace RawRabbit.IntegrationTests.PublishAndSubscribe
 		[Fact]
 		public async Task Should_Honor_Complex_Configuration()
 		{
-			using (var publisher = RawRabbitFactory.CreateTestClient())
-			using (var subscriber = RawRabbitFactory.CreateTestClient())
+			using (Instantiation.Disposable.BusClient publisher = RawRabbitFactory.CreateTestClient())
+			using (Instantiation.Disposable.BusClient subscriber = RawRabbitFactory.CreateTestClient())
 			{
 				/* Setup */
-				var receivedTcs = new TaskCompletionSource<BasicMessage>();
+				TaskCompletionSource<BasicMessage> receivedTcs = new TaskCompletionSource<BasicMessage>();
 				await subscriber.SubscribeAsync<BasicMessage>(received =>
 				{
 					receivedTcs.TrySetResult(received);
@@ -125,7 +123,7 @@ namespace RawRabbit.IntegrationTests.PublishAndSubscribe
 							.WithType(ExchangeType.Topic))
 				));
 
-				var message = new BasicMessage { Prop = "Hello, world!" };
+				BasicMessage message = new BasicMessage { Prop = "Hello, world!" };
 
 				/* Test */
 				await publisher.PublishAsync(message, ctx => ctx
@@ -143,20 +141,20 @@ namespace RawRabbit.IntegrationTests.PublishAndSubscribe
 		[Fact]
 		public async Task Should_Be_Able_To_Create_Unique_Queues_With_Naming_Suffix()
 		{
-			var options = new RawRabbitOptions
+			RawRabbitOptions options = new RawRabbitOptions
 			{
 				Plugins = ioc => ioc
 					.UseApplicationQueueSuffix()
 					.UseQueueSuffix()
 			};
-			using (var firstSubscriber = RawRabbitFactory.CreateTestClient(options))
-			using (var secondSubscriber = RawRabbitFactory.CreateTestClient(options))
-			using (var publisher = RawRabbitFactory.CreateTestClient())
+			using (Instantiation.Disposable.BusClient firstSubscriber = RawRabbitFactory.CreateTestClient(options))
+			using (Instantiation.Disposable.BusClient secondSubscriber = RawRabbitFactory.CreateTestClient(options))
+			using (Instantiation.Disposable.BusClient publisher = RawRabbitFactory.CreateTestClient())
 			{
 				/* Setup */
-				var firstTcs = new TaskCompletionSource<BasicMessage>();
-				var secondTcs = new TaskCompletionSource<BasicMessage>();
-				var message = new BasicMessage {Prop = "I'm delivered twice."};
+				TaskCompletionSource<BasicMessage> firstTcs = new TaskCompletionSource<BasicMessage>();
+				TaskCompletionSource<BasicMessage> secondTcs = new TaskCompletionSource<BasicMessage>();
+				BasicMessage message = new BasicMessage {Prop = "I'm delivered twice."};
 				await firstSubscriber.SubscribeAsync<BasicMessage>(msg =>
 				{
 					firstTcs.TrySetResult(msg);
@@ -185,13 +183,13 @@ namespace RawRabbit.IntegrationTests.PublishAndSubscribe
 		[Fact]
 		public async Task Should_Not_Throw_Exception_When_Queue_Name_Is_Long()
 		{
-			using (var subscriber = RawRabbitFactory.CreateTestClient())
-			using (var publisher = RawRabbitFactory.CreateTestClient())
+			using (Instantiation.Disposable.BusClient subscriber = RawRabbitFactory.CreateTestClient())
+			using (Instantiation.Disposable.BusClient publisher = RawRabbitFactory.CreateTestClient())
 			{
 				/* Setup */
-				var msgTcs = new TaskCompletionSource<BasicMessage>();
-				var message = new BasicMessage { Prop = "I'm delivered to queue with truncated name" };
-				var queueName = string.Empty;
+				TaskCompletionSource<BasicMessage> msgTcs = new TaskCompletionSource<BasicMessage>();
+				BasicMessage message = new BasicMessage { Prop = "I'm delivered to queue with truncated name" };
+				string queueName = string.Empty;
 				while (queueName.Length < 254)
 				{
 					queueName = queueName + "this_is_part_of_a_long_queue_name";
@@ -218,13 +216,13 @@ namespace RawRabbit.IntegrationTests.PublishAndSubscribe
 		[Fact]
 		public async Task Should_Not_Throw_Exception_When_Exchange_Name_Is_Long()
 		{
-			using (var subscriber = RawRabbitFactory.CreateTestClient())
-			using (var publisher = RawRabbitFactory.CreateTestClient())
+			using (Instantiation.Disposable.BusClient subscriber = RawRabbitFactory.CreateTestClient())
+			using (Instantiation.Disposable.BusClient publisher = RawRabbitFactory.CreateTestClient())
 			{
 				/* Setup */
-				var msgTcs = new TaskCompletionSource<BasicMessage>();
-				var message = new BasicMessage { Prop = "I'm delivered on an exchange with truncated name" };
-				var exchangeName = string.Empty;
+				TaskCompletionSource<BasicMessage> msgTcs = new TaskCompletionSource<BasicMessage>();
+				BasicMessage message = new BasicMessage { Prop = "I'm delivered on an exchange with truncated name" };
+				string exchangeName = string.Empty;
 				while (exchangeName.Length < 254)
 				{
 					exchangeName = exchangeName + "this_is_part_of_a_long_exchange_name";
@@ -255,11 +253,11 @@ namespace RawRabbit.IntegrationTests.PublishAndSubscribe
 		[Fact]
 		public async Task Should_Consume_Message_Already_In_Queue()
 		{
-			using (var subscriber = RawRabbitFactory.CreateTestClient())
-			using (var publisher = RawRabbitFactory.CreateTestClient())
+			using (Instantiation.Disposable.BusClient subscriber = RawRabbitFactory.CreateTestClient())
+			using (Instantiation.Disposable.BusClient publisher = RawRabbitFactory.CreateTestClient())
 			{
-				var msgTcs = new TaskCompletionSource<BasicMessage>();
-				var msg = new BasicMessage { Prop = Guid.NewGuid().ToString() };
+				TaskCompletionSource<BasicMessage> msgTcs = new TaskCompletionSource<BasicMessage>();
+				BasicMessage msg = new BasicMessage { Prop = Guid.NewGuid().ToString() };
 				await subscriber.DeclareQueueAsync<BasicMessage>();
 				await subscriber.DeclareExchangeAsync<BasicMessage>();
 				await subscriber.BindQueueAsync<BasicMessage>();
@@ -277,31 +275,31 @@ namespace RawRabbit.IntegrationTests.PublishAndSubscribe
 		[Fact]
 		public async Task Should_Be_Able_To_Declare_Exchange_And_Queue_Using_Declaration_Object()
 		{
-			const string ExchangeName = "rawrabbit.integrationtests.testmessages.declaration.object";
-			const string QueueName = "declaration.object.queue";
-			const string RoutingKey = "#";
+			const string exchangeName = "rawrabbit.integrationtests.testmessages.declaration.object";
+			const string queueName = "declaration.object.queue";
+			const string routingKey = "#";
 
-			using (var subscriber = RawRabbitFactory.CreateTestClient())
-			using (var publisher = RawRabbitFactory.CreateTestClient())
+			using (Instantiation.Disposable.BusClient subscriber = RawRabbitFactory.CreateTestClient())
+			using (Instantiation.Disposable.BusClient publisher = RawRabbitFactory.CreateTestClient())
 			{
-				var msgTcs = new TaskCompletionSource<BasicMessage>();
-				var msg = new BasicMessage { Prop = Guid.NewGuid().ToString() };
-				await subscriber.DeclareExchangeAsync(new ExchangeDeclaration()
+				TaskCompletionSource<BasicMessage> msgTcs = new TaskCompletionSource<BasicMessage>();
+				BasicMessage msg = new BasicMessage { Prop = Guid.NewGuid().ToString() };
+				await subscriber.DeclareExchangeAsync(new ExchangeDeclaration
 				{
-					Name = ExchangeName,
+					Name = exchangeName,
 					ExchangeType = "fanout",
 					AutoDelete = true
 				});
-				await subscriber.DeclareQueueAsync(new QueueDeclaration()
+				await subscriber.DeclareQueueAsync(new QueueDeclaration
 				{
-					Name = QueueName,
+					Name = queueName,
 					AutoDelete = true
 				});
-				await subscriber.BindQueueAsync(QueueName, ExchangeName, RoutingKey);
+				await subscriber.BindQueueAsync(queueName, exchangeName, routingKey);
 
 				await publisher.PublishAsync(msg, ctx => ctx
 					.UsePublishConfiguration(cfg => cfg
-					.OnExchange(ExchangeName)));
+					.OnExchange(exchangeName)));
 
 				await subscriber.SubscribeAsync<BasicMessage>(message =>
 				{
@@ -309,9 +307,9 @@ namespace RawRabbit.IntegrationTests.PublishAndSubscribe
 					return Task.FromResult(true);
 				}, ctx => ctx.UseSubscribeConfiguration(cfg => cfg
 					.Consume(consume => consume
-						.OnExchange(ExchangeName)
-						.FromQueue(QueueName)
-						.WithRoutingKey(RoutingKey))));
+						.OnExchange(exchangeName)
+						.FromQueue(queueName)
+						.WithRoutingKey(routingKey))));
 
 				await msgTcs.Task;
 				Assert.Equal(msg.Prop, msgTcs.Task.Result.Prop);

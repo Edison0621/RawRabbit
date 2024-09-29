@@ -11,14 +11,14 @@ namespace RawRabbit.Operations.StateMachine.Middleware
 
 		public PersistModelMiddleware(IStateMachineActivator stateMachineRepo)
 		{
-			_stateMachineRepo = stateMachineRepo;
+			this._stateMachineRepo = stateMachineRepo;
 		}
 
-		public override async Task InvokeAsync(IPipeContext context, CancellationToken token)
+		public override async Task InvokeAsync(IPipeContext context, CancellationToken token = default(CancellationToken))
 		{
-			var machine = context.GetStateMachine();
-			await _stateMachineRepo.PersistAsync(machine);
-			await Next.InvokeAsync(context, token);
+			StateMachineBase machine = context.GetStateMachine();
+			await this._stateMachineRepo.PersistAsync(machine);
+			await this.Next.InvokeAsync(context, token);
 		}
 	}
 }

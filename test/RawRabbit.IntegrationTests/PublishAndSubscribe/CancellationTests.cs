@@ -3,6 +3,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using RawRabbit.IntegrationTests.TestMessages;
 using Xunit;
+// ReSharper disable All
 
 namespace RawRabbit.IntegrationTests.PublishAndSubscribe
 {
@@ -11,13 +12,13 @@ namespace RawRabbit.IntegrationTests.PublishAndSubscribe
 		[Fact]
 		public async Task Should_Honor_Task_Cancellation()
 		{
-			using (var publisher = RawRabbitFactory.CreateTestClient())
-			using (var subscriber = RawRabbitFactory.CreateTestClient())
+			using (Instantiation.Disposable.BusClient publisher = RawRabbitFactory.CreateTestClient())
+			using (Instantiation.Disposable.BusClient subscriber = RawRabbitFactory.CreateTestClient())
 			{
 				/* Setup */
-				var message = new BasicMessage {Prop = Guid.NewGuid().ToString()};
-				var receivedTcs = new TaskCompletionSource<BasicMessage>();
-				var sendCts = new CancellationTokenSource();
+				BasicMessage message = new BasicMessage {Prop = Guid.NewGuid().ToString()};
+				TaskCompletionSource<BasicMessage> receivedTcs = new TaskCompletionSource<BasicMessage>();
+				CancellationTokenSource sendCts = new CancellationTokenSource();
 				await subscriber.SubscribeAsync<BasicMessage>(received =>
 				{
 					if (received.Prop == message.Prop)
@@ -29,7 +30,7 @@ namespace RawRabbit.IntegrationTests.PublishAndSubscribe
 
 				/* Test */
 				sendCts.CancelAfter(TimeSpan.FromTicks(400));
-				var publishTask = publisher.PublishAsync(new BasicMessage(), token: sendCts.Token);
+				Task publishTask = publisher.PublishAsync(new BasicMessage(), token: sendCts.Token);
 				receivedTcs.Task.Wait(100);
 
 				/* Assert */

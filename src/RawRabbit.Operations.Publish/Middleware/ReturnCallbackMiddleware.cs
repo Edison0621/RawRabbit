@@ -17,53 +17,53 @@ namespace RawRabbit.Operations.Publish.Middleware
 
 	public class ReturnCallbackMiddleware : Pipe.Middleware.Middleware
 	{
-		protected Func<IPipeContext, EventHandler<BasicReturnEventArgs>> CallbackFunc;
-		protected Func<IPipeContext, IModel> ChannelFunc;
-		protected Action<IPipeContext, EventHandler<BasicReturnEventArgs>> PostInvoke;
+		protected readonly Func<IPipeContext, EventHandler<BasicReturnEventArgs>> _callbackFunc;
+		protected readonly Func<IPipeContext, IModel> _channelFunc;
+		protected readonly Action<IPipeContext, EventHandler<BasicReturnEventArgs>> _postInvoke;
 		private readonly ILog _logger = LogProvider.For<ReturnCallbackMiddleware>();
 
 		public ReturnCallbackMiddleware(ReturnCallbackOptions options = null)
 		{
-			CallbackFunc = options?.CallbackFunc ?? (context => context.GetReturnCallback());
-			ChannelFunc = options?.ChannelFunc?? (context => context.GetTransientChannel());
-			PostInvoke = options?.PostInvokeAction;
+			this._callbackFunc = options?.CallbackFunc ?? (context => context.GetReturnCallback());
+			this._channelFunc = options?.ChannelFunc?? (context => context.GetTransientChannel());
+			this._postInvoke = options?.PostInvokeAction;
 		}
 
-		public override async Task InvokeAsync(IPipeContext context, CancellationToken token)
+		public override async Task InvokeAsync(IPipeContext context, CancellationToken token = default(CancellationToken))
 		{
-			var callback = GetCallback(context);
+			EventHandler<BasicReturnEventArgs> callback = this.GetCallback(context);
 			if (callback == null)
 			{
-				_logger.Debug("No Mandatory Callback registered.");
-				await Next.InvokeAsync(context, token);
+				this._logger.Debug("No Mandatory Callback registered.");
+				await this.Next.InvokeAsync(context, token);
 				return;
 			}
 
-			var channel = GetChannel(context);
+			IModel channel = this.GetChannel(context);
 			if (channel == null)
 			{
-				_logger.Warn("Channel not found in Pipe Context. Mandatory Callback not registered.");
-				await Next.InvokeAsync(context, token);
+				this._logger.Warn("Channel not found in Pipe Context. Mandatory Callback not registered.");
+				await this.Next.InvokeAsync(context, token);
 				return;
 			}
 
-			_logger.Debug("Register Mandatory Callback on channel {channelNumber}", channel.ChannelNumber);
+			this._logger.Debug("Register Mandatory Callback on channel {channelNumber}", channel.ChannelNumber);
 			channel.BasicReturn += callback;
-			PostInvoke?.Invoke(context, callback);
+			this._postInvoke?.Invoke(context, callback);
 
-			await Next.InvokeAsync(context, token);
-			_logger.Debug("Removing Mandatory Callback on channel {channelNumber}", channel.ChannelNumber);
+			await this.Next.InvokeAsync(context, token);
+			this._logger.Debug("Removing Mandatory Callback on channel {channelNumber}", channel.ChannelNumber);
 			channel.BasicReturn -= callback;
 		}
 
 		protected virtual IModel GetChannel(IPipeContext context)
 		{
-			return ChannelFunc(context);
+			return this._channelFunc(context);
 		}
 
 		protected virtual EventHandler<BasicReturnEventArgs> GetCallback(IPipeContext context)
 		{
-			return CallbackFunc(context);
+			return this._callbackFunc(context);
 		}
 	}
 }

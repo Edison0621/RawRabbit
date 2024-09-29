@@ -13,7 +13,7 @@ namespace RawRabbit.Operations.MessageSequence
 			Func<IMessageChainPublisher, MessageSequence<TCompleteType>> cfg
 		)
 		{
-			var sequenceMachine = client
+			StateMachineBase sequenceMachine = client
 				.InvokeAsync(ctx => ctx
 					.Use<RetrieveStateMachineMiddleware>(new RetrieveStateMachineOptions
 					{

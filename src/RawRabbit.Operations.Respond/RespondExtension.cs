@@ -1,5 +1,4 @@
 ﻿using System;
-using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using RawRabbit.Common;
@@ -78,7 +77,7 @@ namespace RawRabbit
 		{
 			return client.RespondAsync<TRequest, TResponse>(async request =>
 				{
-					var response = await handler(request);
+					TResponse response = await handler(request);
 					return new Ack<TResponse>(response);
 				},
 				context,
@@ -100,6 +99,7 @@ namespace RawRabbit
 							.ContinueWith(tResponse =>
 							{
 								if (tResponse.IsFaulted)
+									// ReSharper disable once PossibleNullReferenceException
 									throw tResponse.Exception;
 								return tResponse.Result.AsUntyped();
 							}, ct);

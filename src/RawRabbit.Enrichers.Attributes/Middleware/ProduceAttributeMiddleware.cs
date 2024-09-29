@@ -2,7 +2,6 @@
 using System.Reflection;
 using System.Threading;
 using System.Threading.Tasks;
-using RabbitMQ.Client.Framing.Impl;
 using RawRabbit.Configuration.Exchange;
 using RawRabbit.Configuration.Publisher;
 using RawRabbit.Pipe;
@@ -18,38 +17,38 @@ namespace RawRabbit.Enrichers.Attributes.Middleware
 
 	public class ProduceAttributeMiddleware : StagedMiddleware
 	{
-		protected Func<IPipeContext, PublisherConfiguration> PublishConfigFunc;
-		protected Func<IPipeContext, Type> MessageType;
+		protected readonly Func<IPipeContext, PublisherConfiguration> _publishConfigFunc;
+		protected readonly Func<IPipeContext, Type> _messageType;
 		public override string StageMarker => Pipe.StageMarker.PublishConfigured;
 
 		public ProduceAttributeMiddleware(ProduceAttributeOptions options = null)
 		{
-				PublishConfigFunc = options?.PublishConfigFunc ?? (context => context.GetPublishConfiguration());
-				MessageType = options?.MessageTypeFunc ?? (context => context.GetMessageType());
+			this._publishConfigFunc = options?.PublishConfigFunc ?? (context => context.GetPublishConfiguration());
+			this._messageType = options?.MessageTypeFunc ?? (context => context.GetMessageType());
 		}
 
 		public override Task InvokeAsync(IPipeContext context, CancellationToken token = new CancellationToken())
 		{
-			var publishConfig = GetPublishConfig(context);
-			var messageType = GetMessageType(context);
-			UpdateExchangeConfig(publishConfig, messageType);
-			UpdateRoutingConfig(publishConfig, messageType);
-			return Next.InvokeAsync(context, token);
+			PublisherConfiguration publishConfig = this.GetPublishConfig(context);
+			Type messageType = this.GetMessageType(context);
+			this.UpdateExchangeConfig(publishConfig, messageType);
+			this.UpdateRoutingConfig(publishConfig, messageType);
+			return this.Next.InvokeAsync(context, token);
 		}
 
 		protected virtual PublisherConfiguration GetPublishConfig(IPipeContext context)
 		{
-			return PublishConfigFunc?.Invoke(context);
+			return this._publishConfigFunc?.Invoke(context);
 		}
 
 		protected virtual Type GetMessageType(IPipeContext context)
 		{
-			return MessageType?.Invoke(context);
+			return this._messageType?.Invoke(context);
 		}
 
 		protected virtual void UpdateExchangeConfig(PublisherConfiguration config, Type messageType)
 		{
-			var attribute = GetAttribute<ExchangeAttribute>(messageType);
+			ExchangeAttribute attribute = this.GetAttribute<ExchangeAttribute>(messageType);
 			if (attribute == null)
 			{
 				return;
@@ -67,13 +66,13 @@ namespace RawRabbit.Enrichers.Attributes.Middleware
 			{
 				return;
 			}
-			if (attribute.NullableDurability.HasValue)
+			if (attribute._nullableDurability.HasValue)
 			{
-				config.Exchange.Durable = attribute.NullableDurability.Value;
+				config.Exchange.Durable = attribute._nullableDurability.Value;
 			}
-			if (attribute.NullableAutoDelete.HasValue)
+			if (attribute._nullableAutoDelete.HasValue)
 			{
-				config.Exchange.AutoDelete= attribute.NullableAutoDelete.Value;
+				config.Exchange.AutoDelete= attribute._nullableAutoDelete.Value;
 			}
 			if (attribute.Type != ExchangeType.Unknown)
 			{
@@ -83,7 +82,7 @@ namespace RawRabbit.Enrichers.Attributes.Middleware
 
 		protected virtual void UpdateRoutingConfig(PublisherConfiguration config, Type messageType)
 		{
-			var routingAttr = GetAttribute<RoutingAttribute>(messageType);
+			RoutingAttribute routingAttr = this.GetAttribute<RoutingAttribute>(messageType);
 			if (routingAttr?.RoutingKey != null)
 			{
 				config.RoutingKey = routingAttr.RoutingKey;
@@ -92,7 +91,7 @@ namespace RawRabbit.Enrichers.Attributes.Middleware
 
 		protected virtual TAttribute GetAttribute<TAttribute>(Type type) where TAttribute : Attribute
 		{
-			var attr = type.GetTypeInfo().GetCustomAttribute<TAttribute>();
+			TAttribute attr = type.GetTypeInfo().GetCustomAttribute<TAttribute>();
 			return attr;
 		}
 	}

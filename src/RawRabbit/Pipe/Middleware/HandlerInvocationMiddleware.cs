@@ -14,31 +14,31 @@ namespace RawRabbit.Pipe.Middleware
 
 	public class HandlerInvocationMiddleware : Middleware
 	{
-		protected Func<IPipeContext, object[]> HandlerArgsFunc;
-		protected Action<IPipeContext, Acknowledgement> PostInvokeAction;
-		protected Func<IPipeContext, Func<object[], Task<Acknowledgement>>> MessageHandlerFunc;
+		protected readonly Func<IPipeContext, object[]> _handlerArgsFunc;
+		protected readonly Action<IPipeContext, Acknowledgement> _postInvokeAction;
+		protected readonly Func<IPipeContext, Func<object[], Task<Acknowledgement>>> _messageHandlerFunc;
 
 		public HandlerInvocationMiddleware(HandlerInvocationOptions options = null)
 		{
-			HandlerArgsFunc = options?.HandlerArgsFunc ?? (context => context.GetMessageHandlerArgs()) ;
-			MessageHandlerFunc = options?.MessageHandlerFunc ?? (context => context.GetMessageHandler());
-			PostInvokeAction = options?.PostInvokeAction;
+			this._handlerArgsFunc = options?.HandlerArgsFunc ?? (context => context.GetMessageHandlerArgs()) ;
+			this._messageHandlerFunc = options?.MessageHandlerFunc ?? (context => context.GetMessageHandler());
+			this._postInvokeAction = options?.PostInvokeAction;
 		}
 
-		public override async Task InvokeAsync(IPipeContext context, CancellationToken token)
+		public override async Task InvokeAsync(IPipeContext context, CancellationToken token = default(CancellationToken))
 		{
-			await InvokeMessageHandler(context, token);
-			await Next.InvokeAsync(context, token);
+			await this.InvokeMessageHandler(context, token);
+			await this.Next.InvokeAsync(context, token);
 		}
 
 		protected virtual async Task InvokeMessageHandler(IPipeContext context, CancellationToken token)
 		{
-			var args = HandlerArgsFunc(context);
-			var handler = MessageHandlerFunc(context);
+			object[] args = this._handlerArgsFunc(context);
+			Func<object[], Task<Acknowledgement>> handler = this._messageHandlerFunc(context);
 
-			var acknowledgement = await handler(args);
+			Acknowledgement acknowledgement = await handler(args);
 			context.Properties.TryAdd(PipeKey.MessageAcknowledgement, acknowledgement);
-			PostInvokeAction?.Invoke(context, acknowledgement);
+			this._postInvokeAction?.Invoke(context, acknowledgement);
 		}
 	}
 }

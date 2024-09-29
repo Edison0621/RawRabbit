@@ -15,22 +15,22 @@ namespace RawRabbit
 
 	public class PolicyMiddleware : StagedMiddleware
 	{
-		protected Action<IPipeContext> PolicyAction;
+		protected readonly Action<IPipeContext> _policyAction;
 
 		public PolicyMiddleware(PolicyOptions options = null)
 		{
-			PolicyAction = options?.PolicyAction;
+			this._policyAction = options?.PolicyAction;
 		}
 
 		public override Task InvokeAsync(IPipeContext context, CancellationToken token = new CancellationToken())
 		{
-			AddPolicies(context);
-			return Next.InvokeAsync(context, token);
+			this.AddPolicies(context);
+			return this.Next.InvokeAsync(context, token);
 		}
 
 		protected virtual void AddPolicies(IPipeContext context)
 		{
-			PolicyAction?.Invoke(context);
+			this._policyAction?.Invoke(context);
 		}
 
 		public override string StageMarker => Pipe.StageMarker.Initialized;
