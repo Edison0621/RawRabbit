@@ -31,7 +31,7 @@ public class SubscriptionConfigurationMiddleware : Pipe.Middleware.Middleware
 		this._configActionFunc = options?.ConfigActionFunc ?? (context => context.Get<Action<IConsumerConfigurationBuilder>>(PipeKey.ConfigurationAction));
 	}
 
-	public override async Task InvokeAsync(IPipeContext context, CancellationToken token = default(CancellationToken))
+	public override async Task InvokeAsync(IPipeContext context, CancellationToken token = default)
 	{
 		ConsumerConfiguration config = this.ExtractFromContextProperty(context) ?? this.ExtractConfigFromMessageType(context);
 		if (config == null)

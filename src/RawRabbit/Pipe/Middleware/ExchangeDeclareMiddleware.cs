@@ -28,7 +28,7 @@ public class ExchangeDeclareMiddleware : Middleware
 		this._throwOnFailFunc = options?.ThrowOnFailFunc ?? (context => false);
 	}
 
-	public override async Task InvokeAsync(IPipeContext context, CancellationToken token = default(CancellationToken))
+	public override async Task InvokeAsync(IPipeContext context, CancellationToken token = default)
 	{
 		ExchangeDeclaration exchangeCfg = this.GetExchangeDeclaration(context);
 

@@ -44,7 +44,7 @@ public static class SubscribeMessageContextExtension
 		pipe.Replace<ConsumerMessageHandlerMiddleware, ConsumerMessageHandlerMiddleware>(args: new ConsumeOptions { Pipe = ConsumePipe });
 	});
 
-	public static Task<IPipeContext> SubscribeAsync<TMessage, TMessageContext>(this IBusClient client, Func<TMessage, TMessageContext, Task> subscribeMethod, Action<ISubscribeContext> context = null, CancellationToken ct = default(CancellationToken))
+	public static Task<IPipeContext> SubscribeAsync<TMessage, TMessageContext>(this IBusClient client, Func<TMessage, TMessageContext, Task> subscribeMethod, Action<ISubscribeContext> context = null, CancellationToken ct = default)
 	{
 		return client.SubscribeAsync<TMessage, TMessageContext>(
 			(msg, ctx) => subscribeMethod
@@ -57,7 +57,7 @@ public static class SubscribeMessageContextExtension
 		this IBusClient client,
 		Func<TMessage, TMessageContext, Task<Acknowledgement>> subscribeMethod,
 		Action<ISubscribeContext> context = null,
-		CancellationToken token = default(CancellationToken))
+		CancellationToken token = default)
 	{
 		return client
 			.InvokeAsync(

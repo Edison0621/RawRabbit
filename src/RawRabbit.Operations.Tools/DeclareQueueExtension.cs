@@ -14,12 +14,12 @@ public static class DeclareQueueExtension
 		.Use<QueueDeclarationMiddleware>()
 		.Use<QueueDeclareMiddleware>();
 
-	public static async Task DeclareQueueAsync(this IBusClient client, QueueDeclaration declaration, CancellationToken ct = default(CancellationToken))
+	public static async Task DeclareQueueAsync(this IBusClient client, QueueDeclaration declaration, CancellationToken ct = default)
 	{
 		await client.InvokeAsync(DeclareQueueAction, ctx => ctx.Properties.Add(PipeKey.QueueDeclaration, declaration), ct);
 	}
 
-	public static async Task DeclareQueueAsync<TMessage>(this IBusClient client, CancellationToken ct = default(CancellationToken))
+	public static async Task DeclareQueueAsync<TMessage>(this IBusClient client, CancellationToken ct = default)
 	{
 		await client.InvokeAsync(DeclareQueueAction, ctx => ctx.Properties.Add(PipeKey.MessageType, typeof(TMessage)), ct);
 	}

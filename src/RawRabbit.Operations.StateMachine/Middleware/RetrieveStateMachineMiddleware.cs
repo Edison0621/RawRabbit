@@ -31,7 +31,7 @@ public class RetrieveStateMachineMiddleware : Pipe.Middleware.Middleware
 		this._postExecuteAction = options?.PostExecuteAction;
 	}
 
-	public override async Task InvokeAsync(IPipeContext context, CancellationToken token = default(CancellationToken))
+	public override async Task InvokeAsync(IPipeContext context, CancellationToken token = default)
 	{
 		Guid id = this.GetModelId(context);
 		Type stateMachineType = this.GetStateMachineType(context);

@@ -18,7 +18,7 @@ public class BusClient : IBusClient
 		this._contextFactory = contextFactory;
 	}
 
-	public async Task<IPipeContext> InvokeAsync(Action<IPipeBuilder> pipeCfg, Action<IPipeContext> contextCfg = null, CancellationToken token = default(CancellationToken))
+	public async Task<IPipeContext> InvokeAsync(Action<IPipeBuilder> pipeCfg, Action<IPipeContext> contextCfg = null, CancellationToken token = default)
 	{
 		Middleware pipe = this._pipeBuilderFactory.Create(pipeCfg);
 		IPipeContext context = this._contextFactory.CreateContext();

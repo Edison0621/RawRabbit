@@ -13,7 +13,7 @@ public static class BindQueueExtension
 		.Use<ConsumeConfigurationMiddleware>()
 		.Use<QueueBindMiddleware>();
 
-	public static Task BindQueueAsync(this IBusClient client, string queueName, string exchangeName, string routingKey, CancellationToken ct = default (CancellationToken))
+	public static Task BindQueueAsync(this IBusClient client, string queueName, string exchangeName, string routingKey, CancellationToken ct = default)
 	{
 		return client.InvokeAsync(BindQueueAction, cfg =>
 		{
@@ -26,7 +26,7 @@ public static class BindQueueExtension
 		}, ct);
 	}
 
-	public static Task BindQueueAsync<TMessage>(this IBusClient client, CancellationToken ct = default(CancellationToken))
+	public static Task BindQueueAsync<TMessage>(this IBusClient client, CancellationToken ct = default)
 	{
 		return client.InvokeAsync(BindQueueAction, cfg =>
 		{

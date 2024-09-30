@@ -39,7 +39,7 @@ public class ExecutionIdRoutingMiddleware : StagedMiddleware
 		});
 	}
 
-	public override Task InvokeAsync(IPipeContext context, CancellationToken token = default(CancellationToken))
+	public override Task InvokeAsync(IPipeContext context, CancellationToken token = default)
 	{
 		bool enabled = this.GetRoutingEnabled(context);
 		if (!enabled)

@@ -14,12 +14,12 @@ public static class DeclareExchangeExtension
 		.Use<ExchangeDeclarationMiddleware>()
 		.Use<ExchangeDeclareMiddleware>();
 		
-	public static Task DeclareExchangeAsync(this IBusClient client, ExchangeDeclaration declaration, CancellationToken ct = default(CancellationToken))
+	public static Task DeclareExchangeAsync(this IBusClient client, ExchangeDeclaration declaration, CancellationToken ct = default)
 	{
 		return client.InvokeAsync(DeclareExchangeAction, ctx => ctx.Properties.Add(PipeKey.ExchangeDeclaration, declaration), ct);
 	}
 
-	public static Task DeclareExchangeAsync<TMessage>(this IBusClient client, CancellationToken ct = default(CancellationToken))
+	public static Task DeclareExchangeAsync<TMessage>(this IBusClient client, CancellationToken ct = default)
 	{
 		return client.InvokeAsync(DeclareExchangeAction, context => context.Properties.TryAdd(PipeKey.MessageType, typeof(TMessage)), ct);
 	}

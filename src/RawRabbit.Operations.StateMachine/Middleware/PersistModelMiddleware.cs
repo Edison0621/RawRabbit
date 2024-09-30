@@ -14,7 +14,7 @@ public class PersistModelMiddleware : Pipe.Middleware.Middleware
 		this._stateMachineRepo = stateMachineRepo;
 	}
 
-	public override async Task InvokeAsync(IPipeContext context, CancellationToken token = default(CancellationToken))
+	public override async Task InvokeAsync(IPipeContext context, CancellationToken token = default)
 	{
 		StateMachineBase machine = context.GetStateMachine();
 		await this._stateMachineRepo.PersistAsync(machine);

@@ -29,7 +29,7 @@ public class BasicGetMiddleware : Pipe.Middleware.Middleware
 		this._postExecutionAction = options?.PostExecutionAction;
 	}
 
-	public override async Task InvokeAsync(IPipeContext context, CancellationToken token = default(CancellationToken))
+	public override async Task InvokeAsync(IPipeContext context, CancellationToken token = default)
 	{
 		IChannel channel = this.GetChannel(context);
 		string queueNamme = this.GetQueueName(context);

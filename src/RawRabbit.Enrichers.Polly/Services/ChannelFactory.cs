@@ -2,6 +2,7 @@
 using System.Threading;
 using System.Threading.Tasks;
 using Polly;
+using Polly.NoOp;
 using RabbitMQ.Client;
 using RawRabbit.Configuration;
 
@@ -9,9 +10,9 @@ namespace RawRabbit.Enrichers.Polly.Services;
 
 public class ChannelFactory : Channel.ChannelFactory
 {
-	protected readonly Policy _createChannelPolicy;
-	protected readonly Policy _connectPolicy;
-	protected readonly Policy _getConnectionPolicy;
+	protected readonly AsyncNoOpPolicy _createChannelPolicy;
+	protected readonly AsyncNoOpPolicy _connectPolicy;
+	protected readonly AsyncNoOpPolicy _getConnectionPolicy;
 
 	public ChannelFactory(IConnectionFactory connectionFactory, RawRabbitConfiguration config, ConnectionPolicies policies = null)
 		: base(connectionFactory, config)
@@ -21,42 +22,39 @@ public class ChannelFactory : Channel.ChannelFactory
 		this._getConnectionPolicy = policies?.GetConnection ?? Policy.NoOpAsync();
 	}
 
-	public override Task ConnectAsync(CancellationToken token = default(CancellationToken))
+	public override Task ConnectAsync(CancellationToken token = default)
 	{
 		return this._connectPolicy.ExecuteAsync(
-			action: ct => base.ConnectAsync(ct),
+			action: ct => base.ConnectAsync(token),
 			contextData: new Dictionary<string, object>
 			{
 				[RetryKey.ConnectionFactory] = this._connectionFactory,
 				[RetryKey.ClientConfiguration] = this._clientConfig
-			},
-			cancellationToken: token
+			}
 		);
 	}
 
-	protected override Task<IConnection> GetConnectionAsync(CancellationToken token = default(CancellationToken))
+	protected override Task<IConnection> GetConnectionAsync(CancellationToken token = default)
 	{
 		return this._getConnectionPolicy.ExecuteAsync(
-			action: ct => base.GetConnectionAsync(ct),
+			action: ct => base.GetConnectionAsync(token),
 			contextData: new Dictionary<string, object>
 			{
 				[RetryKey.ConnectionFactory] = this._connectionFactory,
 				[RetryKey.ClientConfiguration] = this._clientConfig
-			},
-			cancellationToken: token
+			}
 		);
 	}
 
-	public override Task<IChannel> CreateChannelAsync(CancellationToken token = default(CancellationToken))
+	public override Task<IChannel> CreateChannelAsync(CancellationToken token = default)
 	{
 		return this._createChannelPolicy.ExecuteAsync(
-			action: ct => base.CreateChannelAsync(ct),
+			action: ct => base.CreateChannelAsync(token),
 			contextData: new Dictionary<string, object>
 			{
 				[RetryKey.ConnectionFactory] = this._connectionFactory,
 				[RetryKey.ClientConfiguration] = this._clientConfig
-			},
-			cancellationToken: token
+			}
 		);
 	}
 }
@@ -67,15 +65,15 @@ public class ConnectionPolicies
 	/// Used whenever 'CreateChannelAsync' is called.
 	/// Expects an async policy.
 	/// </summary>
-	public Policy CreateChannel { get; set; }
+	public AsyncNoOpPolicy CreateChannel { get; set; }
 
 	/// <summary>
 	/// Used whenever an existing connection is retrieved.
 	/// </summary>
-	public Policy GetConnection { get; set; }
+	public AsyncNoOpPolicy GetConnection { get; set; }
 
 	/// <summary>
 	/// Used when establishing the initial connection
 	/// </summary>
-	public Policy Connect { get; set; }
+	public AsyncNoOpPolicy Connect { get; set; }
 }

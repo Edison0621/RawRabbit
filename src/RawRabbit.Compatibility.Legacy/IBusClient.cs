@@ -13,11 +13,11 @@ public interface IBusClient<out TMessageContext> where TMessageContext : IMessag
 {
 	ISubscription SubscribeAsync<T>(Func<T, TMessageContext, Task> subscribeMethod, Action<ISubscriptionConfigurationBuilder> configuration = null);
 
-	Task PublishAsync<T>(T message = default(T), Guid globalMessageId = new(), Action<IPublishConfigurationBuilder> configuration = null);
+	Task PublishAsync<T>(T message = default, Guid globalMessageId = new(), Action<IPublishConfigurationBuilder> configuration = null);
 
 	ISubscription RespondAsync<TRequest, TResponse>(Func<TRequest, TMessageContext, Task<TResponse>> onMessage, Action<IResponderConfigurationBuilder> configuration = null);
 
-	Task<TResponse> RequestAsync<TRequest, TResponse>(TRequest message = default(TRequest), Guid globalMessageId = new(), Action<IRequestConfigurationBuilder> configuration = null);
+	Task<TResponse> RequestAsync<TRequest, TResponse>(TRequest message = default, Guid globalMessageId = new(), Action<IRequestConfigurationBuilder> configuration = null);
 }
 
 public interface IBusClient : IBusClient<MessageContext> { }

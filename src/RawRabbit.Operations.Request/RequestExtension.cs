@@ -57,7 +57,7 @@ public static class RequestExtension
 			BodyFunc = c => c.Get<byte[]>(PipeKey.SerializedMessage)
 		});
 
-	public static async Task<TResponse> RequestAsync<TRequest, TResponse>(this IBusClient client, TRequest message = default(TRequest), Action<IRequestContext> context = null, CancellationToken ct = default(CancellationToken))
+	public static async Task<TResponse> RequestAsync<TRequest, TResponse>(this IBusClient client, TRequest message = default, Action<IRequestContext> context = null, CancellationToken ct = default)
 	{
 		IPipeContext result = await client
 			.InvokeAsync(RequestPipe, ctx =>

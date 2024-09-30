@@ -73,7 +73,7 @@ public static class RespondExtension
 		this IBusClient client,
 		Func<TRequest, Task<TResponse>> handler,
 		Action<IRespondContext> context = null,
-		CancellationToken ct = default(CancellationToken))
+		CancellationToken ct = default)
 	{
 		return client.RespondAsync<TRequest, TResponse>(async request =>
 			{
@@ -88,7 +88,7 @@ public static class RespondExtension
 		this IBusClient client,
 		Func<TRequest, Task<TypedAcknowlegement<TResponse>>> handler,
 		Action<IRespondContext> context = null,
-		CancellationToken ct = default(CancellationToken))
+		CancellationToken ct = default)
 	{
 		return client
 			.InvokeAsync(

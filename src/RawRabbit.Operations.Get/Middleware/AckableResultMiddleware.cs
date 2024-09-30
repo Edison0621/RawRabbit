@@ -38,7 +38,7 @@ public class AckableResultMiddleware<TResult> : Pipe.Middleware.Middleware
 		this._deliveryTagFunc = options?.DeliveryTagFunc;
 	}
 
-	public override Task InvokeAsync(IPipeContext context, CancellationToken token = default(CancellationToken))
+	public override Task InvokeAsync(IPipeContext context, CancellationToken token = default)
 	{
 		IChannel channel = this.GetChannel(context);
 		TResult getResult = this.GetResult(context);

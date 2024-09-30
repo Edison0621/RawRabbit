@@ -11,7 +11,7 @@ namespace RawRabbit.Channel;
 
 public interface IChannelPool
 {
-	Task<IChannel> GetAsync(CancellationToken ct = default(CancellationToken));
+	Task<IChannel> GetAsync(CancellationToken ct = default);
 }
 
 public class StaticChannelPool : IDisposable, IChannelPool
@@ -135,7 +135,7 @@ public class StaticChannelPool : IDisposable, IChannelPool
 		};
 	}
 
-	public virtual Task<IChannel> GetAsync(CancellationToken ct = default(CancellationToken))
+	public virtual Task<IChannel> GetAsync(CancellationToken ct = default)
 	{
 		TaskCompletionSource<IChannel> channelTcs = this._channelRequestQueue.Enqueue();
 		ct.Register(() => channelTcs.TrySetCanceled());

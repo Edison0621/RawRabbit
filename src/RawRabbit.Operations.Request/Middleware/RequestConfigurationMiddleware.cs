@@ -24,7 +24,7 @@ public class RequestConfigurationMiddleware : Pipe.Middleware.Middleware
 		this._factory = factory;
 	}
 
-	public override Task InvokeAsync(IPipeContext context, CancellationToken token = default(CancellationToken))
+	public override Task InvokeAsync(IPipeContext context, CancellationToken token = default)
 	{
 		Type requestType = context.GetRequestMessageType();
 		Type responseType = context.GetResponseMessageType();

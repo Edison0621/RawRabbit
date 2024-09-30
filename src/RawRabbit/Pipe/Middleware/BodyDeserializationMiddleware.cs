@@ -36,7 +36,7 @@ public class BodyDeserializationMiddleware : Middleware
 		this.ActivateContentTypeCheck = options?.ActivateContentTypeCheck ?? (context => context.GetContentTypeCheckActivated());
 	}
 
-	public override Task InvokeAsync(IPipeContext context, CancellationToken token = default(CancellationToken))
+	public override Task InvokeAsync(IPipeContext context, CancellationToken token = default)
 	{
 		if (this.ContentTypeCheckActivated(context))
 		{

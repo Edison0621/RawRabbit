@@ -16,7 +16,7 @@ public class TransientChannelMiddleware : Middleware
 		this._channelFactory = channelFactory;
 	}
 
-	public override async Task InvokeAsync(IPipeContext context, CancellationToken token = default(CancellationToken))
+	public override async Task InvokeAsync(IPipeContext context, CancellationToken token = default)
 	{
 		using (IChannel channel = await this.CreateChannelAsync(context, token))
 		{

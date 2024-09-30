@@ -25,7 +25,7 @@ public class ExchangeDeclarationMiddleware : Pipe.Middleware.Middleware
 		this._saveToContextAction = options?.SaveToContextAction ?? ((ctx, d) => ctx.Properties.TryAdd(PipeKey.ExchangeDeclaration, d)); 
 	}
 
-	public override Task InvokeAsync(IPipeContext context, CancellationToken token = default(CancellationToken))
+	public override Task InvokeAsync(IPipeContext context, CancellationToken token = default)
 	{
 		ExchangeDeclaration queueDeclaration = this.GetQueueDeclaration(context);
 		this.SaveToContext(context, queueDeclaration);

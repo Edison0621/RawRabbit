@@ -46,7 +46,7 @@ public static class RespondMessageContextExtension
 		this IBusClient client,
 		Func<TRequest, TMessageContext, Task<TResponse>> handler,
 		Action<IRespondContext> context = null,
-		CancellationToken ct = default(CancellationToken))
+		CancellationToken ct = default)
 	{
 		return client
 			.RespondAsync<TRequest, TResponse, TMessageContext>((request, messageContext) => handler
@@ -66,7 +66,7 @@ public static class RespondMessageContextExtension
 		this IBusClient client,
 		Func<TRequest, TMessageContext, Task<TypedAcknowlegement<TResponse>>> handler,
 		Action<IRespondContext> context = null,
-		CancellationToken ct = default(CancellationToken))
+		CancellationToken ct = default)
 	{
 		return client
 			.InvokeAsync(RespondPipe, ctx =>

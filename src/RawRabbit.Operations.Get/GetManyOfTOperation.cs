@@ -12,7 +12,7 @@ namespace RawRabbit;
 
 public static class GetManyOfTOperation
 {
-	public static async Task<Ackable<List<Ackable<TMessage>>>> GetManyAsync<TMessage>(this IBusClient busClient, int batchSize, Action<IGetConfigurationBuilder> config = null, CancellationToken token = default(CancellationToken))
+	public static async Task<Ackable<List<Ackable<TMessage>>>> GetManyAsync<TMessage>(this IBusClient busClient, int batchSize, Action<IGetConfigurationBuilder> config = null, CancellationToken token = default)
 	{
 		IChannel channel = await busClient.CreateChannelAsync(token:token);
 		List<Ackable<TMessage>> result = new();

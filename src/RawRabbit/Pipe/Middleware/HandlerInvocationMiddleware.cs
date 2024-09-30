@@ -25,7 +25,7 @@ public class HandlerInvocationMiddleware : Middleware
 		this._postInvokeAction = options?.PostInvokeAction;
 	}
 
-	public override async Task InvokeAsync(IPipeContext context, CancellationToken token = default(CancellationToken))
+	public override async Task InvokeAsync(IPipeContext context, CancellationToken token = default)
 	{
 		await this.InvokeMessageHandler(context, token);
 		await this.Next.InvokeAsync(context, token);

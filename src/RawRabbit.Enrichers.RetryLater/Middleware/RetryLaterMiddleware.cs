@@ -43,7 +43,7 @@ public class RetryLaterMiddleware : StagedMiddleware
 		this._deliveryArgsFunc = options?.DeliveryArgsFunc ?? (context => context.GetDeliveryEventArgs());
 	}
 
-	public override async Task InvokeAsync(IPipeContext context, CancellationToken token = default(CancellationToken))
+	public override async Task InvokeAsync(IPipeContext context, CancellationToken token = default)
 	{
 		Acknowledgement ack = this.GetMessageAcknowledgement(context);
 		if (ack is not Retry retryAck)

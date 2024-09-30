@@ -35,7 +35,7 @@ public class ConsumeConfigurationMiddleware : Middleware
 		this._configActionFunc = options?.ConfigActionFunc ?? (context => context.Get<Action<IConsumeConfigurationBuilder>>(PipeKey.ConfigurationAction));
 	}
 
-	public override async Task InvokeAsync(IPipeContext context, CancellationToken token = default(CancellationToken))
+	public override async Task InvokeAsync(IPipeContext context, CancellationToken token = default)
 	{
 		ConsumeConfiguration config = this.ExtractConfigFromMessageType(context) ?? this.ExtractConfigFromStrings(context);
 

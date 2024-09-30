@@ -12,9 +12,9 @@ internal class MessagePackSerializerWorker : ISerializer
 	private readonly MethodInfo _deserializeType;
 	private readonly MethodInfo _serializeType;
 
-	public MessagePackSerializerWorker(MessagePackFormat format)
+	public MessagePackSerializerWorker()
 	{
-		Type tp = format == MessagePackFormat.Lz4Compression ? typeof(LZ4MessagePackSerializer) : typeof(MessagePackSerializer);
+		Type tp = typeof(MessagePackSerializer);
 
 		this._deserializeType = tp
 			.GetMethod(nameof(MessagePackSerializer.Deserialize), new[] { typeof(byte[]) });

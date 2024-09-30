@@ -26,7 +26,7 @@ public class ChannelFactory : IChannelFactory
 		this._channels = new ConcurrentBag<IChannel>();
 	}
 
-	public virtual async Task ConnectAsync(CancellationToken token = default(CancellationToken))
+	public virtual async Task ConnectAsync(CancellationToken token = default)
 	{
 		try
 		{
@@ -41,7 +41,7 @@ public class ChannelFactory : IChannelFactory
 		}
 	}
 
-	public virtual async Task<IChannel> CreateChannelAsync(CancellationToken token = default(CancellationToken))
+	public virtual async Task<IChannel> CreateChannelAsync(CancellationToken token = default)
 	{
 		IConnection connection = await this.GetConnectionAsync(token);
 		token.ThrowIfCancellationRequested();
@@ -50,7 +50,7 @@ public class ChannelFactory : IChannelFactory
 		return channel;
 	}
 
-	protected virtual async Task<IConnection> GetConnectionAsync(CancellationToken token = default(CancellationToken))
+	protected virtual async Task<IConnection> GetConnectionAsync(CancellationToken token = default)
 	{
 		token.ThrowIfCancellationRequested();
 		if (this._connection == null)

@@ -1,7 +1,7 @@
 ﻿using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
-using Polly;
+using Polly.NoOp;
 using RabbitMQ.Client;
 using RawRabbit.Channel;
 using RawRabbit.Pipe;
@@ -16,10 +16,9 @@ public class PooledChannelMiddleware : Pipe.Middleware.PooledChannelMiddleware
 
 	protected override Task<IChannel> GetChannelAsync(IPipeContext context, CancellationToken token)
 	{
-		Policy policy = context.GetPolicy(PolicyKeys.ChannelCreate);
+		AsyncNoOpPolicy policy = context.GetPolicy(PolicyKeys.ChannelCreate);
 		return policy.ExecuteAsync(
-			action: ct => base.GetChannelAsync(context, ct),
-			cancellationToken: token,
+			action: ct => base.GetChannelAsync(context, token),
 			contextData: new Dictionary<string, object>
 			{
 				[RetryKey.PipeContext] = context,

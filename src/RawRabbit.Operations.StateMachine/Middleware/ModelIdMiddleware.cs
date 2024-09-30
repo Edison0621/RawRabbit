@@ -25,7 +25,7 @@ public class ModelIdMiddleware : Pipe.Middleware.Middleware
 		this._modelIdFunc = options?.ModelIdFunc ?? (context => context.GetModelId());
 	}
 
-	public override async Task InvokeAsync(IPipeContext context, CancellationToken token = default(CancellationToken))
+	public override async Task InvokeAsync(IPipeContext context, CancellationToken token = default)
 	{
 		Func<object[], Guid> corrFunc = this.GetCorrelationFunc(context);
 		object[] corrArgs = this.GetCorrelationArgs(context);

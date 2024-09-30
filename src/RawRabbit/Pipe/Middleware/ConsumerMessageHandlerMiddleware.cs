@@ -33,7 +33,7 @@ public class ConsumerMessageHandlerMiddleware : Middleware
 		this._throttledExecutionFunc = options?.ThrottleFuncFunc ?? (context => context.GetConsumeThrottleAction());
 	}
 
-	public override async Task InvokeAsync(IPipeContext context, CancellationToken token = default(CancellationToken))
+	public override async Task InvokeAsync(IPipeContext context, CancellationToken token = default)
 	{
 		IAsyncBasicConsumer consumer = this._consumeFunc(context);
 		Action<Func<Task>, CancellationToken> throttlingFunc = this.GetThrottlingFunc(context);

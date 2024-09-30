@@ -23,7 +23,7 @@ public static class GetOperation
 			ContentFunc = context => context.GetBasicGetResult()
 		});
 
-	public static async Task<Ackable<BasicGetResult>> GetAsync(this IBusClient busClient, Action<IGetConfigurationBuilder> config = null, CancellationToken token = default(CancellationToken))
+	public static async Task<Ackable<BasicGetResult>> GetAsync(this IBusClient busClient, Action<IGetConfigurationBuilder> config = null, CancellationToken token = default)
 	{
 		IPipeContext result = await busClient
 			.InvokeAsync(UntypedGetPipe, context => context.Properties.Add(PipeKey.ConfigurationAction, config), token);

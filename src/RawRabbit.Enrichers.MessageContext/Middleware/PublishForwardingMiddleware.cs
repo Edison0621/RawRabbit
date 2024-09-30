@@ -15,7 +15,7 @@ public class PublishForwardingMiddleware : StagedMiddleware
 		this._repo = repo;
 	}
 
-	public override Task InvokeAsync(IPipeContext context, CancellationToken token = default(CancellationToken))
+	public override Task InvokeAsync(IPipeContext context, CancellationToken token = default)
 	{
 		object messageContext = this._repo.Get();
 		if (messageContext == null)

@@ -20,7 +20,7 @@ public class StageMarkerMiddleware : Middleware
 		this._stage = options.Stage;
 	}
 
-	public override Task InvokeAsync(IPipeContext context, CancellationToken token = default(CancellationToken))
+	public override Task InvokeAsync(IPipeContext context, CancellationToken token = default)
 	{
 		if (this.Next is NoOpMiddleware || this.Next is CancellationMiddleware)
 		{

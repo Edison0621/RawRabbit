@@ -41,7 +41,7 @@ public class ExplicitAckMiddleware : Middleware
 		this._autoAckFunc = options?.AutoAckFunc ?? (context => context.GetConsumeConfiguration().AutoAck);
 	}
 
-	public override async Task InvokeAsync(IPipeContext context, CancellationToken token = default(CancellationToken))
+	public override async Task InvokeAsync(IPipeContext context, CancellationToken token = default)
 	{
 		bool autoAck = this.GetAutoAck(context);
 		if (!autoAck)

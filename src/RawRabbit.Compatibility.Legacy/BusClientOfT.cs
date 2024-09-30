@@ -82,7 +82,7 @@ public class BusClient<TMessageContext> : IBusClient<TMessageContext>, IDisposab
 			.GetResult();
 	}
 
-	public Task PublishAsync<T>(T message = default(T), Guid globalMessageId = new(), Action<IPublishConfigurationBuilder> configuration = null)
+	public Task PublishAsync<T>(T message = default, Guid globalMessageId = new(), Action<IPublishConfigurationBuilder> configuration = null)
 	{
 		PublishConfiguration config = this._configEval.GetConfiguration<T>(configuration);
 		ExchangeDeclaration exchangeCfg = config.Exchange.AssumeInitialized
@@ -169,7 +169,7 @@ public class BusClient<TMessageContext> : IBusClient<TMessageContext>, IDisposab
 			.GetResult();
 	}
 
-	public Task<TResponse> RequestAsync<TRequest, TResponse>(TRequest message = default(TRequest), Guid globalMessageId = new(),
+	public Task<TResponse> RequestAsync<TRequest, TResponse>(TRequest message = default, Guid globalMessageId = new(),
 		Action<IRequestConfigurationBuilder> configuration = null)
 	{
 		RequestConfiguration config = this._configEval.GetConfiguration<TRequest, TResponse>(configuration);

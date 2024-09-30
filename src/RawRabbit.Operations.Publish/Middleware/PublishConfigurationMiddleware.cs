@@ -30,7 +30,7 @@ public class PublishConfigurationMiddleware : Pipe.Middleware.Middleware
 		this._messageTypeFunc = options?.MessageTypeFunc ?? (context => context.GetMessageType());
 	}
 
-	public override Task InvokeAsync(IPipeContext context, CancellationToken token = default(CancellationToken))
+	public override Task InvokeAsync(IPipeContext context, CancellationToken token = default)
 	{
 		PublisherConfiguration config = this.ExtractConfigFromMessageType(context) ?? this.ExtractConfigFromStrings(context);
 		if (config == null)

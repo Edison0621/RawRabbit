@@ -25,7 +25,7 @@ public class GetConfigurationMiddleware : Pipe.Middleware.Middleware
 		this._postExecutionAction = options?.PostExecuteAction;
 		this._configBuilderFunc = options?.ConfigBuilderFunc ?? (context => context.Get<Action<IGetConfigurationBuilder>>(PipeKey.ConfigurationAction));
 	}
-	public override Task InvokeAsync(IPipeContext context, CancellationToken token = default(CancellationToken))
+	public override Task InvokeAsync(IPipeContext context, CancellationToken token = default)
 	{
 		GetConfiguration defaultCfg = this.CreateConfiguration(context);
 		Action<IGetConfigurationBuilder> configAction = this.GetConfigurationAction(context);

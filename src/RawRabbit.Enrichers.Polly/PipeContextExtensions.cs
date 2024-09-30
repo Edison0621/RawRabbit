@@ -1,13 +1,14 @@
 ﻿using Polly;
+using Polly.NoOp;
 using RawRabbit.Pipe;
 
 namespace RawRabbit.Enrichers.Polly;
 
 public static class PipeContextExtensions
 {
-	public static Policy GetPolicy(this IPipeContext context, string policyName = null)
+	public static AsyncNoOpPolicy GetPolicy(this IPipeContext context, string policyName = null)
 	{
-		Policy fallback = context.Get<Policy>(PolicyKeys.DefaultPolicy);
+		AsyncNoOpPolicy fallback = context.Get<AsyncNoOpPolicy>(PolicyKeys.DefaultPolicy);
 		return context.Get(policyName, fallback);
 	}
 

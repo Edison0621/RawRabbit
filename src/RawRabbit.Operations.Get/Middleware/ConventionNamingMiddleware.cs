@@ -26,7 +26,7 @@ public class ConventionNamingMiddleware : Pipe.Middleware.Middleware
 		this._messageTypeFunc = options?.MessageTypeFunc ?? (context => context.GetMessageType());
 	}
 
-	public override Task InvokeAsync(IPipeContext context, CancellationToken token = default(CancellationToken))
+	public override Task InvokeAsync(IPipeContext context, CancellationToken token = default)
 	{
 		GetConfiguration config = this.GetGetConfiguration(context);
 		if (!string.IsNullOrWhiteSpace(config.QueueName))

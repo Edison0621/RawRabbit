@@ -4,8 +4,8 @@ using RawRabbit.Common;
 using RawRabbit.Pipe;
 using RawRabbit.Pipe.Middleware;
 using System.Threading.Tasks;
-using Polly;
 using System;
+using Polly.NoOp;
 
 namespace RawRabbit.Enrichers.Polly.Middleware;
 
@@ -23,14 +23,15 @@ public class BasicPublishMiddleware : Pipe.Middleware.BasicPublishMiddleware
 		ReadOnlyMemory<byte> body,
 		IPipeContext context)
 	{
-		Policy policy = context.GetPolicy(PolicyKeys.BasicPublish);
-		Task<bool> policyTask = await policy.ExecuteAsync(
-			action: async () =>
+		AsyncNoOpPolicy policy = context.GetPolicy(PolicyKeys.BasicPublish);
+
+		await policy.ExecuteAsync(
+			action: ct =>
 			{
-				await base.BasicPublishAsync(channel, exchange, routingKey, mandatory, basicProps, body, context);
+				_ = base.BasicPublishAsync(channel, exchange, routingKey, mandatory, basicProps, body, context);
 				return Task.FromResult(true);
 			},
-			contextData: new Dictionary<string, object>
+			new Dictionary<string, object>
 			{
 				[RetryKey.PipeContext] = context,
 				[RetryKey.ExchangeName] = exchange,
@@ -39,7 +40,8 @@ public class BasicPublishMiddleware : Pipe.Middleware.BasicPublishMiddleware
 				[RetryKey.BasicProperties] = basicProps,
 				[RetryKey.PublishBody] = body,
 			});
-		await policyTask.ConfigureAwait(false);
-		policyTask.GetAwaiter().GetResult();
+
+		//await policyTask.ConfigureAwait(false);
+		//TODO policyTask.GetAwaiter().GetResult();
 	}
 }

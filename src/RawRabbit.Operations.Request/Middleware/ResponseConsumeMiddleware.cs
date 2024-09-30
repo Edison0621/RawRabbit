@@ -41,7 +41,7 @@ public class ResponseConsumeMiddleware : Pipe.Middleware.Middleware
 		this._responsePipe = factory.Create(options?.ResponseReceived);
 	}
 
-	public override async Task InvokeAsync(IPipeContext context, CancellationToken token = default(CancellationToken))
+	public override async Task InvokeAsync(IPipeContext context, CancellationToken token = default)
 	{
 		ConsumerConfiguration respondCfg = this.GetResponseConfig(context);
 		string correlationId = this.GetCorrelationid(context);

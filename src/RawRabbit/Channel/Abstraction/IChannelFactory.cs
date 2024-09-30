@@ -12,5 +12,5 @@ public interface IChannelFactory : IDisposable
 	/// in closing and disposing.
 	/// </summary>
 	/// <returns>A new instance of an IModel</returns>
-	Task<IChannel> CreateChannelAsync(CancellationToken token = default(CancellationToken));
+	Task<IChannel> CreateChannelAsync(CancellationToken token = default);
 }

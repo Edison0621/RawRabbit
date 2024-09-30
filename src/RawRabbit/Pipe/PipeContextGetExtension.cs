@@ -2,7 +2,7 @@
 
 public static class PipeContextGetExtension
 {
-	public static TType Get<TType>(this IPipeContext context, string key, TType fallback = default(TType))
+	public static TType Get<TType>(this IPipeContext context, string key, TType fallback = default)
 	{
 		if (context?.Properties == null)
 		{

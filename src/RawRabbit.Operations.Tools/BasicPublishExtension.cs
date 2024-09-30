@@ -18,7 +18,7 @@ public static class BasicPublishExtension
 		this IBusClient busClient,
 		object message,
 		Action<IBasicPublishConfigurationBuilder> config = null,
-		CancellationToken token = default(CancellationToken))
+		CancellationToken token = default)
 	{
 		return busClient.InvokeAsync(
 			PublishPipe,
@@ -34,7 +34,7 @@ public static class BasicPublishExtension
 	public static Task BasicPublishAsync(
 		this IBusClient busClient,
 		BasicPublishConfiguration config,
-		CancellationToken token = default(CancellationToken)
+		CancellationToken token = default
 	)
 	{
 		return busClient.InvokeAsync(

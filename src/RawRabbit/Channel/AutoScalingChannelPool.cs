@@ -39,7 +39,7 @@ public class AutoScalingChannelPool : DynamicChannelPool
 		}
 	}
 
-	public override async Task<IChannel> GetAsync(CancellationToken ct = default(CancellationToken))
+	public override async Task<IChannel> GetAsync(CancellationToken ct = default)
 	{
 		int activeChannels = this.GetActiveChannelCount();
 		if (activeChannels  < this._options.MinimunPoolSize)

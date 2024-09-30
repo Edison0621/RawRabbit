@@ -15,7 +15,7 @@ public class GlobalLockMiddleware : Pipe.Middleware.Middleware
 		this._globalLock = globalLock;
 	}
 
-	public override Task InvokeAsync(IPipeContext context, CancellationToken token = default(CancellationToken))
+	public override Task InvokeAsync(IPipeContext context, CancellationToken token = default)
 	{
 		return this._globalLock.ExecuteAsync(context.Get<Guid>(StateMachineKey.ModelId), () => this.Next.InvokeAsync(context, token), token);
 	}

@@ -25,7 +25,7 @@ public class PooledChannelMiddleware : Middleware
 		this._saveInContextAction = options?.SaveInContextAction ?? ((ctx, value) =>ctx.Properties.TryAdd(PipeKey.TransientChannel, value));
 	}
 
-	public override async Task InvokeAsync(IPipeContext context, CancellationToken token = default(CancellationToken))
+	public override async Task InvokeAsync(IPipeContext context, CancellationToken token = default)
 	{
 		IChannel channel = await this.GetChannelAsync(context, token);
 		this.SaveInContext(context, channel);

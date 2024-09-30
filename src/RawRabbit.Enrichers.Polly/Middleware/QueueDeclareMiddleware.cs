@@ -1,7 +1,7 @@
 ﻿using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
-using Polly;
+using Polly.NoOp;
 using RawRabbit.Common;
 using RawRabbit.Configuration.Queue;
 using RawRabbit.Pipe;
@@ -18,10 +18,9 @@ public class QueueDeclareMiddleware : Pipe.Middleware.QueueDeclareMiddleware
 
 	protected override Task DeclareQueueAsync(QueueDeclaration queue, IPipeContext context, CancellationToken token)
 	{
-		Policy policy = context.GetPolicy(PolicyKeys.QueueDeclare);
+		AsyncNoOpPolicy policy = context.GetPolicy(PolicyKeys.QueueDeclare);
 		return policy.ExecuteAsync(
-			action: ct => base.DeclareQueueAsync(queue, context, ct),
-			cancellationToken: token,
+			action: ct => base.DeclareQueueAsync(queue, context, token),
 			contextData: new Dictionary<string, object>
 			{
 				[RetryKey.TopologyProvider] = this._topology,

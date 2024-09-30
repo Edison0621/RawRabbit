@@ -41,7 +41,7 @@ namespace RawRabbit.Operations.Publish.Middleware
 			this._enabledFunc = options?.EnabledFunc ?? (context => context.GetPublishAcknowledgeTimeout() != TimeSpan.MaxValue);
 		}
 
-		public override async Task InvokeAsync(IPipeContext context, CancellationToken token = default(CancellationToken))
+		public override async Task InvokeAsync(IPipeContext context, CancellationToken token = default)
 		{
 			bool enabled = this.GetEnabled(context);
 			if (!enabled)

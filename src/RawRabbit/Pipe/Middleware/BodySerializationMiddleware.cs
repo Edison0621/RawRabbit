@@ -24,7 +24,7 @@ public class BodySerializationMiddleware : Middleware
 		this._persistAction = options?.PersistAction ?? ((c, s) => c.Properties.TryAdd(PipeKey.SerializedMessage, s));
 	}
 
-	public override Task InvokeAsync(IPipeContext context, CancellationToken token = default(CancellationToken))
+	public override Task InvokeAsync(IPipeContext context, CancellationToken token = default)
 	{
 		object message = this.GetMessage(context);
 		byte[] serialized = this.SerializeMessage(message);

@@ -29,7 +29,7 @@ public class ReturnCallbackMiddleware : Pipe.Middleware.Middleware
 		this._postInvoke = options?.PostInvokeAction;
 	}
 
-	public override async Task InvokeAsync(IPipeContext context, CancellationToken token = default(CancellationToken))
+	public override async Task InvokeAsync(IPipeContext context, CancellationToken token = default)
 	{
 		EventHandler<BasicReturnEventArgs> callback = this.GetCallback(context);
 		if (callback == null)

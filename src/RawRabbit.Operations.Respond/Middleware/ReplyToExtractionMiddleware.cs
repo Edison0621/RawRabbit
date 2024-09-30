@@ -31,7 +31,7 @@ public class ReplyToExtractionMiddleware : Pipe.Middleware.Middleware
 			args.BasicProperties.ReplyToAddress ?? new PublicationAddress(ExchangeType.Direct, string.Empty, args.BasicProperties.ReplyTo));
 	}
 
-	public override Task InvokeAsync(IPipeContext context, CancellationToken token = default(CancellationToken))
+	public override Task InvokeAsync(IPipeContext context, CancellationToken token = default)
 	{
 		BasicDeliverEventArgs args = this.GetDeliveryArgs(context);
 		PublicationAddress replyTo = this.GetReplyTo(args);

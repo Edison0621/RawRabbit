@@ -26,7 +26,7 @@ public class ConsumerCreationMiddleware : Middleware
 		this._consumerFunc = options?.ConsumerFunc ?? ((factory, token, context) => factory.CreateConsumerAsync(context.GetChannel(), token));
 	}
 
-	public override async Task InvokeAsync(IPipeContext context, CancellationToken token = default(CancellationToken))
+	public override async Task InvokeAsync(IPipeContext context, CancellationToken token = default)
 	{
 		IAsyncBasicConsumer consumer = await this.GetOrCreateConsumerAsync(context, token);
 		context.Properties.TryAdd(PipeKey.Consumer, consumer);

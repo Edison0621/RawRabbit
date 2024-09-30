@@ -5,7 +5,7 @@ namespace RawRabbit.Pipe.Middleware;
 
 public class NoOpMiddleware : Middleware
 {
-	public override Task InvokeAsync(IPipeContext context, CancellationToken token = default(CancellationToken))
+	public override Task InvokeAsync(IPipeContext context, CancellationToken token = default)
 	{
 		return Task.FromResult(0);
 	}

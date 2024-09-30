@@ -23,7 +23,7 @@ public class ConsumerFactory : IConsumerFactory
 		this._channelFactory = channelFactory;
 	}
 
-	public Task<IAsyncBasicConsumer> GetConsumerAsync(ConsumeConfiguration cfg, IChannel channel = null, CancellationToken token = default(CancellationToken))
+	public Task<IAsyncBasicConsumer> GetConsumerAsync(ConsumeConfiguration cfg, IChannel channel = null, CancellationToken token = default)
 	{
 		string consumerKey = this.CreateConsumerKey(cfg);
 		Lazy<Task<IAsyncBasicConsumer>> lazyConsumerTask = this._consumerCache.GetOrAdd(consumerKey, routingKey =>
@@ -37,7 +37,7 @@ public class ConsumerFactory : IConsumerFactory
 		return lazyConsumerTask.Value;
 	}
 
-	public Task<IAsyncBasicConsumer> GetConfiguredConsumerAsync(ConsumeConfiguration cfg, IChannel channel = null, CancellationToken token = default(CancellationToken))
+	public Task<IAsyncBasicConsumer> GetConfiguredConsumerAsync(ConsumeConfiguration cfg, IChannel channel = null, CancellationToken token = default)
 	{
 		string consumerKey = this.CreateConsumerKey(cfg);
 		Lazy<Task<IAsyncBasicConsumer>> lazyConsumerTask = this._consumerCache.GetOrAdd(consumerKey, routingKey =>
@@ -57,7 +57,7 @@ public class ConsumerFactory : IConsumerFactory
 		return lazyConsumerTask.Value;
 	}
 
-	public async Task<IAsyncBasicConsumer> CreateConsumerAsync(IChannel channel = null, CancellationToken token = default(CancellationToken))
+	public async Task<IAsyncBasicConsumer> CreateConsumerAsync(IChannel channel = null, CancellationToken token = default)
 	{
 		if (channel == null)
 		{
@@ -112,7 +112,7 @@ public class ConsumerFactory : IConsumerFactory
 		}
 	}
 
-	protected virtual Task<IChannel> GetOrCreateChannelAsync(CancellationToken token = default(CancellationToken))
+	protected virtual Task<IChannel> GetOrCreateChannelAsync(CancellationToken token = default)
 	{
 		this._logger.Info("Creating a dedicated channel for consumer.");
 		return this._channelFactory.CreateChannelAsync(token);
@@ -126,7 +126,7 @@ public class ConsumerFactory : IConsumerFactory
 
 public static class ConsumerExtensions
 {
-	public static async Task<string> CancelAsync(this AsyncEventingBasicConsumer consumer, CancellationToken token = default(CancellationToken))
+	public static async Task<string> CancelAsync(this AsyncEventingBasicConsumer consumer, CancellationToken token = default)
 	{
 		AsyncEventingBasicConsumer eventConsumer = consumer as AsyncEventingBasicConsumer;
 		if (eventConsumer == null)

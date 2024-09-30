@@ -1,7 +1,7 @@
 ﻿using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
-using Polly;
+using Polly.NoOp;
 using RawRabbit.Pipe;
 using RawRabbit.Pipe.Middleware;
 
@@ -14,10 +14,9 @@ public class HandlerInvocationMiddleware : Pipe.Middleware.HandlerInvocationMidd
 
 	protected override Task InvokeMessageHandler(IPipeContext context, CancellationToken token)
 	{
-		Policy policy = context.GetPolicy(PolicyKeys.HandlerInvocation);
+		AsyncNoOpPolicy policy = context.GetPolicy(PolicyKeys.HandlerInvocation);
 		return policy.ExecuteAsync(
-			action: ct => base.InvokeMessageHandler(context, ct),
-			cancellationToken: token,
+			action: ct => base.InvokeMessageHandler(context, token),
 			contextData: new Dictionary<string, object>
 			{
 				[RetryKey.PipeContext] = context,

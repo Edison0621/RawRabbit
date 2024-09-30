@@ -40,7 +40,7 @@ public static class SubscribeMessageExtension
 		.Use<StageMarkerMiddleware>(StageMarkerOptions.For(SubscribeStage.ConsumerCreated))
 		.Use<SubscriptionMiddleware>();
 
-	public static Task SubscribeAsync<TMessage>(this IBusClient client, Func<TMessage, Task> subscribeMethod, Action<ISubscribeContext> context = null, CancellationToken ct = default(CancellationToken))
+	public static Task SubscribeAsync<TMessage>(this IBusClient client, Func<TMessage, Task> subscribeMethod, Action<ISubscribeContext> context = null, CancellationToken ct = default)
 	{
 		return client.SubscribeAsync<TMessage>(async message =>
 		{
@@ -49,7 +49,7 @@ public static class SubscribeMessageExtension
 		}, context, ct);
 	}
 
-	public static Task SubscribeAsync<TMessage>(this IBusClient client, Func<TMessage, Task<Acknowledgement>> subscribeMethod, Action<ISubscribeContext> context = null, CancellationToken ct = default(CancellationToken))
+	public static Task SubscribeAsync<TMessage>(this IBusClient client, Func<TMessage, Task<Acknowledgement>> subscribeMethod, Action<ISubscribeContext> context = null, CancellationToken ct = default)
 	{
 		return client.InvokeAsync(
 			SubscribePipe,

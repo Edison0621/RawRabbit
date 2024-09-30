@@ -75,7 +75,7 @@ public static class RetryExtensions
 		return ctx.Get<string>(RetryKey.RoutingKey);
 	}
 
-	private static TType Get<TType>(this IDictionary<string, object> ctx, string key, TType fallback = default(TType))
+	private static TType Get<TType>(this IDictionary<string, object> ctx, string key, TType fallback = default)
 	{
 		if (!ctx?.ContainsKey(key) ?? true)
 		{

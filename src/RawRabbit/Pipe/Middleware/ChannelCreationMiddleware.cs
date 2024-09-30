@@ -28,7 +28,7 @@ public class ChannelCreationMiddleware : Middleware
 		this._postExecuteAction = options?.PostExecuteAction;
 	}
 
-	public override async Task InvokeAsync(IPipeContext context, CancellationToken token = default(CancellationToken))
+	public override async Task InvokeAsync(IPipeContext context, CancellationToken token = default)
 	{
 		if (this.ShouldCreateChannel(context))
 		{

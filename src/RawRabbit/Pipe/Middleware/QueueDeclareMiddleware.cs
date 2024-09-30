@@ -24,7 +24,7 @@ public class QueueDeclareMiddleware : Middleware
 		this._queueDeclareFunc = options?.QueueDeclarationFunc ?? (context => context.GetQueueDeclaration());
 	}
 
-	public override async Task InvokeAsync(IPipeContext context, CancellationToken token = default (CancellationToken))
+	public override async Task InvokeAsync(IPipeContext context, CancellationToken token = default)
 	{
 		QueueDeclaration queue = this.GetQueueDeclaration(context);
 

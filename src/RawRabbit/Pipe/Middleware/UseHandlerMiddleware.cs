@@ -13,7 +13,7 @@ public class UseHandlerMiddleware : Middleware
 		this._handler = handler;
 	}
 
-	public override async Task InvokeAsync(IPipeContext context, CancellationToken token = default(CancellationToken))
+	public override async Task InvokeAsync(IPipeContext context, CancellationToken token = default)
 	{
 		await this._handler(context, () => this.Next.InvokeAsync(context, token));
 	}

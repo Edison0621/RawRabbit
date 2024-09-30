@@ -35,7 +35,7 @@ public class BasicPropertiesMiddleware : Middleware
 		});
 	}
 
-	public override Task InvokeAsync(IPipeContext context, CancellationToken token = default(CancellationToken))
+	public override Task InvokeAsync(IPipeContext context, CancellationToken token = default)
 	{
 		IBasicProperties props = this.GetOrCreateBasicProperties(context);
 		this.ModifyBasicProperties(context, props);

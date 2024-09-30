@@ -1,7 +1,7 @@
 ﻿using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
-using Polly;
+using Polly.NoOp;
 using RawRabbit.Common;
 using RawRabbit.Configuration.Exchange;
 using RawRabbit.Pipe;
@@ -16,10 +16,9 @@ public class ExchangeDeclareMiddleware : Pipe.Middleware.ExchangeDeclareMiddlewa
 
 	protected override Task DeclareExchangeAsync(ExchangeDeclaration exchange, IPipeContext context, CancellationToken token)
 	{
-		Policy policy = context.GetPolicy(PolicyKeys.ExchangeDeclare);
+		AsyncNoOpPolicy policy = context.GetPolicy(PolicyKeys.ExchangeDeclare);
 		return policy.ExecuteAsync(
-			action: ct => base.DeclareExchangeAsync(exchange, context, ct),
-			cancellationToken: token,
+			action: ct => base.DeclareExchangeAsync(exchange, context, token),
 			contextData: new Dictionary<string, object>
 			{
 				[RetryKey.TopologyProvider] = this._topologyProvider,

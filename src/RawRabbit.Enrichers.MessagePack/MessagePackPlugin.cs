@@ -8,11 +8,11 @@ public static class MessagePackPlugin
 	/// <summary>
 	/// Replaces the default serializer with MessagePack.
 	/// </summary>
-	public static IClientBuilder UseMessagePack(this IClientBuilder builder, MessagePackFormat format = MessagePackFormat.Normal)
+	public static IClientBuilder UseMessagePack(this IClientBuilder builder)
 	{
 		builder.Register(
 			pipe: p => { },
-			ioc: di => di.AddSingleton<ISerializer, MessagePackSerializerWorker>(resolver => new MessagePackSerializerWorker(format)));
+			ioc: di => di.AddSingleton<ISerializer, MessagePackSerializerWorker>(resolver => new MessagePackSerializerWorker()));
 		return builder;
 	}
 }

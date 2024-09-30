@@ -30,7 +30,7 @@ public class RespondConfigurationMiddleware : Pipe.Middleware.Middleware
 		this._responseTypeFunc = options?.RequestTypeFunc ?? (context => context.GetResponseMessageType());
 	}
 
-	public override Task InvokeAsync(IPipeContext context, CancellationToken token = default(CancellationToken))
+	public override Task InvokeAsync(IPipeContext context, CancellationToken token = default)
 	{
 		Type requestType = this._requestTypeFunc(context);
 		Type responseType = this._responseTypeFunc(context);

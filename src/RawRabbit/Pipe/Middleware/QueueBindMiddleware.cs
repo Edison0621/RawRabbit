@@ -29,7 +29,7 @@ public class QueueBindMiddleware : Middleware
 		this._routingKeyFunc = options?.RoutingKeyFunc ?? (context => context.GetConsumeConfiguration()?.RoutingKey);
 	}
 
-	public override async Task InvokeAsync(IPipeContext context, CancellationToken token = default(CancellationToken))
+	public override async Task InvokeAsync(IPipeContext context, CancellationToken token = default)
 	{
 		string queueName = this.GetQueueName(context);
 		string exchangeName = this.GetExchangeName(context);

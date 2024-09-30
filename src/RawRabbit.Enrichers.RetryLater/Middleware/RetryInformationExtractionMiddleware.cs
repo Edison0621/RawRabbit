@@ -25,7 +25,7 @@ public class RetryInformationExtractionMiddleware : StagedMiddleware
 		this._deliveryArgsFunc = options?.DeliveryArgsFunc ?? (context => context.GetDeliveryEventArgs());
 	}
 
-	public override Task InvokeAsync(IPipeContext context, CancellationToken token = default(CancellationToken))
+	public override Task InvokeAsync(IPipeContext context, CancellationToken token = default)
 	{
 		RetryInformation retryInfo = this.GetRetryInformation(context);
 		this.AddToPipeContext(context, retryInfo);

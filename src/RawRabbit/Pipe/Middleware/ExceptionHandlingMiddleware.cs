@@ -24,7 +24,7 @@ public class ExceptionHandlingMiddleware : Middleware
 		this._innerPipe = factory.Create(options?.InnerPipe);
 	}
 
-	public override async Task InvokeAsync(IPipeContext context, CancellationToken token = default(CancellationToken))
+	public override async Task InvokeAsync(IPipeContext context, CancellationToken token = default)
 	{
 		try
 		{

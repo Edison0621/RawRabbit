@@ -37,7 +37,7 @@ public static class PublishMessageExtension
 		})
 		.Use<StageMarkerMiddleware>(StageMarkerOptions.For(PublishStage.MessagePublished));
 
-	public static Task PublishAsync<TMessage>(this IBusClient client, TMessage message, Action<IPublishContext> context = null, CancellationToken token = default(CancellationToken))
+	public static Task PublishAsync<TMessage>(this IBusClient client, TMessage message, Action<IPublishContext> context = null, CancellationToken token = default)
 	{
 		return client.InvokeAsync(
 			PublishPipeAction,

@@ -39,7 +39,7 @@ public class BasicPublishMiddleware : Middleware
 		this._bodyFunc = options?.BodyFunc ?? (c => c.GetBasicPublishConfiguration()?.Body);
 	}
 
-	public override async Task InvokeAsync(IPipeContext context, CancellationToken token = default(CancellationToken))
+	public override async Task InvokeAsync(IPipeContext context, CancellationToken token = default)
 	{
 		IChannel channel = this.GetOrCreateChannel(context);
 		string exchangeName = this.GetExchangeName(context);

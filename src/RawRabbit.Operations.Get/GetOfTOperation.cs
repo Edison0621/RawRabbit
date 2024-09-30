@@ -29,12 +29,12 @@ public static class GetOfTOperation
 			ContentFunc = context => context.GetMessage()
 		});
 
-	public static Task<Ackable<TMessage>> GetAsync<TMessage>(this IBusClient busClient, Action<IGetConfigurationBuilder> config = null, CancellationToken token = default(CancellationToken))
+	public static Task<Ackable<TMessage>> GetAsync<TMessage>(this IBusClient busClient, Action<IGetConfigurationBuilder> config = null, CancellationToken token = default)
 	{
 		return GetAsync<TMessage>(busClient, config, null, token);
 	}
 
-	internal static async Task<Ackable<TMessage>> GetAsync<TMessage>(this IBusClient busClient, Action<IGetConfigurationBuilder> config = null, Action<IPipeContext> pipeAction = null, CancellationToken token = default(CancellationToken))
+	internal static async Task<Ackable<TMessage>> GetAsync<TMessage>(this IBusClient busClient, Action<IGetConfigurationBuilder> config = null, Action<IPipeContext> pipeAction = null, CancellationToken token = default)
 	{
 		IPipeContext result = await busClient
 			.InvokeAsync(DeserializedBodyGetPipe, context =>

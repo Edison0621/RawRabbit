@@ -24,7 +24,7 @@ public class BasicPublishConfigurationMiddleware : Middleware
 		this._postInvokeAction = options?.PostInvokeAction;
 	}
 
-	public override async Task InvokeAsync(IPipeContext context, CancellationToken token = default(CancellationToken))
+	public override async Task InvokeAsync(IPipeContext context, CancellationToken token = default)
 	{
 		BasicPublishConfiguration config = this.GetInitialConfig(context);
 		Action<IBasicPublishConfigurationBuilder> configAction = this.GetConfigurationAction(context);

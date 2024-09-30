@@ -9,7 +9,7 @@ public static class StateMachineExtension
 {
 	public static async Task RegisterStateMachineAsync<TTriggerConfiguration>(
 		this IBusClient busClient,
-		CancellationToken ct = default(CancellationToken)) where TTriggerConfiguration : TriggerConfigurationCollection, new()
+		CancellationToken ct = default) where TTriggerConfiguration : TriggerConfigurationCollection, new()
 	{
 		List<TriggerConfiguration> triggerCfgs = new TTriggerConfiguration().GetTriggerConfiguration();
 		foreach (TriggerConfiguration triggerCfg in triggerCfgs)

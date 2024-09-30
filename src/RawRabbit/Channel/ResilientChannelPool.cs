@@ -32,7 +32,7 @@ public class ResilientChannelPool : DynamicChannelPool
 		}
 	}
 
-	public override async Task<IChannel> GetAsync(CancellationToken ct = default(CancellationToken))
+	public override async Task<IChannel> GetAsync(CancellationToken ct = default)
 	{
 		int currentCount = this.GetActiveChannelCount();
 		if (currentCount < this._desiredChannelCount)

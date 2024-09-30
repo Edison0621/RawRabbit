@@ -25,7 +25,7 @@ public class QueueDeclarationMiddleware : Pipe.Middleware.Middleware
 		this._saveToContextAction = options?.SaveToContext ?? ((ctx, declaration) =>ctx.Properties.TryAdd(PipeKey.QueueDeclaration, declaration));
 	}
 
-	public override Task InvokeAsync(IPipeContext context, CancellationToken token = default(CancellationToken))
+	public override Task InvokeAsync(IPipeContext context, CancellationToken token = default)
 	{
 		QueueDeclaration queueDeclaration = this.GetQueueDeclaration(context);
 		this.SaveToContext(context, queueDeclaration);

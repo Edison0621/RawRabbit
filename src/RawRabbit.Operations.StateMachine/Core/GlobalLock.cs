@@ -8,7 +8,7 @@ namespace RawRabbit.Operations.StateMachine.Core;
 
 public interface IGlobalLock
 {
-	Task ExecuteAsync(Guid modelId, Func<Task> handler, CancellationToken ct = default(CancellationToken));
+	Task ExecuteAsync(Guid modelId, Func<Task> handler, CancellationToken ct = default);
 }
 
 public class GlobalLock : IGlobalLock
@@ -42,7 +42,7 @@ public class ProcessGlobalLock : IGlobalLock
 		this._semaphores = new ConcurrentDictionary<Guid, SemaphoreSlim>();
 	}
 		
-	public async Task ExecuteAsync(Guid modelId, Func<Task> handler, CancellationToken ct = default(CancellationToken))
+	public async Task ExecuteAsync(Guid modelId, Func<Task> handler, CancellationToken ct = default)
 	{
 		SemaphoreSlim semaphore = this._semaphores.GetOrAdd(modelId, guid => new SemaphoreSlim(1, 1));
 		await semaphore.WaitAsync(ct);

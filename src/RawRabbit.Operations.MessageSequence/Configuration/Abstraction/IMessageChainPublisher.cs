@@ -7,11 +7,11 @@ namespace RawRabbit.Operations.MessageSequence.Configuration.Abstraction;
 public interface IMessageChainPublisher
 {
 	IMessageSequenceBuilder PublishAsync<TMessage>(
-		TMessage message = default(TMessage),
+		TMessage message = default,
 		Guid globalMessageId = new()) where TMessage : new();
 
 	IMessageSequenceBuilder PublishAsync<TMessage>(
 		TMessage message,
 		Action<IPipeContext> context,
-		CancellationToken ct = default(CancellationToken)) where TMessage : new();
+		CancellationToken ct = default) where TMessage : new();
 }

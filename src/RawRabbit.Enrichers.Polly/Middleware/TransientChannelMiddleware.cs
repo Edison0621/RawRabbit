@@ -1,7 +1,7 @@
 ﻿using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
-using Polly;
+using Polly.NoOp;
 using RabbitMQ.Client;
 using RawRabbit.Channel.Abstraction;
 using RawRabbit.Pipe;
@@ -15,10 +15,9 @@ public class TransientChannelMiddleware : Pipe.Middleware.TransientChannelMiddle
 
 	protected override Task<IChannel> CreateChannelAsync(IPipeContext context, CancellationToken token)
 	{
-		Policy policy = context.GetPolicy(PolicyKeys.ChannelCreate);
+		AsyncNoOpPolicy policy = context.GetPolicy(PolicyKeys.ChannelCreate);
 		return policy.ExecuteAsync(
-			action: ct => base.CreateChannelAsync(context, ct),
-			cancellationToken: token,
+			action: ct => base.CreateChannelAsync(context, token),
 			contextData: new Dictionary<string, object>
 			{
 				[RetryKey.PipeContext] = context,

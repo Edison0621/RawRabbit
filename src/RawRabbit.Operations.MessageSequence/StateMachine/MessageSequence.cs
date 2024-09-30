@@ -60,7 +60,7 @@ public class MessageSequence : StateMachineBase<SequenceState, Type, SequenceMod
 		};
 	}
 
-	public IMessageSequenceBuilder PublishAsync<TMessage>(TMessage message = default(TMessage), Guid globalMessageId = new()) where TMessage : new()
+	public IMessageSequenceBuilder PublishAsync<TMessage>(TMessage message = default, Guid globalMessageId = new()) where TMessage : new()
 	{
 		if (globalMessageId != Guid.Empty)
 		{
@@ -217,7 +217,7 @@ public class MessageSequence : StateMachineBase<SequenceState, Type, SequenceMod
 				sequence.Completed = this._model.Completed;
 				sequence.Skipped = this._model.Skipped;
 				sequence.Aborted = true;
-				tsc.TrySetResult(default(TMessage));
+				tsc.TrySetResult(default);
 			});
 
 		this._triggerConfigurer

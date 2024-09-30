@@ -28,7 +28,7 @@ public class SubscriptionMiddleware : Middleware
 		this._saveInContext = options?.SaveInContext ?? ((ctx, subscription) => ctx.Properties.Add(PipeKey.Subscription, subscription));
 	}
 
-	public override async Task InvokeAsync(IPipeContext context, CancellationToken token = default(CancellationToken))
+	public override async Task InvokeAsync(IPipeContext context, CancellationToken token = default)
 	{
 		IAsyncBasicConsumer consumer = this.GetConsumer(context);
 		string queueName = this.GetQueueName(context);

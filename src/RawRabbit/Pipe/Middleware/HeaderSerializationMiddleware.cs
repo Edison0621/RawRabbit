@@ -35,7 +35,7 @@ public class HeaderSerializationMiddleware : StagedMiddleware
 		this._headerKeyFunc = options?.HeaderKeyFunc ?? (context => null);
 	}
 
-	public override async Task InvokeAsync(IPipeContext context, CancellationToken token = default(CancellationToken))
+	public override async Task InvokeAsync(IPipeContext context, CancellationToken token = default)
 	{
 		if (!this.ShouldExecute(context))
 		{

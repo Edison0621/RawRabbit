@@ -28,7 +28,7 @@ public class GlobalExecutionIdMiddleware : StagedMiddleware
 		this._persistAction = options?.PersistAction ?? ((context, id) => context.Properties.TryAdd(PipeKey.GlobalExecutionId, id));
 	}
 
-	public override Task InvokeAsync(IPipeContext context, CancellationToken token = default(CancellationToken))
+	public override Task InvokeAsync(IPipeContext context, CancellationToken token = default)
 	{
 		string fromContext = this.GetExecutionIdFromContext(context);
 		if (!string.IsNullOrWhiteSpace(fromContext))

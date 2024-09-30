@@ -22,9 +22,9 @@ public class RequestTimeoutMiddleware : Pipe.Middleware.Middleware
 		this._timeSpanFunc = options?.TimeSpanFunc ?? (context => context.GetRequestTimeout());
 	}
 
-	public override async Task InvokeAsync(IPipeContext context, CancellationToken token = default(CancellationToken))
+	public override async Task InvokeAsync(IPipeContext context, CancellationToken token = default)
 	{
-		if (token != default(CancellationToken))
+		if (token != default)
 		{
 			await this.Next.InvokeAsync(context, token);
 			return;

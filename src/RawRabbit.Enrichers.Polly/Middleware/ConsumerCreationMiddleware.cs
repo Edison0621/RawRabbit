@@ -1,7 +1,7 @@
 ﻿using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
-using Polly;
+using Polly.NoOp;
 using RabbitMQ.Client;
 using RawRabbit.Consumer;
 using RawRabbit.Pipe;
@@ -16,10 +16,9 @@ public class ConsumerCreationMiddleware : Pipe.Middleware.ConsumerCreationMiddle
 
 	protected override Task<IAsyncBasicConsumer> GetOrCreateConsumerAsync(IPipeContext context, CancellationToken token)
 	{
-		Policy policy = context.GetPolicy(PolicyKeys.QueueDeclare);
+		AsyncNoOpPolicy policy = context.GetPolicy(PolicyKeys.QueueDeclare);
 		return policy.ExecuteAsync(
-			action: ct => base.GetOrCreateConsumerAsync(context, ct),
-			cancellationToken: token,
+			action: ct => base.GetOrCreateConsumerAsync(context, token),
 			contextData: new Dictionary<string, object>
 			{
 				[RetryKey.PipeContext] = context,

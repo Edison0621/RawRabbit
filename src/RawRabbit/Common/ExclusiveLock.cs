@@ -8,10 +8,10 @@ namespace RawRabbit.Common;
 
 public interface IExclusiveLock
 {
-	Task<object> AquireAsync(object obj, CancellationToken token = default(CancellationToken));
+	Task<object> AquireAsync(object obj, CancellationToken token = default);
 	Task ReleaseAsync(object obj);
-	void Execute<T>(T obj, Action<T> action, CancellationToken token = default(CancellationToken));
-	Task ExecuteAsync<T>(T obj, Func<T, Task> func, CancellationToken token = default(CancellationToken));
+	void Execute<T>(T obj, Action<T> action, CancellationToken token = default);
+	Task ExecuteAsync<T>(T obj, Func<T, Task> func, CancellationToken token = default);
 }
 
 public class ExclusiveLock : IExclusiveLock, IDisposable
@@ -26,7 +26,7 @@ public class ExclusiveLock : IExclusiveLock, IDisposable
 		this._lockDictionary = new ConcurrentDictionary<object, object>();
 	}
 
-	public Task<object> AquireAsync(object obj, CancellationToken token = default(CancellationToken))
+	public Task<object> AquireAsync(object obj, CancellationToken token = default)
 	{
 		object theLock = this._lockDictionary.GetOrAdd(obj, o => new object());
 		SemaphoreSlim semaphore = this._semaphoreDictionary.GetOrAdd(theLock, o => new SemaphoreSlim(1,1));
@@ -42,7 +42,7 @@ public class ExclusiveLock : IExclusiveLock, IDisposable
 		return Task.FromResult(0);
 	}
 
-	public void Execute<T>(T obj, Action<T> action, CancellationToken token = default(CancellationToken))
+	public void Execute<T>(T obj, Action<T> action, CancellationToken token = default)
 	{
 		object theLock = this._lockDictionary.GetOrAdd(obj, o => new object());
 		SemaphoreSlim semaphore = this._semaphoreDictionary.GetOrAdd(theLock, o => new SemaphoreSlim(1, 1));
@@ -61,7 +61,7 @@ public class ExclusiveLock : IExclusiveLock, IDisposable
 		}
 	}
 
-	public async Task ExecuteAsync<T>(T obj, Func<T, Task> func, CancellationToken token = default(CancellationToken))
+	public async Task ExecuteAsync<T>(T obj, Func<T, Task> func, CancellationToken token = default)
 	{
 		object theLock = this._lockDictionary.GetOrAdd(obj, o => new object());
 		SemaphoreSlim semaphore = this._semaphoreDictionary.GetOrAdd(theLock, o => new SemaphoreSlim(1, 1));

@@ -31,7 +31,7 @@ public class QueueSuffixMiddleware : StagedMiddleware
 		this._contextSuffixOverride = options?._contextSuffixOverrideFunc ?? (context => null);
 	}
 
-	public override Task InvokeAsync(IPipeContext context, CancellationToken token = default(CancellationToken))
+	public override Task InvokeAsync(IPipeContext context, CancellationToken token = default)
 	{
 		bool activated = this.GetActivatedFlag(context);
 		if (!activated)
