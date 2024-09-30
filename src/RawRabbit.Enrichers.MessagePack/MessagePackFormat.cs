@@ -1,8 +1,7 @@
-﻿namespace RawRabbit.Enrichers.MessagePack
+﻿namespace RawRabbit.Enrichers.MessagePack;
+
+public enum MessagePackFormat
 {
-	public enum MessagePackFormat
-	{
-		Normal,
-		Lz4Compression
-	}
+	Normal,
+	Lz4Compression
 }

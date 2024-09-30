@@ -1,8 +1,7 @@
-﻿namespace RawRabbit.Configuration.Get
+﻿namespace RawRabbit.Configuration.Get;
+
+public class GetConfiguration
 {
-	public class GetConfiguration
-	{
-		public string QueueName { get; set; }
-		public bool AutoAck { get; set; }
-	}
+	public string QueueName { get; set; }
+	public bool AutoAck { get; set; }
 }

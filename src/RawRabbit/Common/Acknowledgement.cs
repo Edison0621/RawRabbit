@@ -1,27 +1,26 @@
-﻿namespace RawRabbit.Common
+﻿namespace RawRabbit.Common;
+
+public abstract class Acknowledgement { }
+
+public class Ack : Acknowledgement
+{ }
+
+public class Nack : Acknowledgement
 {
-	public abstract class Acknowledgement { }
+	public bool Requeue { get; set; }
 
-	public class Ack : Acknowledgement
-	{ }
-
-	public class Nack : Acknowledgement
+	public Nack(bool requeue = true)
 	{
-		public bool Requeue { get; set; }
-
-		public Nack(bool requeue = true)
-		{
-			this.Requeue = requeue;
-		}
+		this.Requeue = requeue;
 	}
+}
 
-	public class Reject : Acknowledgement
+public class Reject : Acknowledgement
+{
+	public bool Requeue { get; set; }
+
+	public Reject(bool requeue = true)
 	{
-		public bool Requeue { get; set; }
-
-		public Reject(bool requeue = true)
-		{
-			this.Requeue = requeue;
-		}
+		this.Requeue = requeue;
 	}
 }

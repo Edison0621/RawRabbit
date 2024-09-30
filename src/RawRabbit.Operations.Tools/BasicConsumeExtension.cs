@@ -5,17 +5,17 @@ using RawRabbit.Common;
 using RawRabbit.Pipe;
 using RawRabbit.Pipe.Middleware;
 
-namespace RawRabbit
-{
-	public static class BasicConsumeExtension
-	{
-		public static Task BasicConsumeAsync(this IBusClient busClient, Func<BasicDeliverEventArgs, Task<Acknowledgement>> consumeFunc,
-			Action<IPipeContext> context)
-		{
-			Func<object[], Task<Acknowledgement>> genericFunc = args => consumeFunc(args[0] as BasicDeliverEventArgs);
+namespace RawRabbit;
 
-			return busClient
-				.InvokeAsync(pipe =>
+public static class BasicConsumeExtension
+{
+	public static Task BasicConsumeAsync(this IBusClient busClient, Func<BasicDeliverEventArgs, Task<Acknowledgement>> consumeFunc,
+		Action<IPipeContext> context)
+	{
+		Func<object[], Task<Acknowledgement>> genericFunc = args => consumeFunc(args[0] as BasicDeliverEventArgs);
+
+		return busClient
+			.InvokeAsync(pipe =>
 					pipe
 						.Use<ConsumeConfigurationMiddleware>()
 						.Use<QueueBindMiddleware>(new QueueBindOptions
@@ -33,12 +33,11 @@ namespace RawRabbit
 								.Use<ExplicitAckMiddleware>()
 						})
 						.Use<ConsumerConsumeMiddleware>(),
-					ctx =>
-					{
-						ctx.Properties.Add(PipeKey.MessageHandler, genericFunc);
-						context?.Invoke(ctx);
-					}
-				);
-		}
+				ctx =>
+				{
+					ctx.Properties.Add(PipeKey.MessageHandler, genericFunc);
+					context?.Invoke(ctx);
+				}
+			);
 	}
 }

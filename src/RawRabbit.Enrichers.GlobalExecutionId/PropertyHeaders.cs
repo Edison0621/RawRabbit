@@ -1,7 +1,6 @@
-﻿namespace RawRabbit.Enrichers.GlobalExecutionId
+﻿namespace RawRabbit.Enrichers.GlobalExecutionId;
+
+public class PropertyHeaders
 {
-	public class PropertyHeaders
-	{
-		public static readonly string GlobalExecutionId = "global_execution_id";
-	}
+	public static readonly string GlobalExecutionId = "global_execution_id";
 }

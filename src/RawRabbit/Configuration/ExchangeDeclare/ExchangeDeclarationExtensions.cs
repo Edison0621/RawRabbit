@@ -1,10 +1,9 @@
-﻿namespace RawRabbit.Configuration.Exchange
+﻿namespace RawRabbit.Configuration.Exchange;
+
+public static class ExchangeDeclarationExtensions
 {
-	public static class ExchangeDeclarationExtensions
+	public static bool IsDefaultExchange(this ExchangeDeclaration declaration)
 	{
-		public static bool IsDefaultExchange(this ExchangeDeclaration declaration)
-		{
-			return string.IsNullOrEmpty(declaration.Name);
-		}
+		return string.IsNullOrEmpty(declaration.Name);
 	}
 }

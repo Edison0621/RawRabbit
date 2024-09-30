@@ -2,31 +2,30 @@
 using System.Collections.Generic;
 using System.Linq;
 
-namespace RawRabbit.Subscription
+namespace RawRabbit.Subscription;
+
+public interface ISubscriptionRepository
 {
-	public interface ISubscriptionRepository
+	void Add(ISubscription subscription);
+	List<ISubscription> GetAll();
+}
+
+public class SubscriptionRepository : ISubscriptionRepository
+{
+	private readonly ConcurrentBag<ISubscription> _subscriptions;
+
+	public SubscriptionRepository()
 	{
-		void Add(ISubscription subscription);
-		List<ISubscription> GetAll();
+		this._subscriptions = new ConcurrentBag<ISubscription>();
 	}
 
-	public class SubscriptionRepository : ISubscriptionRepository
+	public void Add(ISubscription subscription)
 	{
-		private readonly ConcurrentBag<ISubscription> _subscriptions;
+		this._subscriptions.Add(subscription);
+	}
 
-		public SubscriptionRepository()
-		{
-			this._subscriptions = new ConcurrentBag<ISubscription>();
-		}
-
-		public void Add(ISubscription subscription)
-		{
-			this._subscriptions.Add(subscription);
-		}
-
-		public List<ISubscription> GetAll()
-		{
-			return this._subscriptions.ToList();
-		}
+	public List<ISubscription> GetAll()
+	{
+		return this._subscriptions.ToList();
 	}
 }

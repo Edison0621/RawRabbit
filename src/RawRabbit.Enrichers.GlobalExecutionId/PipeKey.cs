@@ -1,7 +1,6 @@
-﻿namespace RawRabbit.Enrichers.GlobalExecutionId
+﻿namespace RawRabbit.Enrichers.GlobalExecutionId;
+
+public class PipeKey
 {
-	public class PipeKey
-	{
-		public const string GlobalExecutionId = "GlobalExecutionId";
-	}
+	public const string GlobalExecutionId = "GlobalExecutionId";
 }

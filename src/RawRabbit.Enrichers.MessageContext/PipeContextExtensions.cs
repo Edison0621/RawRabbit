@@ -1,13 +1,12 @@
 ﻿using RawRabbit.Pipe;
 
-namespace RawRabbit.Enrichers.MessageContext
+namespace RawRabbit.Enrichers.MessageContext;
+
+public static class PipeContextExtensions
 {
-	public static class PipeContextExtensions
+	public static TPipeContext UseMessageContext<TPipeContext>(this TPipeContext context, object msgContext) where TPipeContext : IPipeContext
 	{
-		public static TPipeContext UseMessageContext<TPipeContext>(this TPipeContext context, object msgContext) where TPipeContext : IPipeContext
-		{
-			context.Properties.TryAdd(PipeKey.MessageContext, msgContext);
-			return context;
-		}
+		context.Properties.TryAdd(PipeKey.MessageContext, msgContext);
+		return context;
 	}
 }

@@ -7,28 +7,27 @@ using RawRabbit.Configuration.Queue;
 using RawRabbit.Pipe;
 using RawRabbit.Pipe.Middleware;
 
-namespace RawRabbit.Enrichers.Polly.Middleware
-{
-	public class QueueDeclareMiddleware : Pipe.Middleware.QueueDeclareMiddleware
-	{
-		public QueueDeclareMiddleware(ITopologyProvider topology, QueueDeclareOptions options = null)
-				: base(topology, options)
-		{
-		}
+namespace RawRabbit.Enrichers.Polly.Middleware;
 
-		protected override Task DeclareQueueAsync(QueueDeclaration queue, IPipeContext context, CancellationToken token)
-		{
-			Policy policy = context.GetPolicy(PolicyKeys.QueueDeclare);
-			return policy.ExecuteAsync(
-				action: ct => base.DeclareQueueAsync(queue, context, ct),
-				cancellationToken: token,
-				contextData: new Dictionary<string, object>
-				{
-					[RetryKey.TopologyProvider] = this._topology,
-					[RetryKey.QueueDeclaration] = queue,
-					[RetryKey.PipeContext] = context,
-					[RetryKey.CancellationToken] = token,
-				});
-		}
+public class QueueDeclareMiddleware : Pipe.Middleware.QueueDeclareMiddleware
+{
+	public QueueDeclareMiddleware(ITopologyProvider topology, QueueDeclareOptions options = null)
+		: base(topology, options)
+	{
+	}
+
+	protected override Task DeclareQueueAsync(QueueDeclaration queue, IPipeContext context, CancellationToken token)
+	{
+		Policy policy = context.GetPolicy(PolicyKeys.QueueDeclare);
+		return policy.ExecuteAsync(
+			action: ct => base.DeclareQueueAsync(queue, context, ct),
+			cancellationToken: token,
+			contextData: new Dictionary<string, object>
+			{
+				[RetryKey.TopologyProvider] = this._topology,
+				[RetryKey.QueueDeclaration] = queue,
+				[RetryKey.PipeContext] = context,
+				[RetryKey.CancellationToken] = token,
+			});
 	}
 }

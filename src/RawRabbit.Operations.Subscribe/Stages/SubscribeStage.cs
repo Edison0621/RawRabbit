@@ -1,12 +1,11 @@
-﻿namespace RawRabbit.Operations.Subscribe.Stages
+﻿namespace RawRabbit.Operations.Subscribe.Stages;
+
+public enum SubscribeStage
 {
-	public enum SubscribeStage
-	{
-		ConsumeConfigured,
-		QueueDeclared,
-		ExchangeDeclared,
-		QueueBound,
-		ConsumerChannelCreated,
-		ConsumerCreated
-	}
+	ConsumeConfigured,
+	QueueDeclared,
+	ExchangeDeclared,
+	QueueBound,
+	ConsumerChannelCreated,
+	ConsumerCreated
 }

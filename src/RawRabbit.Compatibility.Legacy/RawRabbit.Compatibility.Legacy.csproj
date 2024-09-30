@@ -5,7 +5,7 @@
     <AssemblyTitle>RawRabbit.Compatibility.Legacy</AssemblyTitle>
     <Version>2.0.0-alpha</Version>
     <Authors>pardahlman</Authors>
-    <TargetFrameworks>netstandard1.5;net451</TargetFrameworks>
+    <TargetFrameworks>net8.0</TargetFrameworks>
     <AssemblyName>RawRabbit.Compatibility.Legacy</AssemblyName>
     <PackageId>RawRabbit.Compatibility.Legacy</PackageId>
     <PackageTags>rabbitmq;rawrabbit;compatibility</PackageTags>

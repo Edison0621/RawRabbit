@@ -29,10 +29,9 @@ namespace RawRabbit.Operations.Publish.Middleware
 		protected readonly Func<IPipeContext, IChannel> _channelFunc;
 		protected readonly Func<IPipeContext, bool> _enabledFunc;
 
-		protected static readonly Dictionary<IChannel, ConcurrentDictionary<ulong, TaskCompletionSource<ulong>>> ConfirmsDictionary =
-			new Dictionary<IChannel, ConcurrentDictionary<ulong, TaskCompletionSource<ulong>>>();
-		protected static readonly ConcurrentDictionary<IChannel, object> ChannelLocks = new ConcurrentDictionary<IChannel, object>();
-		protected static Dictionary<IChannel, ulong> ChannelSequences = new Dictionary<IChannel, ulong>();
+		protected static readonly Dictionary<IChannel, ConcurrentDictionary<ulong, TaskCompletionSource<ulong>>> ConfirmsDictionary = new();
+		protected static readonly ConcurrentDictionary<IChannel, object> ChannelLocks = new();
+		protected static Dictionary<IChannel, ulong> ChannelSequences = new();
 
 		public PublishAcknowledgeMiddleware(IExclusiveLock exclusive, PublishAcknowledgeOptions options = null)
 		{
@@ -59,7 +58,7 @@ namespace RawRabbit.Operations.Publish.Middleware
 			}
 
 			object channelLock = ChannelLocks.GetOrAdd(channel, c => new object());
-			TaskCompletionSource<ulong> ackTcs = new TaskCompletionSource<ulong>();
+			TaskCompletionSource<ulong> ackTcs = new();
 
 			await this._exclusive.ExecuteAsync(channelLock, o =>
 			{

@@ -2,53 +2,52 @@
 using System.Collections.Generic;
 using RabbitMQ.Client.Events;
 
-namespace RawRabbit.Common
+namespace RawRabbit.Common;
+
+public interface IRetryInformationProvider
 {
-	public interface IRetryInformationProvider
+	RetryInformation Get(BasicDeliverEventArgs args);
+}
+
+public class RetryInformationProvider : IRetryInformationProvider
+{
+	public RetryInformation Get(BasicDeliverEventArgs args)
 	{
-		RetryInformation Get(BasicDeliverEventArgs args);
+		return new RetryInformation
+		{
+			NumberOfRetries = this.ExtractNumberOfRetries(args),
+			OriginalDelivered = this.ExtractOriginalDelivered(args)
+		};
 	}
 
-	public class RetryInformationProvider : IRetryInformationProvider
+	private DateTime ExtractOriginalDelivered(BasicDeliverEventArgs args)
 	{
-		public RetryInformation Get(BasicDeliverEventArgs args)
+		string headerValue = GetHeaderString(args.BasicProperties.Headers, RetryHeaders.OriginalDelivered);
+		return DateTime.TryParse(headerValue, out DateTime originalSent) ? originalSent : DateTime.UtcNow;
+	}
+
+	private int ExtractNumberOfRetries(BasicDeliverEventArgs args)
+	{
+		string headerValue = GetHeaderString(args.BasicProperties.Headers, RetryHeaders.NumberOfRetries);
+		return int.TryParse(headerValue, out int noOfRetries) ? noOfRetries : 0;
+	}
+
+	private static string GetHeaderString(IDictionary<string, object> headers, string key)
+	{
+		if (headers == null)
 		{
-			return new RetryInformation
-			{
-				NumberOfRetries = this.ExtractNumberOfRetries(args),
-				OriginalDelivered = this.ExtractOriginalDelivered(args)
-			};
+			return null;
+		}
+		if (!headers.ContainsKey(key))
+		{
+			return null;
+		}
+		if (!(headers[key] is byte[] headerBytes))
+		{
+			return null;
 		}
 
-		private DateTime ExtractOriginalDelivered(BasicDeliverEventArgs args)
-		{
-			string headerValue = GetHeaderString(args.BasicProperties.Headers, RetryHeaders.OriginalDelivered);
-			return DateTime.TryParse(headerValue, out DateTime originalSent) ? originalSent : DateTime.UtcNow;
-		}
-
-		private int ExtractNumberOfRetries(BasicDeliverEventArgs args)
-		{
-			string headerValue = GetHeaderString(args.BasicProperties.Headers, RetryHeaders.NumberOfRetries);
-			return int.TryParse(headerValue, out int noOfRetries) ? noOfRetries : 0;
-		}
-
-		private static string GetHeaderString(IDictionary<string, object> headers, string key)
-		{
-			if (headers == null)
-			{
-				return null;
-			}
-			if (!headers.ContainsKey(key))
-			{
-				return null;
-			}
-			if (!(headers[key] is byte[] headerBytes))
-			{
-				return null;
-			}
-
-			string headerStr = System.Text.Encoding.UTF8.GetString(headerBytes);
-			return headerStr;
-		}
+		string headerStr = System.Text.Encoding.UTF8.GetString(headerBytes);
+		return headerStr;
 	}
 }

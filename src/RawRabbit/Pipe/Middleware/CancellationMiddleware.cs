@@ -1,14 +1,13 @@
 ﻿using System.Threading;
 using System.Threading.Tasks;
 
-namespace RawRabbit.Pipe.Middleware
+namespace RawRabbit.Pipe.Middleware;
+
+public class CancellationMiddleware : Middleware
 {
-	public class CancellationMiddleware : Middleware
+	public override Task InvokeAsync(IPipeContext context, CancellationToken token = new())
 	{
-		public override Task InvokeAsync(IPipeContext context, CancellationToken token = new CancellationToken())
-		{
-			token.ThrowIfCancellationRequested();
-			return this.Next.InvokeAsync(context, token);
-		}
+		token.ThrowIfCancellationRequested();
+		return this.Next.InvokeAsync(context, token);
 	}
 }

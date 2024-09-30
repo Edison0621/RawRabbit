@@ -6,23 +6,22 @@ using System.Threading.Tasks;
 using Polly;
 using RawRabbit.Channel.Abstraction;
 
-namespace RawRabbit.Enrichers.Polly.Middleware
-{
-	public class ExplicitAckMiddleware : Pipe.Middleware.ExplicitAckMiddleware
-	{
-		public ExplicitAckMiddleware(INamingConventions conventions, ITopologyProvider topology, IChannelFactory channelFactory, ExplicitAckOptions options = null)
-				: base(conventions, topology, channelFactory, options) { }
+namespace RawRabbit.Enrichers.Polly.Middleware;
 
-		protected override async Task<Acknowledgement> AcknowledgeMessageAsync(IPipeContext context)
-		{
-			Policy policy = context.GetPolicy(PolicyKeys.MessageAcknowledge);
-			Task<Acknowledgement> result = await policy.ExecuteAsync(
-				action: () => Task.FromResult(base.AcknowledgeMessageAsync(context)),
-				contextData: new Dictionary<string, object>
-				{
-					[RetryKey.PipeContext] = context
-				});
-			return await result;
-		}
+public class ExplicitAckMiddleware : Pipe.Middleware.ExplicitAckMiddleware
+{
+	public ExplicitAckMiddleware(INamingConventions conventions, ITopologyProvider topology, IChannelFactory channelFactory, ExplicitAckOptions options = null)
+		: base(conventions, topology, channelFactory, options) { }
+
+	protected override async Task<Acknowledgement> AcknowledgeMessageAsync(IPipeContext context)
+	{
+		Policy policy = context.GetPolicy(PolicyKeys.MessageAcknowledge);
+		Task<Acknowledgement> result = await policy.ExecuteAsync(
+			action: () => Task.FromResult(base.AcknowledgeMessageAsync(context)),
+			contextData: new Dictionary<string, object>
+			{
+				[RetryKey.PipeContext] = context
+			});
+		return await result;
 	}
 }

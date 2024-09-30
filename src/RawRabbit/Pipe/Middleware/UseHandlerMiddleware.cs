@@ -2,20 +2,19 @@
 using System.Threading;
 using System.Threading.Tasks;
 
-namespace RawRabbit.Pipe.Middleware
+namespace RawRabbit.Pipe.Middleware;
+
+public class UseHandlerMiddleware : Middleware
 {
-	public class UseHandlerMiddleware : Middleware
+	private readonly Func<IPipeContext, Func<Task>, Task> _handler;
+
+	public UseHandlerMiddleware(Func<IPipeContext, Func<Task>, Task> handler)
 	{
-		private readonly Func<IPipeContext, Func<Task>, Task> _handler;
+		this._handler = handler;
+	}
 
-		public UseHandlerMiddleware(Func<IPipeContext, Func<Task>, Task> handler)
-		{
-			this._handler = handler;
-		}
-
-		public override async Task InvokeAsync(IPipeContext context, CancellationToken token = default(CancellationToken))
-		{
-			await this._handler(context, () => this.Next.InvokeAsync(context, token));
-		}
+	public override async Task InvokeAsync(IPipeContext context, CancellationToken token = default(CancellationToken))
+	{
+		await this._handler(context, () => this.Next.InvokeAsync(context, token));
 	}
 }

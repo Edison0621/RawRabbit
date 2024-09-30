@@ -2,19 +2,18 @@
 using RawRabbit.Enrichers.MessageContext.Middleware;
 using RawRabbit.Instantiation;
 
-namespace RawRabbit.Enrichers.MessageContext
+namespace RawRabbit.Enrichers.MessageContext;
+
+public static class ContextForwardPlugin
 {
-	public static class ContextForwardPlugin
+	public static IClientBuilder UseContextForwarding(this IClientBuilder builder)
 	{
-		public static IClientBuilder UseContextForwarding(this IClientBuilder builder)
-		{
-			builder.Register(
-				pipe => pipe
-					.Use<PublishForwardingMiddleware>()
-					.Use<ConsumeForwardingMiddleware>(),
-				ioc => ioc
-					.AddSingleton<IMessageContextRepository, MessageContextRepository>());
-			return builder;
-		}
+		builder.Register(
+			pipe => pipe
+				.Use<PublishForwardingMiddleware>()
+				.Use<ConsumeForwardingMiddleware>(),
+			ioc => ioc
+				.AddSingleton<IMessageContextRepository, MessageContextRepository>());
+		return builder;
 	}
 }

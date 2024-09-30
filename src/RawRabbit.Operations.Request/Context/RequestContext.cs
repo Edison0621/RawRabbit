@@ -1,14 +1,13 @@
 ﻿using RawRabbit.Pipe;
 
-namespace RawRabbit.Operations.Request.Context
-{
-	public interface IRequestContext : IPipeContext { }
+namespace RawRabbit.Operations.Request.Context;
 
-	public class RequestContext : PipeContext, IRequestContext
+public interface IRequestContext : IPipeContext { }
+
+public class RequestContext : PipeContext, IRequestContext
+{
+	public RequestContext(IPipeContext context)
 	{
-		public RequestContext(IPipeContext context)
-		{
-			this.Properties = context?.Properties;
-		}
+		this.Properties = context?.Properties;
 	}
 }

@@ -1,14 +1,13 @@
 ﻿using RawRabbit.Pipe;
 
-namespace RawRabbit.Operations.Publish.Context
-{
-	public interface IPublishContext : IPipeContext { }
+namespace RawRabbit.Operations.Publish.Context;
 
-	public class PublishContext : PipeContext, IPublishContext
+public interface IPublishContext : IPipeContext { }
+
+public class PublishContext : PipeContext, IPublishContext
+{
+	public PublishContext(IPipeContext context)
 	{
-		public PublishContext(IPipeContext context)
-		{
-			this.Properties = context.Properties;
-		}
+		this.Properties = context.Properties;
 	}
 }

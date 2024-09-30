@@ -1,19 +1,18 @@
 ﻿using RawRabbit.Common;
 
-namespace RawRabbit.Operations.Respond.Acknowledgement
+namespace RawRabbit.Operations.Respond.Acknowledgement;
+
+public class Nack<TResponse> : TypedAcknowlegement<TResponse>
 {
-	public class Nack<TResponse> : TypedAcknowlegement<TResponse>
+	public bool Requeue { get; set; }
+
+	public Nack(bool requeue = true)
 	{
-		public bool Requeue { get; set; }
+		this.Requeue = requeue;
+	}
 
-		public Nack(bool requeue = true)
-		{
-			this.Requeue = requeue;
-		}
-
-		public override Common.Acknowledgement AsUntyped()
-		{
-			return new Nack(this.Requeue);
-		}
+	public override Common.Acknowledgement AsUntyped()
+	{
+		return new Nack(this.Requeue);
 	}
 }

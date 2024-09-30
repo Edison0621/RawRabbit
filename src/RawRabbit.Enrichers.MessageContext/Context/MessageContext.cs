@@ -1,9 +1,8 @@
 ﻿using System;
 
-namespace RawRabbit.Enrichers.MessageContext.Context
+namespace RawRabbit.Enrichers.MessageContext.Context;
+
+public class MessageContext : IMessageContext
 {
-	public class MessageContext : IMessageContext
-	{
-		public Guid GlobalRequestId { get; set; }
-	}
+	public Guid GlobalRequestId { get; set; }
 }

@@ -1,17 +1,16 @@
 ﻿using System;
 
-namespace RawRabbit.Operations.MessageSequence.Model
-{
-	public class StepDefinition
-	{
-		public Guid Id { get; private set; }
-		public Type Type { get; set; }
-		public bool Optional { get; set; }
-		public bool AbortsExecution { get; set; }
+namespace RawRabbit.Operations.MessageSequence.Model;
 
-		public StepDefinition()
-		{
-			this.Id = Guid.NewGuid();
-		}
+public class StepDefinition
+{
+	public Guid Id { get; private set; }
+	public Type Type { get; set; }
+	public bool Optional { get; set; }
+	public bool AbortsExecution { get; set; }
+
+	public StepDefinition()
+	{
+		this.Id = Guid.NewGuid();
 	}
 }

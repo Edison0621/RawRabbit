@@ -5,39 +5,38 @@ using RawRabbit.Enrichers.GlobalExecutionId.Dependencies;
 using RawRabbit.Pipe;
 using RawRabbit.Pipe.Middleware;
 
-namespace RawRabbit.Enrichers.GlobalExecutionId.Middleware
+namespace RawRabbit.Enrichers.GlobalExecutionId.Middleware;
+
+public class PersistGlobalExecutionIdOptions
 {
-	public class PersistGlobalExecutionIdOptions
+	public Func<IPipeContext, string> ExecutionIdFunc { get; set; }
+}
+
+public class PersistGlobalExecutionIdMiddleware : StagedMiddleware
+{
+	protected readonly Func<IPipeContext, string> _executionIdFunc;
+
+	public override string StageMarker => Pipe.StageMarker.MessageReceived;
+
+	public PersistGlobalExecutionIdMiddleware(PersistGlobalExecutionIdOptions options = null)
 	{
-		public Func<IPipeContext, string> ExecutionIdFunc { get; set; }
+		this._executionIdFunc = options?.ExecutionIdFunc ?? (context => context.GetGlobalExecutionId());
 	}
 
-	public class PersistGlobalExecutionIdMiddleware : StagedMiddleware
+	public override Task InvokeAsync(IPipeContext context, CancellationToken token = new())
 	{
-		protected readonly Func<IPipeContext, string> _executionIdFunc;
+		string globalExecutionId = this.GetGlobalExecutionId(context);
+		this.PersistInProcess(globalExecutionId);
+		return this.Next.InvokeAsync(context, token);
+	}
 
-		public override string StageMarker => Pipe.StageMarker.MessageReceived;
+	protected virtual string GetGlobalExecutionId(IPipeContext context)
+	{
+		return this._executionIdFunc(context);
+	}
 
-		public PersistGlobalExecutionIdMiddleware(PersistGlobalExecutionIdOptions options = null)
-		{
-			this._executionIdFunc = options?.ExecutionIdFunc ?? (context => context.GetGlobalExecutionId());
-		}
-
-		public override Task InvokeAsync(IPipeContext context, CancellationToken token = new CancellationToken())
-		{
-			string globalExecutionId = this.GetGlobalExecutionId(context);
-			this.PersistInProcess(globalExecutionId);
-			return this.Next.InvokeAsync(context, token);
-		}
-
-		protected virtual string GetGlobalExecutionId(IPipeContext context)
-		{
-			return this._executionIdFunc(context);
-		}
-
-		protected virtual void PersistInProcess(string id)
-		{
-			GlobalExecutionIdRepository.Set(id);
-		}
+	protected virtual void PersistInProcess(string id)
+	{
+		GlobalExecutionIdRepository.Set(id);
 	}
 }

@@ -3,10 +3,10 @@ using System.Threading.Tasks;
 using RawRabbit.Pipe;
 using RawRabbit.Pipe.Middleware;
 
-namespace RawRabbit.Enrichers.HttpContext
+namespace RawRabbit.Enrichers.HttpContext;
+
+public class AspNetCoreHttpContextMiddleware : StagedMiddleware
 {
-	public class AspNetCoreHttpContextMiddleware : StagedMiddleware
-	{
 #if NETSTANDARD1_6
 		private readonly Microsoft.AspNetCore.Http.IHttpContextAccessor _httpAccessor;
 
@@ -15,15 +15,14 @@ namespace RawRabbit.Enrichers.HttpContext
 			this._httpAccessor = httpAccessor;
 		}
 #endif
-		public override string StageMarker => Pipe.StageMarker.Initialized;
+	public override string StageMarker => Pipe.StageMarker.Initialized;
 
-		public override Task InvokeAsync(IPipeContext context, CancellationToken token = new CancellationToken())
-		{
+	public override Task InvokeAsync(IPipeContext context, CancellationToken token = new())
+	{
 #if NETSTANDARD1_6
 			context.UseHttpContext(this._httpAccessor.HttpContext);
 #endif
-			return this.Next.InvokeAsync(context, token);
-		}
-
+		return this.Next.InvokeAsync(context, token);
 	}
+
 }

@@ -1,44 +1,43 @@
 ﻿using System;
 using System.Text;
 
-namespace RawRabbit.Serialization
+namespace RawRabbit.Serialization;
+
+public abstract class StringSerializerBase : ISerializer
 {
-	public abstract class StringSerializerBase : ISerializer
+	public abstract string ContentType { get; }
+	public abstract object Deserialize(Type type, string serialized);
+	public abstract string SerializeToString(object obj);
+
+	public byte[] Serialize(object obj)
 	{
-		public abstract string ContentType { get; }
-		public abstract object Deserialize(Type type, string serialized);
-		public abstract string SerializeToString(object obj);
+		string serialized = this.SerializeToString(obj);
+		return this.ConvertToBytes(serialized);
+	}
 
-		public byte[] Serialize(object obj)
+	public object Deserialize(Type type, ReadOnlyMemory<byte>? bytes)
+	{
+		if (bytes == null)
 		{
-			string serialized = this.SerializeToString(obj);
-			return this.ConvertToBytes(serialized);
+			return null;
 		}
+		string serialized = this.ConvertToString(bytes);
+		return this.Deserialize(type, serialized);
+	}
 
-		public object Deserialize(Type type, ReadOnlyMemory<byte>? bytes)
-		{
-			if (bytes == null)
-			{
-				return null;
-			}
-			string serialized = this.ConvertToString(bytes);
-			return this.Deserialize(type, serialized);
-		}
+	public TType Deserialize<TType>(ReadOnlyMemory<byte>? bytes)
+	{
+		string serialized = this.ConvertToString(bytes);
+		return (TType)this.Deserialize(typeof(TType), serialized);
+	}
 
-		public TType Deserialize<TType>(ReadOnlyMemory<byte>? bytes)
-		{
-			string serialized = this.ConvertToString(bytes);
-			return (TType)this.Deserialize(typeof(TType), serialized);
-		}
+	protected virtual byte[] ConvertToBytes(string serialzed)
+	{
+		return Encoding.UTF8.GetBytes(serialzed);
+	}
 
-		protected virtual byte[] ConvertToBytes(string serialzed)
-		{
-			return Encoding.UTF8.GetBytes(serialzed);
-		}
-
-		protected virtual string ConvertToString(ReadOnlyMemory<byte>? bytes)
-		{
-			return Encoding.UTF8.GetString(bytes?.ToArray());
-		}
+	protected virtual string ConvertToString(ReadOnlyMemory<byte>? bytes)
+	{
+		return Encoding.UTF8.GetString(bytes?.ToArray());
 	}
 }

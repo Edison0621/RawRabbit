@@ -1,10 +1,9 @@
-﻿namespace RawRabbit.Compatibility.Legacy.Configuration.Exchange
+﻿namespace RawRabbit.Compatibility.Legacy.Configuration.Exchange;
+
+public static class ExchangeConfigurationExtensions
 {
-	public static class ExchangeConfigurationExtensions
+	public static bool IsDefaultExchange(this ExchangeConfiguration configuration)
 	{
-		public static bool IsDefaultExchange(this ExchangeConfiguration configuration)
-		{
-			return string.IsNullOrEmpty(configuration.ExchangeName);
-		}
+		return string.IsNullOrEmpty(configuration.ExchangeName);
 	}
 }

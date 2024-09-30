@@ -1,14 +1,13 @@
-﻿namespace RawRabbit.Operations.Publish
+﻿namespace RawRabbit.Operations.Publish;
+
+public enum PublishStage
 {
-	public enum PublishStage
-	{
-		Initiated,
-		PublishConfigured,
-		ExchangeDeclared,
-		MessageSerialized,
-		BasicPropertiesCreated,
-		ChannelCreated,
-		PreMessagePublish,
-		MessagePublished
-	}
+	Initiated,
+	PublishConfigured,
+	ExchangeDeclared,
+	MessageSerialized,
+	BasicPropertiesCreated,
+	ChannelCreated,
+	PreMessagePublish,
+	MessagePublished
 }

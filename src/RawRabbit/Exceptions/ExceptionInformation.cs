@@ -1,13 +1,12 @@
-﻿namespace RawRabbit.Exceptions
+﻿namespace RawRabbit.Exceptions;
+
+/// <summary>
+/// Holds information about exception thrown in a remote message handler. 
+/// </summary>
+public class ExceptionInformation
 {
-	/// <summary>
-	/// Holds information about exception thrown in a remote message handler. 
-	/// </summary>
-	public class ExceptionInformation
-	{
-		public string Message { get; set; }
-		public string ExceptionType { get; set; }
-		public string StackTrace { get; set; }
-		public string InnerMessage { get; set; }
-	}
+	public string Message { get; set; }
+	public string ExceptionType { get; set; }
+	public string StackTrace { get; set; }
+	public string InnerMessage { get; set; }
 }

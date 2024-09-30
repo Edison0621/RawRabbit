@@ -1,11 +1,10 @@
-﻿namespace RawRabbit.Enrichers.MessageContext.Subscribe
+﻿namespace RawRabbit.Enrichers.MessageContext.Subscribe;
+
+public enum MessageContextSubscibeStage
 {
-	public enum MessageContextSubscibeStage
-	{
-		MessageReceived,
-		MessageDeserialized,
-		MessageContextDeserialized,
-		MessageContextEnhanced,
-		HandlerInvoked
-	}
+	MessageReceived,
+	MessageDeserialized,
+	MessageContextDeserialized,
+	MessageContextEnhanced,
+	HandlerInvoked
 }

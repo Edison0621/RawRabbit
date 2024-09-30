@@ -1,20 +1,19 @@
 ﻿using RawRabbit.Pipe;
 
-namespace RawRabbit.Enrichers.QueueSuffix
+namespace RawRabbit.Enrichers.QueueSuffix;
+
+public static class HostNamePipeExtensions
 {
-	public static class HostNamePipeExtensions
+	private const string HostnameQueueSuffixActive = "HostnameQueueSuffixActive";
+
+	public static bool GetHostnameQueueSuffixFlag(this IPipeContext context)
 	{
-		private const string HostnameQueueSuffixActive = "HostnameQueueSuffixActive";
+		return context.Get(HostnameQueueSuffixActive, true);
+	}
 
-		public static bool GetHostnameQueueSuffixFlag(this IPipeContext context)
-		{
-			return context.Get(HostnameQueueSuffixActive, true);
-		}
-
-		public static TPipeContext UseHostnameQueueSuffix<TPipeContext>(this TPipeContext context, bool activated) where TPipeContext : IPipeContext
-		{
-			context.Properties.TryAdd(HostnameQueueSuffixActive, activated);
-			return context;
-		}
+	public static TPipeContext UseHostnameQueueSuffix<TPipeContext>(this TPipeContext context, bool activated) where TPipeContext : IPipeContext
+	{
+		context.Properties.TryAdd(HostnameQueueSuffixActive, activated);
+		return context;
 	}
 }

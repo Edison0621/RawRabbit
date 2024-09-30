@@ -9,65 +9,64 @@ using RawRabbit.Operations.Request.Middleware;
 using RawRabbit.Pipe;
 using RawRabbit.Pipe.Middleware;
 
-namespace RawRabbit
-{
-	public static class RequestExtension
-	{
-		public static readonly Action<IPipeBuilder> RequestPipe = pipe => pipe
-				.Use<StageMarkerMiddleware>(StageMarkerOptions.For(StageMarker.Initialized))
-				.Use<StageMarkerMiddleware>(StageMarkerOptions.For(StageMarker.ProducerInitialized))
-				.Use<RequestConfigurationMiddleware>()
-				.Use<StageMarkerMiddleware>(StageMarkerOptions.For(StageMarker.PublishConfigured))
-				.Use<StageMarkerMiddleware>(StageMarkerOptions.For(StageMarker.ConsumeConfigured))
-				.Use<QueueDeclareMiddleware>(new QueueDeclareOptions {QueueDeclarationFunc = context => context.GetResponseQueue()})
-				.Use<ExchangeDeclareMiddleware>(new ExchangeDeclareOptions {ExchangeFunc = context => context.GetRequestExchange()})
-				.Use<ExchangeDeclareMiddleware>(new ExchangeDeclareOptions {ExchangeFunc = context => context.GetResponseExchange()})
-				.Use<QueueBindMiddleware>(new QueueBindOptions
-				{
-					ExchangeNameFunc = context => context.GetConsumeConfiguration()?.ExchangeName,
-					QueueNameFunc = context => context.GetConsumeConfiguration()?.QueueName,
-					RoutingKeyFunc = context => context.GetConsumeConfiguration()?.RoutingKey
-				})
-				.Use<BodySerializationMiddleware>()
-				.Use<Operations.Request.Middleware.BasicPropertiesMiddleware>(new BasicPropertiesOptions
-				{
-					PostCreateAction = (ctx, props) =>
-					{
-						props.Type = ctx.GetRequestMessageType().GetUserFriendlyName();
-						props.Headers.TryAdd(PropertyHeaders.Sent, DateTime.UtcNow.ToString("O"));
-					}
-				})
-				.Use<StageMarkerMiddleware>(StageMarkerOptions.For(StageMarker.BasicPropertiesCreated))
-				.Use<RequestTimeoutMiddleware>()
-				.Use<ResponseConsumeMiddleware>(new ResponseConsumerOptions
-				{
-					ResponseReceived = p => p
-						.Use<ResponderExceptionMiddleware>()
-						.Use<BodyDeserializationMiddleware>(new MessageDeserializationOptions
-						{
-							BodyTypeFunc = c => c.GetResponseMessageType(),
-							PersistAction = (ctx, msg) => ctx.Properties.TryAdd(RequestKey.ResponseMessage, msg)
-						})
-				})
-				.Use<BasicPublishMiddleware>(new BasicPublishOptions
-				{
-					ExchangeNameFunc = c => c.GetRequestConfiguration()?.Request.ExchangeName,
-					RoutingKeyFunc = c => c.GetRequestConfiguration()?.Request.RoutingKey,
-					ChannelFunc = c => c.Get<IAsyncBasicConsumer>(PipeKey.Consumer)?.Channel,
-					BodyFunc = c => c.Get<byte[]>(PipeKey.SerializedMessage)
-				});
+namespace RawRabbit;
 
-		public static async Task<TResponse> RequestAsync<TRequest, TResponse>(this IBusClient client, TRequest message = default(TRequest), Action<IRequestContext> context = null, CancellationToken ct = default(CancellationToken))
+public static class RequestExtension
+{
+	public static readonly Action<IPipeBuilder> RequestPipe = pipe => pipe
+		.Use<StageMarkerMiddleware>(StageMarkerOptions.For(StageMarker.Initialized))
+		.Use<StageMarkerMiddleware>(StageMarkerOptions.For(StageMarker.ProducerInitialized))
+		.Use<RequestConfigurationMiddleware>()
+		.Use<StageMarkerMiddleware>(StageMarkerOptions.For(StageMarker.PublishConfigured))
+		.Use<StageMarkerMiddleware>(StageMarkerOptions.For(StageMarker.ConsumeConfigured))
+		.Use<QueueDeclareMiddleware>(new QueueDeclareOptions {QueueDeclarationFunc = context => context.GetResponseQueue()})
+		.Use<ExchangeDeclareMiddleware>(new ExchangeDeclareOptions {ExchangeFunc = context => context.GetRequestExchange()})
+		.Use<ExchangeDeclareMiddleware>(new ExchangeDeclareOptions {ExchangeFunc = context => context.GetResponseExchange()})
+		.Use<QueueBindMiddleware>(new QueueBindOptions
 		{
-			IPipeContext result = await client
-				.InvokeAsync(RequestPipe, ctx =>
+			ExchangeNameFunc = context => context.GetConsumeConfiguration()?.ExchangeName,
+			QueueNameFunc = context => context.GetConsumeConfiguration()?.QueueName,
+			RoutingKeyFunc = context => context.GetConsumeConfiguration()?.RoutingKey
+		})
+		.Use<BodySerializationMiddleware>()
+		.Use<Operations.Request.Middleware.BasicPropertiesMiddleware>(new BasicPropertiesOptions
+		{
+			PostCreateAction = (ctx, props) =>
+			{
+				props.Type = ctx.GetRequestMessageType().GetUserFriendlyName();
+				props.Headers.TryAdd(PropertyHeaders.Sent, DateTime.UtcNow.ToString("O"));
+			}
+		})
+		.Use<StageMarkerMiddleware>(StageMarkerOptions.For(StageMarker.BasicPropertiesCreated))
+		.Use<RequestTimeoutMiddleware>()
+		.Use<ResponseConsumeMiddleware>(new ResponseConsumerOptions
+		{
+			ResponseReceived = p => p
+				.Use<ResponderExceptionMiddleware>()
+				.Use<BodyDeserializationMiddleware>(new MessageDeserializationOptions
 				{
-					ctx.Properties.Add(RequestKey.OutgoingMessageType, typeof(TRequest));
-					ctx.Properties.Add(RequestKey.IncommingMessageType, typeof(TResponse));
-					ctx.Properties.Add(PipeKey.Message, message);
-					context?.Invoke(new RequestContext(ctx));
-				}, ct);
-			return result.Get<TResponse>(RequestKey.ResponseMessage);
-		}
+					BodyTypeFunc = c => c.GetResponseMessageType(),
+					PersistAction = (ctx, msg) => ctx.Properties.TryAdd(RequestKey.ResponseMessage, msg)
+				})
+		})
+		.Use<BasicPublishMiddleware>(new BasicPublishOptions
+		{
+			ExchangeNameFunc = c => c.GetRequestConfiguration()?.Request.ExchangeName,
+			RoutingKeyFunc = c => c.GetRequestConfiguration()?.Request.RoutingKey,
+			ChannelFunc = c => c.Get<IAsyncBasicConsumer>(PipeKey.Consumer)?.Channel,
+			BodyFunc = c => c.Get<byte[]>(PipeKey.SerializedMessage)
+		});
+
+	public static async Task<TResponse> RequestAsync<TRequest, TResponse>(this IBusClient client, TRequest message = default(TRequest), Action<IRequestContext> context = null, CancellationToken ct = default(CancellationToken))
+	{
+		IPipeContext result = await client
+			.InvokeAsync(RequestPipe, ctx =>
+			{
+				ctx.Properties.Add(RequestKey.OutgoingMessageType, typeof(TRequest));
+				ctx.Properties.Add(RequestKey.IncommingMessageType, typeof(TResponse));
+				ctx.Properties.Add(PipeKey.Message, message);
+				context?.Invoke(new RequestContext(ctx));
+			}, ct);
+		return result.Get<TResponse>(RequestKey.ResponseMessage);
 	}
 }

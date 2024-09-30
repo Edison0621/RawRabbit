@@ -4,88 +4,87 @@ using System.Threading;
 using System.Threading.Tasks;
 using RawRabbit.Logging;
 
-namespace RawRabbit.Common
+namespace RawRabbit.Common;
+
+public interface IExclusiveLock
 {
-	public interface IExclusiveLock
+	Task<object> AquireAsync(object obj, CancellationToken token = default(CancellationToken));
+	Task ReleaseAsync(object obj);
+	void Execute<T>(T obj, Action<T> action, CancellationToken token = default(CancellationToken));
+	Task ExecuteAsync<T>(T obj, Func<T, Task> func, CancellationToken token = default(CancellationToken));
+}
+
+public class ExclusiveLock : IExclusiveLock, IDisposable
+{
+	private readonly ConcurrentDictionary<object, SemaphoreSlim> _semaphoreDictionary;
+	private readonly ConcurrentDictionary<object, object> _lockDictionary;
+	private readonly ILog _logger = LogProvider.For<ExclusiveLock>();
+
+	public ExclusiveLock()
 	{
-		Task<object> AquireAsync(object obj, CancellationToken token = default(CancellationToken));
-		Task ReleaseAsync(object obj);
-		void Execute<T>(T obj, Action<T> action, CancellationToken token = default(CancellationToken));
-		Task ExecuteAsync<T>(T obj, Func<T, Task> func, CancellationToken token = default(CancellationToken));
+		this._semaphoreDictionary = new ConcurrentDictionary<object, SemaphoreSlim>();
+		this._lockDictionary = new ConcurrentDictionary<object, object>();
 	}
 
-	public class ExclusiveLock : IExclusiveLock, IDisposable
+	public Task<object> AquireAsync(object obj, CancellationToken token = default(CancellationToken))
 	{
-		private readonly ConcurrentDictionary<object, SemaphoreSlim> _semaphoreDictionary;
-		private readonly ConcurrentDictionary<object, object> _lockDictionary;
-		private readonly ILog _logger = LogProvider.For<ExclusiveLock>();
+		object theLock = this._lockDictionary.GetOrAdd(obj, o => new object());
+		SemaphoreSlim semaphore = this._semaphoreDictionary.GetOrAdd(theLock, o => new SemaphoreSlim(1,1));
+		return semaphore
+			.WaitAsync(token)
+			.ContinueWith(t => theLock, token);
+	}
 
-		public ExclusiveLock()
+	public Task ReleaseAsync(object obj)
+	{
+		SemaphoreSlim semaphore = this._semaphoreDictionary.GetOrAdd(obj, o => new SemaphoreSlim(1, 1));
+		semaphore.Release();
+		return Task.FromResult(0);
+	}
+
+	public void Execute<T>(T obj, Action<T> action, CancellationToken token = default(CancellationToken))
+	{
+		object theLock = this._lockDictionary.GetOrAdd(obj, o => new object());
+		SemaphoreSlim semaphore = this._semaphoreDictionary.GetOrAdd(theLock, o => new SemaphoreSlim(1, 1));
+		semaphore.Wait(token);
+		try
 		{
-			this._semaphoreDictionary = new ConcurrentDictionary<object, SemaphoreSlim>();
-			this._lockDictionary = new ConcurrentDictionary<object, object>();
+			action(obj);
 		}
-
-		public Task<object> AquireAsync(object obj, CancellationToken token = default(CancellationToken))
+		catch (Exception e)
 		{
-			object theLock = this._lockDictionary.GetOrAdd(obj, o => new object());
-			SemaphoreSlim semaphore = this._semaphoreDictionary.GetOrAdd(theLock, o => new SemaphoreSlim(1,1));
-			return semaphore
-				.WaitAsync(token)
-				.ContinueWith(t => theLock, token);
+			this._logger.Error("Exception when performing exclusive execute", e);
 		}
-
-		public Task ReleaseAsync(object obj)
+		finally
 		{
-			SemaphoreSlim semaphore = this._semaphoreDictionary.GetOrAdd(obj, o => new SemaphoreSlim(1, 1));
 			semaphore.Release();
-			return Task.FromResult(0);
 		}
+	}
 
-		public void Execute<T>(T obj, Action<T> action, CancellationToken token = default(CancellationToken))
+	public async Task ExecuteAsync<T>(T obj, Func<T, Task> func, CancellationToken token = default(CancellationToken))
+	{
+		object theLock = this._lockDictionary.GetOrAdd(obj, o => new object());
+		SemaphoreSlim semaphore = this._semaphoreDictionary.GetOrAdd(theLock, o => new SemaphoreSlim(1, 1));
+		await semaphore.WaitAsync(token);
+		try
 		{
-			object theLock = this._lockDictionary.GetOrAdd(obj, o => new object());
-			SemaphoreSlim semaphore = this._semaphoreDictionary.GetOrAdd(theLock, o => new SemaphoreSlim(1, 1));
-			semaphore.Wait(token);
-			try
-			{
-				action(obj);
-			}
-			catch (Exception e)
-			{
-				this._logger.Error("Exception when performing exclusive execute", e);
-			}
-			finally
-			{
-				semaphore.Release();
-			}
+			await func(obj);
 		}
-
-		public async Task ExecuteAsync<T>(T obj, Func<T, Task> func, CancellationToken token = default(CancellationToken))
+		catch (Exception e)
 		{
-			object theLock = this._lockDictionary.GetOrAdd(obj, o => new object());
-			SemaphoreSlim semaphore = this._semaphoreDictionary.GetOrAdd(theLock, o => new SemaphoreSlim(1, 1));
-			await semaphore.WaitAsync(token);
-			try
-			{
-				await func(obj);
-			}
-			catch (Exception e)
-			{
-				this._logger.ErrorException("Exception when performing exclusive executeasync", e);
-			}
-			finally
-			{
-				semaphore.Release();
-			}
+			this._logger.ErrorException("Exception when performing exclusive executeasync", e);
 		}
-
-		public void Dispose()
+		finally
 		{
-			foreach (SemaphoreSlim slim in this._semaphoreDictionary.Values)
-			{
-				slim.Dispose();
-			}
+			semaphore.Release();
+		}
+	}
+
+	public void Dispose()
+	{
+		foreach (SemaphoreSlim slim in this._semaphoreDictionary.Values)
+		{
+			slim.Dispose();
 		}
 	}
 }

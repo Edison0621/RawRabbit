@@ -1,11 +1,10 @@
 ﻿using System;
 
-namespace RawRabbit.Configuration.Consumer
+namespace RawRabbit.Configuration.Consumer;
+
+public interface IConsumerConfigurationFactory
 {
-	public interface IConsumerConfigurationFactory
-	{
-		ConsumerConfiguration Create<TMessageType>();
-		ConsumerConfiguration Create(Type messageType);
-		ConsumerConfiguration Create(string queueName, string exchangeName, string routingKey);
-	}
+	ConsumerConfiguration Create<TMessageType>();
+	ConsumerConfiguration Create(Type messageType);
+	ConsumerConfiguration Create(string queueName, string exchangeName, string routingKey);
 }

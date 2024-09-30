@@ -2,56 +2,55 @@
 using System.Collections.Concurrent;
 using RawRabbit.DependencyInjection;
 
-namespace RawRabbit.Pipe
+namespace RawRabbit.Pipe;
+
+public interface IPipeBuilderFactory
 {
-	public interface IPipeBuilderFactory
+	IExtendedPipeBuilder Create();
+	Middleware.Middleware Create(Action<IPipeBuilder> pipe);
+}
+
+public class PipeBuilderFactory : IPipeBuilderFactory
+{
+	private readonly IDependencyResolver _resolver;
+
+	public PipeBuilderFactory(IDependencyResolver resolver)
 	{
-		IExtendedPipeBuilder Create();
-		Middleware.Middleware Create(Action<IPipeBuilder> pipe);
+		this._resolver = resolver;
 	}
 
-	public class PipeBuilderFactory : IPipeBuilderFactory
+	public IExtendedPipeBuilder Create()
 	{
-		private readonly IDependencyResolver _resolver;
-
-		public PipeBuilderFactory(IDependencyResolver resolver)
-		{
-			this._resolver = resolver;
-		}
-
-		public IExtendedPipeBuilder Create()
-		{
-			return new PipeBuilder(this._resolver);
-		}
-
-		public Middleware.Middleware Create(Action<IPipeBuilder> pipe)
-		{
-			IExtendedPipeBuilder builder = this.Create();
-			pipe(builder);
-			return builder.Build();
-		}
+		return new PipeBuilder(this._resolver);
 	}
 
-	public class CachedPipeBuilderFactory : IPipeBuilderFactory
+	public Middleware.Middleware Create(Action<IPipeBuilder> pipe)
 	{
-		private readonly PipeBuilderFactory _fallback;
-		private readonly ConcurrentDictionary<Action<IPipeBuilder>, Middleware.Middleware> _pipeCache;
+		IExtendedPipeBuilder builder = this.Create();
+		pipe(builder);
+		return builder.Build();
+	}
+}
 
-		public CachedPipeBuilderFactory(IDependencyResolver resolver)
-		{
-			this._fallback = new PipeBuilderFactory(resolver);
-			this._pipeCache = new ConcurrentDictionary<Action<IPipeBuilder>, Middleware.Middleware>();
-		}
+public class CachedPipeBuilderFactory : IPipeBuilderFactory
+{
+	private readonly PipeBuilderFactory _fallback;
+	private readonly ConcurrentDictionary<Action<IPipeBuilder>, Middleware.Middleware> _pipeCache;
 
-		public IExtendedPipeBuilder Create()
-		{
-			return this._fallback.Create();
-		}
+	public CachedPipeBuilderFactory(IDependencyResolver resolver)
+	{
+		this._fallback = new PipeBuilderFactory(resolver);
+		this._pipeCache = new ConcurrentDictionary<Action<IPipeBuilder>, Middleware.Middleware>();
+	}
 
-		public Middleware.Middleware Create(Action<IPipeBuilder> pipe)
-		{
-			Middleware.Middleware result = this._pipeCache.GetOrAdd(pipe, action => this._fallback.Create(action));
-			return result;
-		}
+	public IExtendedPipeBuilder Create()
+	{
+		return this._fallback.Create();
+	}
+
+	public Middleware.Middleware Create(Action<IPipeBuilder> pipe)
+	{
+		Middleware.Middleware result = this._pipeCache.GetOrAdd(pipe, action => this._fallback.Create(action));
+		return result;
 	}
 }

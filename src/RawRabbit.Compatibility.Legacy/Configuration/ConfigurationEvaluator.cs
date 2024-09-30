@@ -8,123 +8,122 @@ using RawRabbit.Compatibility.Legacy.Configuration.Respond;
 using RawRabbit.Compatibility.Legacy.Configuration.Subscribe;
 using RawRabbit.Configuration;
 
-namespace RawRabbit.Compatibility.Legacy.Configuration
-{
-	public interface IConfigurationEvaluator
-	{
-		SubscriptionConfiguration GetConfiguration<TMessage>(Action<ISubscriptionConfigurationBuilder> configuration = null);
-		PublishConfiguration GetConfiguration<TMessage>(Action<IPublishConfigurationBuilder> configuration);
-		ResponderConfiguration GetConfiguration<TRequest, TResponse>(Action<IResponderConfigurationBuilder> configuration);
-		RequestConfiguration GetConfiguration<TRequest, TResponse>(Action<IRequestConfigurationBuilder> configuration);
+namespace RawRabbit.Compatibility.Legacy.Configuration;
 
-		SubscriptionConfiguration GetConfiguration(Type messageType, Action<ISubscriptionConfigurationBuilder> configuration = null);
-		PublishConfiguration GetConfiguration(Type messageType, Action<IPublishConfigurationBuilder> configuration);
-		ResponderConfiguration GetConfiguration(Type requestType, Type responseType, Action<IResponderConfigurationBuilder> configuration);
-		RequestConfiguration GetConfiguration(Type requestType, Type responseType, Action<IRequestConfigurationBuilder> configuration);
+public interface IConfigurationEvaluator
+{
+	SubscriptionConfiguration GetConfiguration<TMessage>(Action<ISubscriptionConfigurationBuilder> configuration = null);
+	PublishConfiguration GetConfiguration<TMessage>(Action<IPublishConfigurationBuilder> configuration);
+	ResponderConfiguration GetConfiguration<TRequest, TResponse>(Action<IResponderConfigurationBuilder> configuration);
+	RequestConfiguration GetConfiguration<TRequest, TResponse>(Action<IRequestConfigurationBuilder> configuration);
+
+	SubscriptionConfiguration GetConfiguration(Type messageType, Action<ISubscriptionConfigurationBuilder> configuration = null);
+	PublishConfiguration GetConfiguration(Type messageType, Action<IPublishConfigurationBuilder> configuration);
+	ResponderConfiguration GetConfiguration(Type requestType, Type responseType, Action<IResponderConfigurationBuilder> configuration);
+	RequestConfiguration GetConfiguration(Type requestType, Type responseType, Action<IRequestConfigurationBuilder> configuration);
+}
+
+public class ConfigurationEvaluator : IConfigurationEvaluator
+{
+	private readonly RawRabbitConfiguration _clientConfig;
+	private readonly INamingConventions _conventions;
+	private readonly string _directReplyTo = "amq.rabbitmq.reply-to";
+
+	public ConfigurationEvaluator(RawRabbitConfiguration clientConfig, INamingConventions conventions)
+	{
+		this._clientConfig = clientConfig;
+		this._conventions = conventions;
 	}
 
-	public class ConfigurationEvaluator : IConfigurationEvaluator
+	public SubscriptionConfiguration GetConfiguration<TMessage>(Action<ISubscriptionConfigurationBuilder> configuration = null)
 	{
-		private readonly RawRabbitConfiguration _clientConfig;
-		private readonly INamingConventions _conventions;
-		private readonly string _directReplyTo = "amq.rabbitmq.reply-to";
+		return this.GetConfiguration(typeof(TMessage), configuration);
+	}
 
-		public ConfigurationEvaluator(RawRabbitConfiguration clientConfig, INamingConventions conventions)
+	public PublishConfiguration GetConfiguration<TMessage>(Action<IPublishConfigurationBuilder> configuration)
+	{
+		return this.GetConfiguration(typeof(TMessage), configuration);
+	}
+
+	public ResponderConfiguration GetConfiguration<TRequest, TResponse>(Action<IResponderConfigurationBuilder> configuration)
+	{
+		return this.GetConfiguration(typeof(TRequest), typeof(TResponse), configuration);
+	}
+
+	public RequestConfiguration GetConfiguration<TRequest, TResponse>(Action<IRequestConfigurationBuilder> configuration)
+	{
+		return this.GetConfiguration(typeof(TRequest), typeof(TResponse), configuration);
+	}
+
+	public SubscriptionConfiguration GetConfiguration(Type messageType, Action<ISubscriptionConfigurationBuilder> configuration = null)
+	{
+		string routingKey = this._conventions.QueueNamingConvention(messageType);
+		QueueConfiguration queueConfig = new(this._clientConfig.Queue)
 		{
-			this._clientConfig = clientConfig;
-			this._conventions = conventions;
-		}
+			QueueName = routingKey,
+			NameSuffix = this._conventions.SubscriberQueueSuffix(messageType)
+		};
 
-		public SubscriptionConfiguration GetConfiguration<TMessage>(Action<ISubscriptionConfigurationBuilder> configuration = null)
+		ExchangeConfiguration exchangeConfig = new(this._clientConfig.Exchange)
 		{
-			return this.GetConfiguration(typeof(TMessage), configuration);
-		}
+			ExchangeName = this._conventions.ExchangeNamingConvention(messageType)
+		};
 
-		public PublishConfiguration GetConfiguration<TMessage>(Action<IPublishConfigurationBuilder> configuration)
+		SubscriptionConfigurationBuilder builder = new(queueConfig, exchangeConfig, routingKey);
+		configuration?.Invoke(builder);
+		return builder.Configuration;
+	}
+
+	public PublishConfiguration GetConfiguration(Type messageType, Action<IPublishConfigurationBuilder> configuration)
+	{
+		ExchangeConfiguration exchangeConfig = new(this._clientConfig.Exchange)
 		{
-			return this.GetConfiguration(typeof(TMessage), configuration);
-		}
+			ExchangeName = this._conventions.ExchangeNamingConvention(messageType)
+		};
+		string routingKey = this._conventions.QueueNamingConvention(messageType);
+		PublishConfigurationBuilder builder = new(exchangeConfig, routingKey);
+		configuration?.Invoke(builder);
+		return builder.Configuration;
+	}
 
-		public ResponderConfiguration GetConfiguration<TRequest, TResponse>(Action<IResponderConfigurationBuilder> configuration)
+	public ResponderConfiguration GetConfiguration(Type requestType, Type responseType, Action<IResponderConfigurationBuilder> configuration)
+	{
+		QueueConfiguration queueConfig = new(this._clientConfig.Queue)
 		{
-			return this.GetConfiguration(typeof(TRequest), typeof(TResponse), configuration);
-		}
+			QueueName = this._conventions.QueueNamingConvention(requestType)
+		};
 
-		public RequestConfiguration GetConfiguration<TRequest, TResponse>(Action<IRequestConfigurationBuilder> configuration)
+		ExchangeConfiguration exchangeConfig = new(this._clientConfig.Exchange)
 		{
-			return this.GetConfiguration(typeof(TRequest), typeof(TResponse), configuration);
-		}
+			ExchangeName = this._conventions.ExchangeNamingConvention(requestType)
+		};
 
-		public SubscriptionConfiguration GetConfiguration(Type messageType, Action<ISubscriptionConfigurationBuilder> configuration = null)
+		ResponderConfigurationBuilder builder = new(queueConfig, exchangeConfig);
+		configuration?.Invoke(builder);
+		return builder.Configuration;
+	}
+
+	public RequestConfiguration GetConfiguration(Type requestType, Type responseType, Action<IRequestConfigurationBuilder> configuration)
+	{
+		// leverage direct reply to: https://www.rabbitmq.com/direct-reply-to.html
+		QueueConfiguration replyQueueConfig = new()
 		{
-			string routingKey = this._conventions.QueueNamingConvention(messageType);
-			QueueConfiguration queueConfig = new QueueConfiguration(this._clientConfig.Queue)
-			{
-				QueueName = routingKey,
-				NameSuffix = this._conventions.SubscriberQueueSuffix(messageType)
-			};
+			QueueName = this._directReplyTo,
+			AutoDelete = true,
+			Durable = false,
+			Exclusive = true
+		};
 
-			ExchangeConfiguration exchangeConfig = new ExchangeConfiguration(this._clientConfig.Exchange)
-			{
-				ExchangeName = this._conventions.ExchangeNamingConvention(messageType)
-			};
-
-			SubscriptionConfigurationBuilder builder = new SubscriptionConfigurationBuilder(queueConfig, exchangeConfig, routingKey);
-			configuration?.Invoke(builder);
-			return builder.Configuration;
-		}
-
-		public PublishConfiguration GetConfiguration(Type messageType, Action<IPublishConfigurationBuilder> configuration)
+		RequestConfiguration defaultConfig = new()
 		{
-			ExchangeConfiguration exchangeConfig = new ExchangeConfiguration(this._clientConfig.Exchange)
-			{
-				ExchangeName = this._conventions.ExchangeNamingConvention(messageType)
-			};
-			string routingKey = this._conventions.QueueNamingConvention(messageType);
-			PublishConfigurationBuilder builder = new PublishConfigurationBuilder(exchangeConfig, routingKey);
-			configuration?.Invoke(builder);
-			return builder.Configuration;
-		}
+			ReplyQueue = replyQueueConfig,
+			Exchange = ExchangeConfiguration.Default,
+			RoutingKey = this._conventions.QueueNamingConvention(requestType),
+			ReplyQueueRoutingKey = replyQueueConfig.QueueName
+		};
 
-		public ResponderConfiguration GetConfiguration(Type requestType, Type responseType, Action<IResponderConfigurationBuilder> configuration)
-		{
-			QueueConfiguration queueConfig = new QueueConfiguration(this._clientConfig.Queue)
-			{
-				QueueName = this._conventions.QueueNamingConvention(requestType)
-			};
-
-			ExchangeConfiguration exchangeConfig = new ExchangeConfiguration(this._clientConfig.Exchange)
-			{
-				ExchangeName = this._conventions.ExchangeNamingConvention(requestType)
-			};
-
-			ResponderConfigurationBuilder builder = new ResponderConfigurationBuilder(queueConfig, exchangeConfig);
-			configuration?.Invoke(builder);
-			return builder.Configuration;
-		}
-
-		public RequestConfiguration GetConfiguration(Type requestType, Type responseType, Action<IRequestConfigurationBuilder> configuration)
-		{
-			// leverage direct reply to: https://www.rabbitmq.com/direct-reply-to.html
-			QueueConfiguration replyQueueConfig = new QueueConfiguration
-			{
-				QueueName = this._directReplyTo,
-				AutoDelete = true,
-				Durable = false,
-				Exclusive = true
-			};
-
-			RequestConfiguration defaultConfig = new RequestConfiguration
-			{
-				ReplyQueue = replyQueueConfig,
-				Exchange = ExchangeConfiguration.Default,
-				RoutingKey = this._conventions.QueueNamingConvention(requestType),
-				ReplyQueueRoutingKey = replyQueueConfig.QueueName
-			};
-
-			RequestConfigurationBuilder builder = new RequestConfigurationBuilder(defaultConfig);
-			configuration?.Invoke(builder);
-			return builder.Configuration;
-		}
+		RequestConfigurationBuilder builder = new(defaultConfig);
+		configuration?.Invoke(builder);
+		return builder.Configuration;
 	}
 }

@@ -3,49 +3,48 @@ using RawRabbit.Configuration.Consume;
 using RawRabbit.Configuration.Exchange;
 using RawRabbit.Configuration.Queue;
 
-namespace RawRabbit.Configuration.Consumer
+namespace RawRabbit.Configuration.Consumer;
+
+public class ConsumerConfigurationBuilder :  IConsumerConfigurationBuilder
 {
-	public class ConsumerConfigurationBuilder :  IConsumerConfigurationBuilder
+	public ConsumerConfiguration Config { get; }
+
+	public ConsumerConfigurationBuilder(ConsumerConfiguration initial)
 	{
-		public ConsumerConfiguration Config { get; }
+		this.Config = initial;
+	}
 
-		public ConsumerConfigurationBuilder(ConsumerConfiguration initial)
-		{
-			this.Config = initial;
-		}
+	public IConsumerConfigurationBuilder OnDeclaredExchange(Action<IExchangeDeclarationBuilder> exchange)
+	{
+		ExchangeDeclarationBuilder builder = new(this.Config.Exchange);
+		exchange(builder);
+		this.Config.Exchange = builder.Declaration;
+		this.Config.Consume.ExchangeName = builder.Declaration.Name;
+		return this;
+	}
 
-		public IConsumerConfigurationBuilder OnDeclaredExchange(Action<IExchangeDeclarationBuilder> exchange)
-		{
-			ExchangeDeclarationBuilder builder = new ExchangeDeclarationBuilder(this.Config.Exchange);
-			exchange(builder);
-			this.Config.Exchange = builder.Declaration;
-			this.Config.Consume.ExchangeName = builder.Declaration.Name;
-			return this;
-		}
+	public IConsumerConfigurationBuilder FromDeclaredQueue(Action<IQueueDeclarationBuilder> queue)
+	{
+		QueueDeclarationBuilder builder = new(this.Config.Queue);
+		queue(builder);
+		this.Config.Queue = builder.Declaration;
+		this.Config.Consume.QueueName = builder.Declaration.Name;
+		return this;
+	}
 
-		public IConsumerConfigurationBuilder FromDeclaredQueue(Action<IQueueDeclarationBuilder> queue)
+	public IConsumerConfigurationBuilder Consume(Action<IConsumeConfigurationBuilder> consume)
+	{
+		ConsumeConfigurationBuilder builder = new(this.Config.Consume);
+		consume(builder);
+		this.Config.Consume = builder.Config;
+		if (builder.ExistingExchange)
 		{
-			QueueDeclarationBuilder builder = new QueueDeclarationBuilder(this.Config.Queue);
-			queue(builder);
-			this.Config.Queue = builder.Declaration;
-			this.Config.Consume.QueueName = builder.Declaration.Name;
-			return this;
+			this.Config.Exchange = null;
 		}
-
-		public IConsumerConfigurationBuilder Consume(Action<IConsumeConfigurationBuilder> consume)
+		if (builder.ExistingQueue)
 		{
-			ConsumeConfigurationBuilder builder = new ConsumeConfigurationBuilder(this.Config.Consume);
-			consume(builder);
-			this.Config.Consume = builder.Config;
-			if (builder.ExistingExchange)
-			{
-				this.Config.Exchange = null;
-			}
-			if (builder.ExistingQueue)
-			{
-				this.Config.Queue = null;
-			}
-			return this;
+			this.Config.Queue = null;
 		}
+		return this;
 	}
 }

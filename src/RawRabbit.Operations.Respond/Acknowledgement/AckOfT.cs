@@ -1,17 +1,16 @@
-﻿namespace RawRabbit.Operations.Respond.Acknowledgement
+﻿namespace RawRabbit.Operations.Respond.Acknowledgement;
+
+public class Ack<TResponse> : TypedAcknowlegement<TResponse>
 {
-	public class Ack<TResponse> : TypedAcknowlegement<TResponse>
+	public TResponse Response { get; set; }
+
+	public Ack(TResponse response)
 	{
-		public TResponse Response { get; set; }
+		this.Response = response;
+	}
 
-		public Ack(TResponse response)
-		{
-			this.Response = response;
-		}
-
-		public override Common.Acknowledgement AsUntyped()
-		{
-			return new Ack { Response = this.Response };
-		}
+	public override Common.Acknowledgement AsUntyped()
+	{
+		return new Ack { Response = this.Response };
 	}
 }

@@ -3,53 +3,52 @@ using System.Threading;
 using System.Threading.Tasks;
 using RawRabbit.Logging;
 
-namespace RawRabbit.Pipe.Middleware
+namespace RawRabbit.Pipe.Middleware;
+
+public class StageMarkerMiddleware : Middleware
 {
-	public class StageMarkerMiddleware : Middleware
+	public readonly string _stage;
+	private readonly ILog _logger = LogProvider.For<StageMarkerMiddleware>();
+
+	public StageMarkerMiddleware(StageMarkerOptions options)
 	{
-		public readonly string _stage;
-		private readonly ILog _logger = LogProvider.For<StageMarkerMiddleware>();
-
-		public StageMarkerMiddleware(StageMarkerOptions options)
+		if (options == null)
 		{
-			if (options == null)
-			{
-				throw new ArgumentNullException(nameof(options));
-			}
-
-			this._stage = options.Stage;
+			throw new ArgumentNullException(nameof(options));
 		}
 
-		public override Task InvokeAsync(IPipeContext context, CancellationToken token = default(CancellationToken))
-		{
-			if (this.Next is NoOpMiddleware || this.Next is CancellationMiddleware)
-			{
-				this._logger.Debug("Stage {pipeStage} has no additional middlewares registered.", this._stage);
-			}
-			else
-			{
-				this._logger.Info("Invoking additional middlewares on stage {pipeStage}", this._stage);
-			}
-			return this.Next.InvokeAsync(context, token);
-		}
+		this._stage = options.Stage;
 	}
 
-	public class StageMarkerOptions
+	public override Task InvokeAsync(IPipeContext context, CancellationToken token = default(CancellationToken))
 	{
-		public string Stage { get; set; }
-
-		public static StageMarkerOptions For<TPipe>(TPipe stage)
+		if (this.Next is NoOpMiddleware || this.Next is CancellationMiddleware)
 		{
-			return new StageMarkerOptions
-			{
-				Stage = stage.ToString()
-			};
+			this._logger.Debug("Stage {pipeStage} has no additional middlewares registered.", this._stage);
 		}
+		else
+		{
+			this._logger.Info("Invoking additional middlewares on stage {pipeStage}", this._stage);
+		}
+		return this.Next.InvokeAsync(context, token);
 	}
+}
 
+public class StageMarkerOptions
+{
+	public string Stage { get; set; }
 
-	public abstract class StagedMiddleware : Middleware
+	public static StageMarkerOptions For<TPipe>(TPipe stage)
 	{
-		public abstract string StageMarker { get; }
+		return new StageMarkerOptions
+		{
+			Stage = stage.ToString()
+		};
 	}
+}
+
+
+public abstract class StagedMiddleware : Middleware
+{
+	public abstract string StageMarker { get; }
 }

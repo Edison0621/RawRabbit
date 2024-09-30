@@ -10,83 +10,82 @@ using RawRabbit.Operations.Respond.Middleware;
 using RawRabbit.Pipe;
 using RawRabbit.Pipe.Middleware;
 
-namespace RawRabbit
+namespace RawRabbit;
+
+public static class RespondMessageContextExtension
 {
-	public static class RespondMessageContextExtension
+	public static readonly Action<IPipeBuilder> RespondPipe = RespondExtension.RespondPipe + (pipe =>
 	{
-		public static readonly Action<IPipeBuilder> RespondPipe = RespondExtension.RespondPipe + (pipe =>
+		pipe.Replace<ConsumerMessageHandlerMiddleware, ConsumerMessageHandlerMiddleware>(args: new ConsumeOptions
 		{
-			pipe.Replace<ConsumerMessageHandlerMiddleware, ConsumerMessageHandlerMiddleware>(args: new ConsumeOptions
-			{
-				Pipe = RespondExtension.ConsumePipe + (consume => consume
-					.Replace<RespondExceptionMiddleware, RespondExceptionMiddleware>(args: new RespondExceptionOptions
-					{
-						InnerPipe = p => p
-							.Use<BodyDeserializationMiddleware>(new MessageDeserializationOptions
-							{
-								BodyTypeFunc = context => context.GetRequestMessageType()
-							})
-							.Use<StageMarkerMiddleware>(StageMarkerOptions.For(RespondStage.MessageDeserialized))
-							.Use<HandlerInvocationMiddleware >(ResponseHandlerOptionFactory.Create(new HandlerInvocationOptions
-							{
-								HandlerArgsFunc = context => new[] { context.GetMessage(), context.GetMessageContext() }
-							}))
-					})
-					.Use<StageMarkerMiddleware>(StageMarkerOptions.For(StageMarker.HandlerInvoked))
-					.Use<HeaderDeserializationMiddleware>(new HeaderDeserializationOptions
-					{
-						HeaderKeyFunc = c => PropertyHeaders.Context,
-						HeaderTypeFunc = c => c.GetMessageContextType(),
-						ContextSaveAction = (pipeCtx, msgCtx) => pipeCtx.Properties.TryAdd(PipeKey.MessageContext, msgCtx)
-					}))
-			});
-		});
-
-		public static Task<IPipeContext> RespondAsync<TRequest, TResponse, TMessageContext>(
-			this IBusClient client,
-			Func<TRequest, TMessageContext, Task<TResponse>> handler,
-			Action<IRespondContext> context = null,
-			CancellationToken ct = default(CancellationToken))
-		{
-			return client
-				.RespondAsync<TRequest, TResponse, TMessageContext>((request, messageContext) => handler
-					.Invoke(request, messageContext)
-					.ContinueWith<TypedAcknowlegement<TResponse>>(t =>
-					{
-						if (!t.IsFaulted) return new Ack<TResponse>(t.Result);
-
-						if (t.Exception != null)
-							throw t.Exception;
-
-						return new Ack<TResponse>(t.Result);
-					}, ct), context, ct);
-		}
-
-		public static Task<IPipeContext> RespondAsync<TRequest, TResponse, TMessageContext>(
-			this IBusClient client,
-			Func<TRequest, TMessageContext, Task<TypedAcknowlegement<TResponse>>> handler,
-			Action<IRespondContext> context = null,
-			CancellationToken ct = default(CancellationToken))
-		{
-			return client
-				.InvokeAsync(RespondPipe, ctx =>
+			Pipe = RespondExtension.ConsumePipe + (consume => consume
+				.Replace<RespondExceptionMiddleware, RespondExceptionMiddleware>(args: new RespondExceptionOptions
 				{
-					Func<object[], Task<Acknowledgement>> genericHandler = args => (handler((TRequest) args[0], (TMessageContext) args[1])
-						.ContinueWith(tResponse =>
+					InnerPipe = p => p
+						.Use<BodyDeserializationMiddleware>(new MessageDeserializationOptions
 						{
-							if (!tResponse.IsFaulted) return tResponse.Result.AsUntyped();
+							BodyTypeFunc = context => context.GetRequestMessageType()
+						})
+						.Use<StageMarkerMiddleware>(StageMarkerOptions.For(RespondStage.MessageDeserialized))
+						.Use<HandlerInvocationMiddleware >(ResponseHandlerOptionFactory.Create(new HandlerInvocationOptions
+						{
+							HandlerArgsFunc = context => new[] { context.GetMessage(), context.GetMessageContext() }
+						}))
+				})
+				.Use<StageMarkerMiddleware>(StageMarkerOptions.For(StageMarker.HandlerInvoked))
+				.Use<HeaderDeserializationMiddleware>(new HeaderDeserializationOptions
+				{
+					HeaderKeyFunc = c => PropertyHeaders.Context,
+					HeaderTypeFunc = c => c.GetMessageContextType(),
+					ContextSaveAction = (pipeCtx, msgCtx) => pipeCtx.Properties.TryAdd(PipeKey.MessageContext, msgCtx)
+				}))
+		});
+	});
 
-							if (tResponse.Exception != null)
-								throw tResponse.Exception;
+	public static Task<IPipeContext> RespondAsync<TRequest, TResponse, TMessageContext>(
+		this IBusClient client,
+		Func<TRequest, TMessageContext, Task<TResponse>> handler,
+		Action<IRespondContext> context = null,
+		CancellationToken ct = default(CancellationToken))
+	{
+		return client
+			.RespondAsync<TRequest, TResponse, TMessageContext>((request, messageContext) => handler
+				.Invoke(request, messageContext)
+				.ContinueWith<TypedAcknowlegement<TResponse>>(t =>
+				{
+					if (!t.IsFaulted) return new Ack<TResponse>(t.Result);
 
-							return tResponse.Result.AsUntyped();
-						}, ct));
-					ctx.Properties.Add(RespondKey.IncomingMessageType, typeof(TRequest));
-					ctx.Properties.Add(RespondKey.OutgoingMessageType, typeof(TResponse));
-					ctx.AddMessageContextType<TMessageContext>();
-					ctx.Properties.Add(PipeKey.MessageHandler, genericHandler);
-					context?.Invoke(new RespondContext(ctx));
-				}, ct);
-		}
+					if (t.Exception != null)
+						throw t.Exception;
+
+					return new Ack<TResponse>(t.Result);
+				}, ct), context, ct);
+	}
+
+	public static Task<IPipeContext> RespondAsync<TRequest, TResponse, TMessageContext>(
+		this IBusClient client,
+		Func<TRequest, TMessageContext, Task<TypedAcknowlegement<TResponse>>> handler,
+		Action<IRespondContext> context = null,
+		CancellationToken ct = default(CancellationToken))
+	{
+		return client
+			.InvokeAsync(RespondPipe, ctx =>
+			{
+				Func<object[], Task<Acknowledgement>> genericHandler = args => (handler((TRequest) args[0], (TMessageContext) args[1])
+					.ContinueWith(tResponse =>
+					{
+						if (!tResponse.IsFaulted) return tResponse.Result.AsUntyped();
+
+						if (tResponse.Exception != null)
+							throw tResponse.Exception;
+
+						return tResponse.Result.AsUntyped();
+					}, ct));
+				ctx.Properties.Add(RespondKey.IncomingMessageType, typeof(TRequest));
+				ctx.Properties.Add(RespondKey.OutgoingMessageType, typeof(TResponse));
+				ctx.AddMessageContextType<TMessageContext>();
+				ctx.Properties.Add(PipeKey.MessageHandler, genericHandler);
+				context?.Invoke(new RespondContext(ctx));
+			}, ct);
 	}
 }

@@ -2,55 +2,54 @@
 using System.Linq;
 using RabbitMQ.Client;
 
-namespace RawRabbit.Channel
+namespace RawRabbit.Channel;
+
+public class DynamicChannelPool : StaticChannelPool
 {
-	public class DynamicChannelPool : StaticChannelPool
+	public DynamicChannelPool()
+		: this(Enumerable.Empty<IChannel>()) { }
+
+	public DynamicChannelPool(IEnumerable<IChannel> seed)
+		: base(seed) { }
+
+	public void Add(params IChannel[] channels)
 	{
-		public DynamicChannelPool()
-			: this(Enumerable.Empty<IChannel>()) { }
+		this.Add(channels.ToList());
+	}
 
-		public DynamicChannelPool(IEnumerable<IChannel> seed)
-			: base(seed) { }
-
-		public void Add(params IChannel[] channels)
+	public void Add(IEnumerable<IChannel> channels)
+	{
+		foreach (IChannel channel in channels)
 		{
-			this.Add(channels.ToList());
-		}
-
-		public void Add(IEnumerable<IChannel> channels)
-		{
-			foreach (IChannel channel in channels)
+			this.ConfigureRecovery(channel);
+			if (this._pool.Contains(channel))
 			{
-				this.ConfigureRecovery(channel);
-				if (this._pool.Contains(channel))
-				{
-					continue;
-				}
-
-				this._pool.AddLast(channel);
+				continue;
 			}
-		}
 
-		public void Remove(int numberOfChannels = 1)
-		{
-			List<IChannel> toRemove = this._pool
-				.Take(numberOfChannels)
-				.ToList();
-			this.Remove(toRemove);
+			this._pool.AddLast(channel);
 		}
+	}
 
-		public void Remove(params IChannel[] channels)
-		{
-			this.Remove(channels.ToList());
-		}
+	public void Remove(int numberOfChannels = 1)
+	{
+		List<IChannel> toRemove = this._pool
+			.Take(numberOfChannels)
+			.ToList();
+		this.Remove(toRemove);
+	}
 
-		public void Remove(IEnumerable<IChannel> channels)
+	public void Remove(params IChannel[] channels)
+	{
+		this.Remove(channels.ToList());
+	}
+
+	public void Remove(IEnumerable<IChannel> channels)
+	{
+		foreach (IChannel channel in channels)
 		{
-			foreach (IChannel channel in channels)
-			{
-				this._pool.Remove(channel);
-				this._recoverables.Remove(channel as IRecoverable);
-			}
+			this._pool.Remove(channel);
+			this._recoverables.Remove(channel as IRecoverable);
 		}
 	}
 }

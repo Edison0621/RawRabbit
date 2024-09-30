@@ -1,20 +1,19 @@
 ﻿using RawRabbit.Instantiation;
 
-namespace RawRabbit.Enrichers.QueueSuffix
+namespace RawRabbit.Enrichers.QueueSuffix;
+
+public static class QueueSuffixPlugin
 {
-	public static class QueueSuffixPlugin
+	public static IClientBuilder UseQueueSuffix(this IClientBuilder builder, QueueSuffixOptions options = null)
 	{
-		public static IClientBuilder UseQueueSuffix(this IClientBuilder builder, QueueSuffixOptions options = null)
+		if (options == null)
 		{
-			if (options == null)
-			{
-				builder.Register(pipe => pipe.Use<QueueSuffixMiddleware>());
-			}
-			else
-			{
-				builder.Register(pipe => pipe.Use<QueueSuffixMiddleware>(options));
-			}
-			return builder;
+			builder.Register(pipe => pipe.Use<QueueSuffixMiddleware>());
 		}
+		else
+		{
+			builder.Register(pipe => pipe.Use<QueueSuffixMiddleware>(options));
+		}
+		return builder;
 	}
 }

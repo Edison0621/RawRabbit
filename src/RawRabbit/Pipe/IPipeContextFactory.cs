@@ -2,31 +2,30 @@
 using System.Collections.Generic;
 using RawRabbit.Configuration;
 
-namespace RawRabbit.Pipe
+namespace RawRabbit.Pipe;
+
+public interface IPipeContextFactory
 {
-	public interface IPipeContextFactory
+	IPipeContext CreateContext(params KeyValuePair<string, object>[] additional);
+}
+
+public class PipeContextFactory : IPipeContextFactory
+{
+	private readonly RawRabbitConfiguration _config;
+
+	public PipeContextFactory(RawRabbitConfiguration config)
 	{
-		IPipeContext CreateContext(params KeyValuePair<string, object>[] additional);
+		this._config = config;
 	}
 
-	public class PipeContextFactory : IPipeContextFactory
+	public IPipeContext CreateContext(params KeyValuePair<string, object>[] additional)
 	{
-		private readonly RawRabbitConfiguration _config;
-
-		public PipeContextFactory(RawRabbitConfiguration config)
+		return new PipeContext
 		{
-			this._config = config;
-		}
-
-		public IPipeContext CreateContext(params KeyValuePair<string, object>[] additional)
-		{
-			return new PipeContext
+			Properties = new ConcurrentDictionary<string, object>(additional)
 			{
-				Properties = new ConcurrentDictionary<string, object>(additional)
-				{
-					[PipeKey.ClientConfiguration] = this._config
-				}
-			};
-		}
+				[PipeKey.ClientConfiguration] = this._config
+			}
+		};
 	}
 }

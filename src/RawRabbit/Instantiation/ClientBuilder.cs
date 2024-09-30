@@ -2,28 +2,27 @@
 using RawRabbit.DependencyInjection;
 using RawRabbit.Pipe;
 
-namespace RawRabbit.Instantiation
+namespace RawRabbit.Instantiation;
+
+public interface IClientBuilder
 {
-	public interface IClientBuilder
+	void Register(Action<IPipeBuilder> pipe, Action<IDependencyRegister> ioc = null);
+}
+
+public class ClientBuilder : IClientBuilder
+{
+	public Action<IPipeBuilder> PipeBuilderAction { get; set; }
+	public Action<IDependencyRegister> DependencyInjection { get; set; }
+
+	public ClientBuilder()
 	{
-		void Register(Action<IPipeBuilder> pipe, Action<IDependencyRegister> ioc = null);
+		this.PipeBuilderAction = builder => { };
+		this.DependencyInjection = collection => { };
 	}
 
-	public class ClientBuilder : IClientBuilder
+	public void Register(Action<IPipeBuilder> pipe, Action<IDependencyRegister> ioc)
 	{
-		public Action<IPipeBuilder> PipeBuilderAction { get; set; }
-		public Action<IDependencyRegister> DependencyInjection { get; set; }
-
-		public ClientBuilder()
-		{
-			this.PipeBuilderAction = builder => { };
-			this.DependencyInjection = collection => { };
-		}
-
-		public void Register(Action<IPipeBuilder> pipe, Action<IDependencyRegister> ioc)
-		{
-			this.PipeBuilderAction += pipe;
-			this.DependencyInjection += ioc;
-		}
+		this.PipeBuilderAction += pipe;
+		this.DependencyInjection += ioc;
 	}
 }

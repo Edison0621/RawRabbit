@@ -9,25 +9,24 @@ using RawRabbit.Operations.Get.Model;
 using RawRabbit.Pipe;
 using RawRabbit.Pipe.Middleware;
 
-namespace RawRabbit
-{
-	public static class GetOperation
-	{
-		public static readonly Action<IPipeBuilder> UntypedGetPipe = pipe => pipe
-			.Use<GetConfigurationMiddleware>()
-			.Use<ChannelCreationMiddleware>()
-			.Use<BasicGetMiddleware>()
-			.Use<AckableResultMiddleware>(new AckableResultOptions
-			{
-				DeliveryTagFunc = context => context.GetBasicGetResult()?.DeliveryTag ?? 0,
-				ContentFunc = context => context.GetBasicGetResult()
-			});
+namespace RawRabbit;
 
-		public static async Task<Ackable<BasicGetResult>> GetAsync(this IBusClient busClient, Action<IGetConfigurationBuilder> config = null, CancellationToken token = default(CancellationToken))
+public static class GetOperation
+{
+	public static readonly Action<IPipeBuilder> UntypedGetPipe = pipe => pipe
+		.Use<GetConfigurationMiddleware>()
+		.Use<ChannelCreationMiddleware>()
+		.Use<BasicGetMiddleware>()
+		.Use<AckableResultMiddleware>(new AckableResultOptions
 		{
-			IPipeContext result = await busClient
-				.InvokeAsync(UntypedGetPipe, context => context.Properties.Add(PipeKey.ConfigurationAction, config), token);
-			return result.Get<Ackable<object>>(GetKey.AckableResult).AsAckable<BasicGetResult>();
-		}
+			DeliveryTagFunc = context => context.GetBasicGetResult()?.DeliveryTag ?? 0,
+			ContentFunc = context => context.GetBasicGetResult()
+		});
+
+	public static async Task<Ackable<BasicGetResult>> GetAsync(this IBusClient busClient, Action<IGetConfigurationBuilder> config = null, CancellationToken token = default(CancellationToken))
+	{
+		IPipeContext result = await busClient
+			.InvokeAsync(UntypedGetPipe, context => context.Properties.Add(PipeKey.ConfigurationAction, config), token);
+		return result.Get<Ackable<object>>(GetKey.AckableResult).AsAckable<BasicGetResult>();
 	}
 }

@@ -1,14 +1,13 @@
 ﻿using RawRabbit.Pipe;
 using RawRabbit.Pipe.Middleware;
 
-namespace RawRabbit.Operations.Subscribe.Middleware
+namespace RawRabbit.Operations.Subscribe.Middleware;
+
+public class SubscribeInvocationMiddleware : HandlerInvocationMiddleware
 {
-	public class SubscribeInvocationMiddleware : HandlerInvocationMiddleware
+	public SubscribeInvocationMiddleware() : base(new HandlerInvocationOptions
 	{
-		public SubscribeInvocationMiddleware() : base(new HandlerInvocationOptions
-		{
-			HandlerArgsFunc = context => new []{ context.GetMessage()}
-		})
-		{ }
-	}
+		HandlerArgsFunc = context => new []{ context.GetMessage()}
+	})
+	{ }
 }

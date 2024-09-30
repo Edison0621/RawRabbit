@@ -2,25 +2,24 @@
 using RawRabbit.Compatibility.Legacy.Configuration.Queue;
 using RawRabbit.Compatibility.Legacy.Configuration.Respond;
 
-namespace RawRabbit.Compatibility.Legacy.Configuration.Request
+namespace RawRabbit.Compatibility.Legacy.Configuration.Request;
+
+public class RequestConfiguration : IConsumerConfiguration
 {
-	public class RequestConfiguration : IConsumerConfiguration
+	public ExchangeConfiguration Exchange { get; set; }
+	public string RoutingKey { get; set; }
+
+	/* Response Queue Configuration*/
+	public bool AutoAck { get; set; }
+	public ushort PrefetchCount => 1; // Only expect one response
+	public QueueConfiguration Queue => this.ReplyQueue;
+	public QueueConfiguration ReplyQueue { get; set; }
+	public string ReplyQueueRoutingKey { get; set; }
+
+	public RequestConfiguration()
 	{
-		public ExchangeConfiguration Exchange { get; set; }
-		public string RoutingKey { get; set; }
-
-		/* Response Queue Configuration*/
-		public bool AutoAck { get; set; }
-		public ushort PrefetchCount => 1; // Only expect one response
-		public QueueConfiguration Queue => this.ReplyQueue;
-		public QueueConfiguration ReplyQueue { get; set; }
-		public string ReplyQueueRoutingKey { get; set; }
-
-		public RequestConfiguration()
-		{
-			this.Exchange = new ExchangeConfiguration();
-			this.ReplyQueue = new QueueConfiguration();
-			this.AutoAck = true;
-		}
+		this.Exchange = new ExchangeConfiguration();
+		this.ReplyQueue = new QueueConfiguration();
+		this.AutoAck = true;
 	}
 }

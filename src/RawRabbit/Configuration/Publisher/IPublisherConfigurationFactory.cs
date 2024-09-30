@@ -1,11 +1,10 @@
 using System;
 
-namespace RawRabbit.Configuration.Publisher
+namespace RawRabbit.Configuration.Publisher;
+
+public interface IPublisherConfigurationFactory
 {
-	public interface IPublisherConfigurationFactory
-	{
-		PublisherConfiguration Create<TMessage>();
-		PublisherConfiguration Create(Type messageType);
-		PublisherConfiguration Create(string exchangeName, string routingKey);
-	}
+	PublisherConfiguration Create<TMessage>();
+	PublisherConfiguration Create(Type messageType);
+	PublisherConfiguration Create(string exchangeName, string routingKey);
 }

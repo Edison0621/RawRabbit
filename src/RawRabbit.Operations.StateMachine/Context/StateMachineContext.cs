@@ -1,14 +1,13 @@
 ﻿using RawRabbit.Pipe;
 
-namespace RawRabbit.Operations.StateMachine.Context
-{
-	public interface IStateMachineContext : IPipeContext { }
+namespace RawRabbit.Operations.StateMachine.Context;
 
-	public class StateMachineContext : PipeContext, IStateMachineContext
+public interface IStateMachineContext : IPipeContext { }
+
+public class StateMachineContext : PipeContext, IStateMachineContext
+{
+	public StateMachineContext(IPipeContext context)
 	{
-		public StateMachineContext(IPipeContext context)
-		{
-			this.Properties = context?.Properties;
-		}
+		this.Properties = context?.Properties;
 	}
 }

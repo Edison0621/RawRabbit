@@ -3,35 +3,34 @@ using System.IO;
 using ProtoBuf;
 using RawRabbit.Serialization;
 
-namespace RawRabbit.Enrichers.Protobuf
+namespace RawRabbit.Enrichers.Protobuf;
+
+public class ProtobufSerializer : ISerializer
 {
-	public class ProtobufSerializer : ISerializer
+	public string ContentType => "application/x-protobuf";
+
+	public byte[] Serialize(object obj)
 	{
-		public string ContentType => "application/x-protobuf";
-
-		public byte[] Serialize(object obj)
+		using (MemoryStream memoryStream = new())
 		{
-			using (MemoryStream memoryStream = new MemoryStream())
-			{
-				Serializer.Serialize(memoryStream, obj);
-				return memoryStream.ToArray();
-			}
+			Serializer.Serialize(memoryStream, obj);
+			return memoryStream.ToArray();
 		}
+	}
 
-		public object Deserialize(Type type, ReadOnlyMemory<byte>? bytes)
+	public object Deserialize(Type type, ReadOnlyMemory<byte>? bytes)
+	{
+		using (MemoryStream memoryStream = new(bytes?.ToArray()))
 		{
-			using (MemoryStream memoryStream = new MemoryStream(bytes?.ToArray()))
-			{
-				return Serializer.Deserialize(type, memoryStream);
-			}
+			return Serializer.Deserialize(type, memoryStream);
 		}
+	}
 
-		public TType Deserialize<TType>(ReadOnlyMemory<byte>? bytes)
+	public TType Deserialize<TType>(ReadOnlyMemory<byte>? bytes)
+	{
+		using (MemoryStream memoryStream = new(bytes?.ToArray()))
 		{
-			using (MemoryStream memoryStream = new MemoryStream(bytes?.ToArray()))
-			{
-				return Serializer.Deserialize<TType>(memoryStream);
-			}
+			return Serializer.Deserialize<TType>(memoryStream);
 		}
 	}
 }

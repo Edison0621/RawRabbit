@@ -2,19 +2,18 @@
 using RawRabbit.Instantiation;
 using RawRabbit.Serialization;
 
-namespace RawRabbit
+namespace RawRabbit;
+
+public static class ProtobufPlugin
 {
-	public static class ProtobufPlugin
+	/// <summary>
+	/// Replaces the default serializer with Protobuf.
+	/// </summary>
+	public static IClientBuilder UseProtobuf(this IClientBuilder builder)
 	{
-		/// <summary>
-		/// Replaces the default serializer with Protobuf.
-		/// </summary>
-		public static IClientBuilder UseProtobuf(this IClientBuilder builder)
-		{
-			builder.Register(
-				pipe: p => {},
-				ioc: di => di.AddSingleton<ISerializer, ProtobufSerializer>());
-			return builder;
-		}
+		builder.Register(
+			pipe: p => {},
+			ioc: di => di.AddSingleton<ISerializer, ProtobufSerializer>());
+		return builder;
 	}
 }

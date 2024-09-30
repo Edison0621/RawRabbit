@@ -1,12 +1,11 @@
 ﻿using RawRabbit.Pipe;
 
-namespace RawRabbit.Enrichers.GlobalExecutionId
+namespace RawRabbit.Enrichers.GlobalExecutionId;
+
+public static class PipeContextExtensions
 {
-	public static class PipeContextExtensions
+	public static string GetGlobalExecutionId(this IPipeContext context)
 	{
-		public static string GetGlobalExecutionId(this IPipeContext context)
-		{
-			return context.Get<string>(PipeKey.GlobalExecutionId);
-		}
+		return context.Get<string>(PipeKey.GlobalExecutionId);
 	}
 }

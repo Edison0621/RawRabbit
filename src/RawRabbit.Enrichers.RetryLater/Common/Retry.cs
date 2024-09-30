@@ -1,19 +1,18 @@
 ﻿using System;
 
-namespace RawRabbit.Common
+namespace RawRabbit.Common;
+
+public class Retry : Acknowledgement
 {
-	public class Retry : Acknowledgement
+	public TimeSpan Span { get; set; }
+
+	public Retry(TimeSpan span)
 	{
-		public TimeSpan Span { get; set; }
+		this.Span = span;
+	}
 
-		public Retry(TimeSpan span)
-		{
-			this.Span = span;
-		}
-
-		public static Retry In(TimeSpan span)
-		{
-			return new Retry(span);
-		}
+	public static Retry In(TimeSpan span)
+	{
+		return new Retry(span);
 	}
 }

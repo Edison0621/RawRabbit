@@ -7,26 +7,25 @@ using RawRabbit.Configuration.Exchange;
 using RawRabbit.Pipe;
 using RawRabbit.Pipe.Middleware;
 
-namespace RawRabbit.Enrichers.Polly.Middleware
-{
-	public class ExchangeDeclareMiddleware : Pipe.Middleware.ExchangeDeclareMiddleware
-	{
-		public ExchangeDeclareMiddleware(ITopologyProvider topologyProvider, ExchangeDeclareOptions options = null)
-			: base(topologyProvider, options) { }
+namespace RawRabbit.Enrichers.Polly.Middleware;
 
-		protected override Task DeclareExchangeAsync(ExchangeDeclaration exchange, IPipeContext context, CancellationToken token)
-		{
-			Policy policy = context.GetPolicy(PolicyKeys.ExchangeDeclare);
-			return policy.ExecuteAsync(
-				action: ct => base.DeclareExchangeAsync(exchange, context, ct),
-				cancellationToken: token,
-				contextData: new Dictionary<string, object>
-				{
-					[RetryKey.TopologyProvider] = this._topologyProvider,
-					[RetryKey.ExchangeDeclaration] = exchange,
-					[RetryKey.PipeContext] = context,
-					[RetryKey.CancellationToken] = token,
-				});
-		}
+public class ExchangeDeclareMiddleware : Pipe.Middleware.ExchangeDeclareMiddleware
+{
+	public ExchangeDeclareMiddleware(ITopologyProvider topologyProvider, ExchangeDeclareOptions options = null)
+		: base(topologyProvider, options) { }
+
+	protected override Task DeclareExchangeAsync(ExchangeDeclaration exchange, IPipeContext context, CancellationToken token)
+	{
+		Policy policy = context.GetPolicy(PolicyKeys.ExchangeDeclare);
+		return policy.ExecuteAsync(
+			action: ct => base.DeclareExchangeAsync(exchange, context, ct),
+			cancellationToken: token,
+			contextData: new Dictionary<string, object>
+			{
+				[RetryKey.TopologyProvider] = this._topologyProvider,
+				[RetryKey.ExchangeDeclaration] = exchange,
+				[RetryKey.PipeContext] = context,
+				[RetryKey.CancellationToken] = token,
+			});
 	}
 }

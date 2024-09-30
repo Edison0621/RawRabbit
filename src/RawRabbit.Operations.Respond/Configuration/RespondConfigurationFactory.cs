@@ -1,37 +1,36 @@
 ﻿using System;
 using RawRabbit.Configuration.Consumer;
 
-namespace RawRabbit.Operations.Respond.Configuration
+namespace RawRabbit.Operations.Respond.Configuration;
+
+public interface IRespondConfigurationFactory
 {
-	public interface IRespondConfigurationFactory
+	RespondConfiguration Create<TRequest, TResponse>();
+	RespondConfiguration Create(Type requestType, Type respondType);
+}
+
+public class RespondConfigurationFactory : IRespondConfigurationFactory
+{
+	private readonly IConsumerConfigurationFactory _consumerFactory;
+
+	public RespondConfigurationFactory(IConsumerConfigurationFactory consumerFactory)
 	{
-		RespondConfiguration Create<TRequest, TResponse>();
-		RespondConfiguration Create(Type requestType, Type respondType);
+		this._consumerFactory = consumerFactory;
 	}
 
-	public class RespondConfigurationFactory : IRespondConfigurationFactory
+	public RespondConfiguration Create<TRequest, TResponse>()
 	{
-		private readonly IConsumerConfigurationFactory _consumerFactory;
+		return this.Create(typeof(TRequest), typeof(TResponse));
+	}
 
-		public RespondConfigurationFactory(IConsumerConfigurationFactory consumerFactory)
+	public RespondConfiguration Create(Type requestType, Type respondType)
+	{
+		ConsumerConfiguration consumerCfg = this._consumerFactory.Create(requestType);
+		return new RespondConfiguration
 		{
-			this._consumerFactory = consumerFactory;
-		}
-
-		public RespondConfiguration Create<TRequest, TResponse>()
-		{
-			return this.Create(typeof(TRequest), typeof(TResponse));
-		}
-
-		public RespondConfiguration Create(Type requestType, Type respondType)
-		{
-			ConsumerConfiguration consumerCfg = this._consumerFactory.Create(requestType);
-			return new RespondConfiguration
-			{
-				Queue = consumerCfg.Queue,
-				Exchange = consumerCfg.Exchange,
-				Consume = consumerCfg.Consume
-			};
-		}
+			Queue = consumerCfg.Queue,
+			Exchange = consumerCfg.Exchange,
+			Consume = consumerCfg.Consume
+		};
 	}
 }

@@ -4,60 +4,59 @@ using System.Threading;
 using System.Threading.Tasks;
 using RawRabbit.Logging;
 
-namespace RawRabbit.Operations.StateMachine.Core
+namespace RawRabbit.Operations.StateMachine.Core;
+
+public interface IGlobalLock
 {
-	public interface IGlobalLock
+	Task ExecuteAsync(Guid modelId, Func<Task> handler, CancellationToken ct = default(CancellationToken));
+}
+
+public class GlobalLock : IGlobalLock
+{
+	private readonly Func<Guid, Func<Task>, CancellationToken, Task> _exclusiveExecute;
+
+	public GlobalLock(Func<Guid, Func<Task>, CancellationToken, Task> exclusiveExecute = null)
 	{
-		Task ExecuteAsync(Guid modelId, Func<Task> handler, CancellationToken ct = default(CancellationToken));
+		if (exclusiveExecute == null)
+		{
+			ProcessGlobalLock processLock = new();
+			exclusiveExecute = (id, handler, ct) => processLock.ExecuteAsync(id, handler, ct);
+		}
+
+		this._exclusiveExecute = exclusiveExecute;
 	}
 
-	public class GlobalLock : IGlobalLock
+	public Task ExecuteAsync(Guid modelId, Func<Task> handler, CancellationToken ct = new())
 	{
-		private readonly Func<Guid, Func<Task>, CancellationToken, Task> _exclusiveExecute;
-
-		public GlobalLock(Func<Guid, Func<Task>, CancellationToken, Task> exclusiveExecute = null)
-		{
-			if (exclusiveExecute == null)
-			{
-				ProcessGlobalLock processLock = new ProcessGlobalLock();
-				exclusiveExecute = (id, handler, ct) => processLock.ExecuteAsync(id, handler, ct);
-			}
-
-			this._exclusiveExecute = exclusiveExecute;
-		}
-
-		public Task ExecuteAsync(Guid modelId, Func<Task> handler, CancellationToken ct = new CancellationToken())
-		{
-			return this._exclusiveExecute(modelId, handler, ct);
-		}
+		return this._exclusiveExecute(modelId, handler, ct);
 	}
+}
 
-	public class ProcessGlobalLock : IGlobalLock
+public class ProcessGlobalLock : IGlobalLock
+{
+	private readonly ConcurrentDictionary<Guid, SemaphoreSlim> _semaphores;
+	private readonly ILog _logger = LogProvider.For<ProcessGlobalLock>();
+
+	public ProcessGlobalLock()
 	{
-		private readonly ConcurrentDictionary<Guid, SemaphoreSlim> _semaphores;
-		private readonly ILog _logger = LogProvider.For<ProcessGlobalLock>();
-
-		public ProcessGlobalLock()
-		{
-			this._semaphores = new ConcurrentDictionary<Guid, SemaphoreSlim>();
-		}
+		this._semaphores = new ConcurrentDictionary<Guid, SemaphoreSlim>();
+	}
 		
-		public async Task ExecuteAsync(Guid modelId, Func<Task> handler, CancellationToken ct = default(CancellationToken))
+	public async Task ExecuteAsync(Guid modelId, Func<Task> handler, CancellationToken ct = default(CancellationToken))
+	{
+		SemaphoreSlim semaphore = this._semaphores.GetOrAdd(modelId, guid => new SemaphoreSlim(1, 1));
+		await semaphore.WaitAsync(ct);
+		try
 		{
-			SemaphoreSlim semaphore = this._semaphores.GetOrAdd(modelId, guid => new SemaphoreSlim(1, 1));
-			await semaphore.WaitAsync(ct);
-			try
-			{
-				await handler();
-			}
-			catch (Exception e)
-			{
-				this._logger.Error(e, "Unhandled exception during execution under Global Lock");
-			}
-			finally
-			{
-				semaphore.Release();
-			}
+			await handler();
+		}
+		catch (Exception e)
+		{
+			this._logger.Error(e, "Unhandled exception during execution under Global Lock");
+		}
+		finally
+		{
+			semaphore.Release();
 		}
 	}
 }

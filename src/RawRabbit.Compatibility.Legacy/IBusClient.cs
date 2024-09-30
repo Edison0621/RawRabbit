@@ -7,18 +7,17 @@ using RawRabbit.Compatibility.Legacy.Configuration.Subscribe;
 using RawRabbit.Enrichers.MessageContext.Context;
 using RawRabbit.Subscription;
 
-namespace RawRabbit.Compatibility.Legacy
+namespace RawRabbit.Compatibility.Legacy;
+
+public interface IBusClient<out TMessageContext> where TMessageContext : IMessageContext
 {
-	public interface IBusClient<out TMessageContext> where TMessageContext : IMessageContext
-	{
-		ISubscription SubscribeAsync<T>(Func<T, TMessageContext, Task> subscribeMethod, Action<ISubscriptionConfigurationBuilder> configuration = null);
+	ISubscription SubscribeAsync<T>(Func<T, TMessageContext, Task> subscribeMethod, Action<ISubscriptionConfigurationBuilder> configuration = null);
 
-		Task PublishAsync<T>(T message = default(T), Guid globalMessageId = new Guid(), Action<IPublishConfigurationBuilder> configuration = null);
+	Task PublishAsync<T>(T message = default(T), Guid globalMessageId = new(), Action<IPublishConfigurationBuilder> configuration = null);
 
-		ISubscription RespondAsync<TRequest, TResponse>(Func<TRequest, TMessageContext, Task<TResponse>> onMessage, Action<IResponderConfigurationBuilder> configuration = null);
+	ISubscription RespondAsync<TRequest, TResponse>(Func<TRequest, TMessageContext, Task<TResponse>> onMessage, Action<IResponderConfigurationBuilder> configuration = null);
 
-		Task<TResponse> RequestAsync<TRequest, TResponse>(TRequest message = default(TRequest), Guid globalMessageId = new Guid(), Action<IRequestConfigurationBuilder> configuration = null);
-	}
-
-	public interface IBusClient : IBusClient<MessageContext> { }
+	Task<TResponse> RequestAsync<TRequest, TResponse>(TRequest message = default(TRequest), Guid globalMessageId = new(), Action<IRequestConfigurationBuilder> configuration = null);
 }
+
+public interface IBusClient : IBusClient<MessageContext> { }

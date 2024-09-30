@@ -4,20 +4,19 @@ using System.Threading.Tasks;
 using RawRabbit.Operations.StateMachine.Core;
 using RawRabbit.Pipe;
 
-namespace RawRabbit.Operations.StateMachine.Middleware
+namespace RawRabbit.Operations.StateMachine.Middleware;
+
+public class GlobalLockMiddleware : Pipe.Middleware.Middleware
 {
-	public class GlobalLockMiddleware : Pipe.Middleware.Middleware
+	private readonly IGlobalLock _globalLock;
+
+	public GlobalLockMiddleware(IGlobalLock globalLock)
 	{
-		private readonly IGlobalLock _globalLock;
+		this._globalLock = globalLock;
+	}
 
-		public GlobalLockMiddleware(IGlobalLock globalLock)
-		{
-			this._globalLock = globalLock;
-		}
-
-		public override Task InvokeAsync(IPipeContext context, CancellationToken token = default(CancellationToken))
-		{
-			return this._globalLock.ExecuteAsync(context.Get<Guid>(StateMachineKey.ModelId), () => this.Next.InvokeAsync(context, token), token);
-		}
+	public override Task InvokeAsync(IPipeContext context, CancellationToken token = default(CancellationToken))
+	{
+		return this._globalLock.ExecuteAsync(context.Get<Guid>(StateMachineKey.ModelId), () => this.Next.InvokeAsync(context, token), token);
 	}
 }

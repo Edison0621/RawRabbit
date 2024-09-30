@@ -4,83 +4,82 @@ using RabbitMQ.Client;
 using RawRabbit.Common;
 using RawRabbit.Serialization;
 
-namespace RawRabbit.Configuration.BasicPublish
+namespace RawRabbit.Configuration.BasicPublish;
+
+public class BasicPublishConfigurationFactory : IBasicPublishConfigurationFactory
 {
-	public class BasicPublishConfigurationFactory : IBasicPublishConfigurationFactory
+	private readonly INamingConventions _conventions;
+	private readonly ISerializer _serializer;
+	private readonly RawRabbitConfiguration _config;
+
+	public BasicPublishConfigurationFactory(INamingConventions conventions, ISerializer serializer, RawRabbitConfiguration config)
 	{
-		private readonly INamingConventions _conventions;
-		private readonly ISerializer _serializer;
-		private readonly RawRabbitConfiguration _config;
+		this._conventions = conventions;
+		this._serializer = serializer;
+		this._config = config;
+	}
 
-		public BasicPublishConfigurationFactory(INamingConventions conventions, ISerializer serializer, RawRabbitConfiguration config)
+	public virtual BasicPublishConfiguration Create(object message)
+	{
+		if (message == null)
 		{
-			this._conventions = conventions;
-			this._serializer = serializer;
-			this._config = config;
+			return this.Create();
 		}
+		BasicPublishConfiguration cfg = this.Create(message.GetType());
+		cfg.Body = this.GetBody(message);
+		return cfg;
+	}
 
-		public virtual BasicPublishConfiguration Create(object message)
+	public virtual BasicPublishConfiguration Create(Type type)
+	{
+		return new BasicPublishConfiguration
 		{
-			if (message == null)
-			{
-				return this.Create();
-			}
-			BasicPublishConfiguration cfg = this.Create(message.GetType());
-			cfg.Body = this.GetBody(message);
-			return cfg;
-		}
+			RoutingKey = this.GetRoutingKey(type),
+			BasicProperties = this.GetBasicProperties(type),
+			ExchangeName = this.GetExchangeName(type),
+			Mandatory = this.GetMandatory(type)
+		};
+	}
 
-		public virtual BasicPublishConfiguration Create(Type type)
+	public virtual BasicPublishConfiguration Create()
+	{
+		return new BasicPublishConfiguration
 		{
-			return new BasicPublishConfiguration
-			{
-				RoutingKey = this.GetRoutingKey(type),
-				BasicProperties = this.GetBasicProperties(type),
-				ExchangeName = this.GetExchangeName(type),
-				Mandatory = this.GetMandatory(type)
-			};
-		}
+			BasicProperties = new BasicProperties()
+		};
+	}
 
-		public virtual BasicPublishConfiguration Create()
-		{
-			return new BasicPublishConfiguration
-			{
-				BasicProperties = new BasicProperties()
-			};
-		}
+	protected  virtual string GetRoutingKey(Type type)
+	{
+		return this._conventions.RoutingKeyConvention(type);
+	}
 
-		protected  virtual string GetRoutingKey(Type type)
-		{
-			return this._conventions.RoutingKeyConvention(type);
-		}
+	protected virtual bool GetMandatory(Type type)
+	{
+		return false;
+	}
 
-		protected virtual bool GetMandatory(Type type)
-		{
-			return false;
-		}
+	protected virtual string GetExchangeName(Type type)
+	{
+		return this._conventions.ExchangeNamingConvention(type);
+	}
 
-		protected virtual string GetExchangeName(Type type)
+	protected virtual IBasicProperties GetBasicProperties(Type type)
+	{
+		return new BasicProperties
 		{
-			return this._conventions.ExchangeNamingConvention(type);
-		}
+			Type = type.GetUserFriendlyName(),
+			MessageId = Guid.NewGuid().ToString(),
+			DeliveryMode = this._config.PersistentDeliveryMode ? DeliveryModes.Persistent : DeliveryModes.Transient,
+			ContentType = this._serializer.ContentType,
+			ContentEncoding = "UTF-8",
+			UserId = this._config.Username,
+			Headers = new Dictionary<string, object>()
+		};
+	}
 
-		protected virtual IBasicProperties GetBasicProperties(Type type)
-		{
-			return new BasicProperties
-			{
-				Type = type.GetUserFriendlyName(),
-				MessageId = Guid.NewGuid().ToString(),
-				DeliveryMode = this._config.PersistentDeliveryMode ? DeliveryModes.Persistent : DeliveryModes.Transient,
-				ContentType = this._serializer.ContentType,
-				ContentEncoding = "UTF-8",
-				UserId = this._config.Username,
-				Headers = new Dictionary<string, object>()
-			};
-		}
-
-		protected virtual byte[] GetBody(object message)
-		{
-			return this._serializer.Serialize(message);
-		}
+	protected virtual byte[] GetBody(object message)
+	{
+		return this._serializer.Serialize(message);
 	}
 }

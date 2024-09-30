@@ -2,20 +2,19 @@
 using RawRabbit.Compatibility.Legacy.Configuration.Queue;
 using RawRabbit.Compatibility.Legacy.Configuration.Respond;
 
-namespace RawRabbit.Compatibility.Legacy.Configuration.Subscribe
-{
-	public class SubscriptionConfiguration : IConsumerConfiguration
-	{
-		public bool AutoAck { get; set; }
-		public ushort PrefetchCount { get; set; }
-		public ExchangeConfiguration Exchange { get; set; }
-		public QueueConfiguration Queue { get; set; }
-		public string RoutingKey { get; set; }
+namespace RawRabbit.Compatibility.Legacy.Configuration.Subscribe;
 
-		public SubscriptionConfiguration()
-		{
-			this.Exchange = new ExchangeConfiguration();
-			this.Queue = new QueueConfiguration();
-		}
+public class SubscriptionConfiguration : IConsumerConfiguration
+{
+	public bool AutoAck { get; set; }
+	public ushort PrefetchCount { get; set; }
+	public ExchangeConfiguration Exchange { get; set; }
+	public QueueConfiguration Queue { get; set; }
+	public string RoutingKey { get; set; }
+
+	public SubscriptionConfiguration()
+	{
+		this.Exchange = new ExchangeConfiguration();
+		this.Queue = new QueueConfiguration();
 	}
 }

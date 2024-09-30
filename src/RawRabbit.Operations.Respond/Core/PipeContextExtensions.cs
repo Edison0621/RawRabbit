@@ -4,38 +4,37 @@ using RabbitMQ.Client;
 using RawRabbit.Operations.Respond.Configuration;
 using RawRabbit.Pipe;
 
-namespace RawRabbit.Operations.Respond.Core
+namespace RawRabbit.Operations.Respond.Core;
+
+public static class PipeContextExtensions
 {
-	public static class PipeContextExtensions
+	public static Type GetResponseMessageType(this IPipeContext context)
 	{
-		public static Type GetResponseMessageType(this IPipeContext context)
-		{
-			return context.Get<Type>(RespondKey.OutgoingMessageType);
-		}
+		return context.Get<Type>(RespondKey.OutgoingMessageType);
+	}
 
-		public static object GetResponseMessage(this IPipeContext context)
-		{
-			return context.Get<object>(RespondKey.ResponseMessage);
-		}
+	public static object GetResponseMessage(this IPipeContext context)
+	{
+		return context.Get<object>(RespondKey.ResponseMessage);
+	}
 
-		public static Type GetRequestMessageType(this IPipeContext context)
-		{
-			return context.Get<Type>(RespondKey.IncomingMessageType);
-		}
+	public static Type GetRequestMessageType(this IPipeContext context)
+	{
+		return context.Get<Type>(RespondKey.IncomingMessageType);
+	}
 
-		public static Func<object, Task<object>> GetResponseMessageHandler(this IPipeContext context)
-		{
-			return context.Get<Func<object, Task<object>>>(PipeKey.MessageHandler);
-		}
+	public static Func<object, Task<object>> GetResponseMessageHandler(this IPipeContext context)
+	{
+		return context.Get<Func<object, Task<object>>>(PipeKey.MessageHandler);
+	}
 
-		public static PublicationAddress GetPublicationAddress(this IPipeContext context)
-		{
-			return context.Get<PublicationAddress>(RespondKey.PublicationAddress);
-		}
+	public static PublicationAddress GetPublicationAddress(this IPipeContext context)
+	{
+		return context.Get<PublicationAddress>(RespondKey.PublicationAddress);
+	}
 
-		public static RespondConfiguration GetRespondConfiguration(this IPipeContext context)
-		{
-			return context.Get<RespondConfiguration>(RespondKey.Configuration);
-		}
+	public static RespondConfiguration GetRespondConfiguration(this IPipeContext context)
+	{
+		return context.Get<RespondConfiguration>(RespondKey.Configuration);
 	}
 }

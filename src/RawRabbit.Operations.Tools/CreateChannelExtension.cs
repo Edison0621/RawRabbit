@@ -5,17 +5,16 @@ using RabbitMQ.Client;
 using RawRabbit.Pipe;
 using RawRabbit.Pipe.Middleware;
 
-namespace RawRabbit
-{
-	public static class CreateChannelExtension
-	{
-		public static readonly Action<IPipeBuilder> CreateChannelPipe = pipe => pipe
-			.Use<ChannelCreationMiddleware>();
+namespace RawRabbit;
 
-		public static async Task<IChannel> CreateChannelAsync(this IBusClient busClient, ChannelCreationOptions options = null, CancellationToken token = default(CancellationToken))
-		{
-			IPipeContext context = await busClient.InvokeAsync(CreateChannelPipe, token: token);
-			return context.GetChannel();
-		}
+public static class CreateChannelExtension
+{
+	public static readonly Action<IPipeBuilder> CreateChannelPipe = pipe => pipe
+		.Use<ChannelCreationMiddleware>();
+
+	public static async Task<IChannel> CreateChannelAsync(this IBusClient busClient, ChannelCreationOptions options = null, CancellationToken token = default(CancellationToken))
+	{
+		IPipeContext context = await busClient.InvokeAsync(CreateChannelPipe, token: token);
+		return context.GetChannel();
 	}
 }

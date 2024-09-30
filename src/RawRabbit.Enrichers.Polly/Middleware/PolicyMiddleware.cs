@@ -5,34 +5,33 @@ using RawRabbit.Enrichers.Polly.Services;
 using RawRabbit.Pipe;
 using RawRabbit.Pipe.Middleware;
 
-namespace RawRabbit
+namespace RawRabbit;
+
+public class PolicyOptions
 {
-	public class PolicyOptions
+	public Action<IPipeContext> PolicyAction { get; set; }
+	public ConnectionPolicies ConnectionPolicies { get; set; }
+}
+
+public class PolicyMiddleware : StagedMiddleware
+{
+	protected readonly Action<IPipeContext> _policyAction;
+
+	public PolicyMiddleware(PolicyOptions options = null)
 	{
-		public Action<IPipeContext> PolicyAction { get; set; }
-		public ConnectionPolicies ConnectionPolicies { get; set; }
+		this._policyAction = options?.PolicyAction;
 	}
 
-	public class PolicyMiddleware : StagedMiddleware
+	public override Task InvokeAsync(IPipeContext context, CancellationToken token = new())
 	{
-		protected readonly Action<IPipeContext> _policyAction;
-
-		public PolicyMiddleware(PolicyOptions options = null)
-		{
-			this._policyAction = options?.PolicyAction;
-		}
-
-		public override Task InvokeAsync(IPipeContext context, CancellationToken token = new CancellationToken())
-		{
-			this.AddPolicies(context);
-			return this.Next.InvokeAsync(context, token);
-		}
-
-		protected virtual void AddPolicies(IPipeContext context)
-		{
-			this._policyAction?.Invoke(context);
-		}
-
-		public override string StageMarker => Pipe.StageMarker.Initialized;
+		this.AddPolicies(context);
+		return this.Next.InvokeAsync(context, token);
 	}
+
+	protected virtual void AddPolicies(IPipeContext context)
+	{
+		this._policyAction?.Invoke(context);
+	}
+
+	public override string StageMarker => Pipe.StageMarker.Initialized;
 }

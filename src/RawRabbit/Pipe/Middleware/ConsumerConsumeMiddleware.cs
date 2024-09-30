@@ -6,64 +6,63 @@ using RawRabbit.Configuration.Consume;
 using RawRabbit.Consumer;
 using RawRabbit.Logging;
 
-namespace RawRabbit.Pipe.Middleware
+namespace RawRabbit.Pipe.Middleware;
+
+public class BasicConsumeOptions
 {
-	public class BasicConsumeOptions
+	public Func<IPipeContext, ConsumeConfiguration> ConsumeConfigFunc { get; set; }
+	public Func<IPipeContext, IAsyncBasicConsumer> ConsumerFunc { get; set; }
+	public Func<IPipeContext, bool> ConfigValidatePredicate { get; set; }
+}
+
+public class ConsumerConsumeMiddleware : Middleware
+{
+	private readonly IConsumerFactory _factory;
+	protected readonly Func<IPipeContext, ConsumeConfiguration> _consumeConfigFunc;
+	protected readonly Func<IPipeContext, IAsyncBasicConsumer> _consumerFunc;
+	protected Func<IPipeContext, bool> _configValidatePredicate;
+	private readonly ILog _logger = LogProvider.For<ConsumerConsumeMiddleware>();
+
+	public ConsumerConsumeMiddleware(IConsumerFactory factory, BasicConsumeOptions options = null)
 	{
-		public Func<IPipeContext, ConsumeConfiguration> ConsumeConfigFunc { get; set; }
-		public Func<IPipeContext, IAsyncBasicConsumer> ConsumerFunc { get; set; }
-		public Func<IPipeContext, bool> ConfigValidatePredicate { get; set; }
+		this._factory = factory;
+		this._consumeConfigFunc = options?.ConsumeConfigFunc ?? (context => context.GetConsumeConfiguration());
+		this._consumerFunc = options?.ConsumerFunc ?? (context => context.GetConsumer());
+		this._configValidatePredicate = options?.ConfigValidatePredicate ?? (context => true);
 	}
 
-	public class ConsumerConsumeMiddleware : Middleware
+	public override async Task InvokeAsync(IPipeContext context, CancellationToken token = new())
 	{
-		private readonly IConsumerFactory _factory;
-		protected readonly Func<IPipeContext, ConsumeConfiguration> _consumeConfigFunc;
-		protected readonly Func<IPipeContext, IAsyncBasicConsumer> _consumerFunc;
-		protected Func<IPipeContext, bool> _configValidatePredicate;
-		private readonly ILog _logger = LogProvider.For<ConsumerConsumeMiddleware>();
-
-		public ConsumerConsumeMiddleware(IConsumerFactory factory, BasicConsumeOptions options = null)
+		ConsumeConfiguration config = this.GetConsumeConfiguration(context);
+		if (config == null)
 		{
-			this._factory = factory;
-			this._consumeConfigFunc = options?.ConsumeConfigFunc ?? (context => context.GetConsumeConfiguration());
-			this._consumerFunc = options?.ConsumerFunc ?? (context => context.GetConsumer());
-			this._configValidatePredicate = options?.ConfigValidatePredicate ?? (context => true);
+			this._logger.Info("Consumer configuration not found, skipping consume.");
+			return;
 		}
 
-		public override async Task InvokeAsync(IPipeContext context, CancellationToken token = new CancellationToken())
+		IAsyncBasicConsumer consumer = this.GetConsumer(context);
+		if (consumer == null)
 		{
-			ConsumeConfiguration config = this.GetConsumeConfiguration(context);
-			if (config == null)
-			{
-				this._logger.Info("Consumer configuration not found, skipping consume.");
-				return;
-			}
-
-			IAsyncBasicConsumer consumer = this.GetConsumer(context);
-			if (consumer == null)
-			{
-				this._logger.Info("Consumer not found. Will not consume on queue {queueName}.", config.QueueName);
-				return;
-			}
-
-			this.BasicConsume(consumer, config);
-			await this.Next.InvokeAsync(context, token);
+			this._logger.Info("Consumer not found. Will not consume on queue {queueName}.", config.QueueName);
+			return;
 		}
 
-		protected virtual ConsumeConfiguration GetConsumeConfiguration(IPipeContext context)
-		{
-			return this._consumeConfigFunc?.Invoke(context);
-		}
+		this.BasicConsume(consumer, config);
+		await this.Next.InvokeAsync(context, token);
+	}
 
-		protected virtual IAsyncBasicConsumer GetConsumer(IPipeContext context)
-		{
-			return this._consumerFunc?.Invoke(context);
-		}
+	protected virtual ConsumeConfiguration GetConsumeConfiguration(IPipeContext context)
+	{
+		return this._consumeConfigFunc?.Invoke(context);
+	}
 
-		protected virtual void BasicConsume(IAsyncBasicConsumer consumer, ConsumeConfiguration config)
-		{
-			this._factory.ConfigureConsumeAsync(consumer, config);
-		}
+	protected virtual IAsyncBasicConsumer GetConsumer(IPipeContext context)
+	{
+		return this._consumerFunc?.Invoke(context);
+	}
+
+	protected virtual void BasicConsume(IAsyncBasicConsumer consumer, ConsumeConfiguration config)
+	{
+		this._factory.ConfigureConsumeAsync(consumer, config);
 	}
 }

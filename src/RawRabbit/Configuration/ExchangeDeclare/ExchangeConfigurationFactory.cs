@@ -2,47 +2,46 @@
 using System.Collections.Generic;
 using RawRabbit.Common;
 
-namespace RawRabbit.Configuration.Exchange
+namespace RawRabbit.Configuration.Exchange;
+
+public interface IExchangeDeclarationFactory
 {
-	public interface IExchangeDeclarationFactory
+	ExchangeDeclaration Create(string exchangeName);
+	ExchangeDeclaration Create<TMessage>();
+	ExchangeDeclaration Create(Type messageType);
+}
+
+public class ExchangeDeclarationFactory : IExchangeDeclarationFactory
+{
+	private readonly RawRabbitConfiguration _config;
+	private readonly INamingConventions _conventions;
+
+	public ExchangeDeclarationFactory(RawRabbitConfiguration config, INamingConventions conventions)
 	{
-		ExchangeDeclaration Create(string exchangeName);
-		ExchangeDeclaration Create<TMessage>();
-		ExchangeDeclaration Create(Type messageType);
+		this._config = config;
+		this._conventions = conventions;
 	}
 
-	public class ExchangeDeclarationFactory : IExchangeDeclarationFactory
+	public ExchangeDeclaration Create(string exchangeName)
 	{
-		private readonly RawRabbitConfiguration _config;
-		private readonly INamingConventions _conventions;
-
-		public ExchangeDeclarationFactory(RawRabbitConfiguration config, INamingConventions conventions)
+		return new ExchangeDeclaration
 		{
-			this._config = config;
-			this._conventions = conventions;
-		}
+			Arguments = new Dictionary<string, object>(),
+			ExchangeType = this._config.Exchange.Type.ToString().ToLower(),
+			Durable = this._config.Exchange.Durable,
+			AutoDelete = this._config.Exchange.AutoDelete,
+			Name = exchangeName
+		};
+	}
 
-		public ExchangeDeclaration Create(string exchangeName)
-		{
-			return new ExchangeDeclaration
-			{
-				Arguments = new Dictionary<string, object>(),
-				ExchangeType = this._config.Exchange.Type.ToString().ToLower(),
-				Durable = this._config.Exchange.Durable,
-				AutoDelete = this._config.Exchange.AutoDelete,
-				Name = exchangeName
-			};
-		}
+	public ExchangeDeclaration Create<TMessage>()
+	{
+		return this.Create(typeof(TMessage));
+	}
 
-		public ExchangeDeclaration Create<TMessage>()
-		{
-			return this.Create(typeof(TMessage));
-		}
-
-		public ExchangeDeclaration Create(Type messageType)
-		{
-			string exchangeName = this._conventions.ExchangeNamingConvention(messageType);
-			return this.Create(exchangeName);
-		}
+	public ExchangeDeclaration Create(Type messageType)
+	{
+		string exchangeName = this._conventions.ExchangeNamingConvention(messageType);
+		return this.Create(exchangeName);
 	}
 }

@@ -6,46 +6,45 @@ using RawRabbit.Common;
 using RawRabbit.Pipe;
 using RawRabbit.Pipe.Middleware;
 
-namespace RawRabbit.Middleware
+namespace RawRabbit.Middleware;
+
+public class RetryInformationExtractionOptions
 {
-	public class RetryInformationExtractionOptions
+	public Func<IPipeContext, BasicDeliverEventArgs> DeliveryArgsFunc { get; set; }
+}
+
+public class RetryInformationExtractionMiddleware : StagedMiddleware
+{
+	private readonly IRetryInformationProvider _retryProvider;
+	protected readonly Func<IPipeContext, BasicDeliverEventArgs> _deliveryArgsFunc;
+	public override string StageMarker => Pipe.StageMarker.MessageReceived;
+
+	public RetryInformationExtractionMiddleware(IRetryInformationProvider retryProvider, RetryInformationExtractionOptions options = null)
 	{
-		public Func<IPipeContext, BasicDeliverEventArgs> DeliveryArgsFunc { get; set; }
+		this._retryProvider = retryProvider;
+		this._deliveryArgsFunc = options?.DeliveryArgsFunc ?? (context => context.GetDeliveryEventArgs());
 	}
 
-	public class RetryInformationExtractionMiddleware : StagedMiddleware
+	public override Task InvokeAsync(IPipeContext context, CancellationToken token = default(CancellationToken))
 	{
-		private readonly IRetryInformationProvider _retryProvider;
-		protected readonly Func<IPipeContext, BasicDeliverEventArgs> _deliveryArgsFunc;
-		public override string StageMarker => Pipe.StageMarker.MessageReceived;
+		RetryInformation retryInfo = this.GetRetryInformation(context);
+		this.AddToPipeContext(context, retryInfo);
+		return this.Next.InvokeAsync(context, token);
+	}
 
-		public RetryInformationExtractionMiddleware(IRetryInformationProvider retryProvider, RetryInformationExtractionOptions options = null)
-		{
-			this._retryProvider = retryProvider;
-			this._deliveryArgsFunc = options?.DeliveryArgsFunc ?? (context => context.GetDeliveryEventArgs());
-		}
+	protected virtual BasicDeliverEventArgs GetDeliveryEventArgs(IPipeContext context)
+	{
+		return this._deliveryArgsFunc?.Invoke(context);
+	}
 
-		public override Task InvokeAsync(IPipeContext context, CancellationToken token = default(CancellationToken))
-		{
-			RetryInformation retryInfo = this.GetRetryInformation(context);
-			this.AddToPipeContext(context, retryInfo);
-			return this.Next.InvokeAsync(context, token);
-		}
+	protected virtual RetryInformation GetRetryInformation(IPipeContext context)
+	{
+		BasicDeliverEventArgs devlieryArgs = this.GetDeliveryEventArgs(context);
+		return this._retryProvider.Get(devlieryArgs);
+	}
 
-		protected virtual BasicDeliverEventArgs GetDeliveryEventArgs(IPipeContext context)
-		{
-			return this._deliveryArgsFunc?.Invoke(context);
-		}
-
-		protected virtual RetryInformation GetRetryInformation(IPipeContext context)
-		{
-			BasicDeliverEventArgs devlieryArgs = this.GetDeliveryEventArgs(context);
-			return this._retryProvider.Get(devlieryArgs);
-		}
-
-		protected virtual void AddToPipeContext(IPipeContext context, RetryInformation retryInfo)
-		{
-			context.AddRetryInformation(retryInfo);
-		}
+	protected virtual void AddToPipeContext(IPipeContext context, RetryInformation retryInfo)
+	{
+		context.AddRetryInformation(retryInfo);
 	}
 }

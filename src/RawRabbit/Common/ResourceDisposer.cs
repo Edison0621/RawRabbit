@@ -7,52 +7,51 @@ using RawRabbit.Channel.Abstraction;
 using RawRabbit.Configuration;
 using RawRabbit.Subscription;
 
-namespace RawRabbit.Common
+namespace RawRabbit.Common;
+
+public interface IResourceDisposer :IDisposable
 {
-	public interface IResourceDisposer :IDisposable
+	Task ShutdownAsync(TimeSpan? graceful = null);
+}
+
+public class ResourceDisposer : IResourceDisposer
+{
+	private readonly IChannelFactory _channelFactory;
+	private readonly IConnectionFactory _connectionFactory;
+	private readonly ISubscriptionRepository _subscriptionRepo;
+	private readonly IChannelPoolFactory _channelPoolFactory;
+	private readonly RawRabbitConfiguration _config;
+
+	public ResourceDisposer(
+		IChannelFactory channelFactory,
+		IConnectionFactory connectionFactory,
+		ISubscriptionRepository subscriptionRepo,
+		IChannelPoolFactory channelPoolFactory,
+		RawRabbitConfiguration config)
 	{
-		Task ShutdownAsync(TimeSpan? graceful = null);
+		this._channelFactory = channelFactory;
+		this._connectionFactory = connectionFactory;
+		this._subscriptionRepo = subscriptionRepo;
+		this._channelPoolFactory = channelPoolFactory;
+		this._config = config;
 	}
 
-	public class ResourceDisposer : IResourceDisposer
+	public void Dispose()
 	{
-		private readonly IChannelFactory _channelFactory;
-		private readonly IConnectionFactory _connectionFactory;
-		private readonly ISubscriptionRepository _subscriptionRepo;
-		private readonly IChannelPoolFactory _channelPoolFactory;
-		private readonly RawRabbitConfiguration _config;
+		this._channelFactory.Dispose();
+		(this._connectionFactory as IDisposable)?.Dispose();
+		(this._channelPoolFactory as IDisposable)?.Dispose();
+	}
 
-		public ResourceDisposer(
-			IChannelFactory channelFactory,
-			IConnectionFactory connectionFactory,
-			ISubscriptionRepository subscriptionRepo,
-			IChannelPoolFactory channelPoolFactory,
-			RawRabbitConfiguration config)
+	public async Task ShutdownAsync(TimeSpan? graceful = null)
+	{
+		List<ISubscription> subscriptions = this._subscriptionRepo.GetAll();
+		foreach (ISubscription subscription in subscriptions)
 		{
-			this._channelFactory = channelFactory;
-			this._connectionFactory = connectionFactory;
-			this._subscriptionRepo = subscriptionRepo;
-			this._channelPoolFactory = channelPoolFactory;
-			this._config = config;
+			subscription?.Dispose();
 		}
-
-		public void Dispose()
-		{
-			this._channelFactory.Dispose();
-			(this._connectionFactory as IDisposable)?.Dispose();
-			(this._channelPoolFactory as IDisposable)?.Dispose();
-		}
-
-		public async Task ShutdownAsync(TimeSpan? graceful = null)
-		{
-			List<ISubscription> subscriptions = this._subscriptionRepo.GetAll();
-			foreach (ISubscription subscription in subscriptions)
-			{
-				subscription?.Dispose();
-			}
-			graceful = graceful ?? this._config.GracefulShutdown;
-			await Task.Delay(graceful.Value);
-			this.Dispose();
-		}
+		graceful = graceful ?? this._config.GracefulShutdown;
+		await Task.Delay(graceful.Value);
+		this.Dispose();
 	}
 }

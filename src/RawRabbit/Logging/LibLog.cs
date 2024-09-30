@@ -682,7 +682,7 @@ namespace RawRabbit.Logging
 		internal
 #endif
 			static readonly List<Tuple<IsLoggerAvailable, CreateLogProvider>> LogProviderResolvers =
-				new List<Tuple<IsLoggerAvailable, CreateLogProvider>>
+				new()
 				{
 					new Tuple<IsLoggerAvailable, CreateLogProvider>(SerilogLogProvider.IsLoggerAvailable, () => new SerilogLogProvider()),
 					new Tuple<IsLoggerAvailable, CreateLogProvider>(NLogLogProvider.IsLoggerAvailable, () => new NLogLogProvider()),
@@ -735,7 +735,7 @@ namespace RawRabbit.Logging
 #endif
 		internal class NoOpLogger : ILog
 		{
-			internal static readonly NoOpLogger Instance = new NoOpLogger();
+			internal static readonly NoOpLogger Instance = new();
 
 			public bool Log(LogLevel logLevel, Func<string> messageFunc, Exception exception, params object[] formatParameters)
 			{
@@ -1321,7 +1321,7 @@ namespace RawRabbit.Logging.LogProviders
 		{
 			private readonly dynamic _logger;
 			private static Type _sCallerStackBoundaryType;
-			private static readonly object _callerStackBoundaryTypeSync = new object();
+			private static readonly object _callerStackBoundaryTypeSync = new();
 
 			private readonly object _levelDebug;
 			private readonly object _levelInfo;
@@ -2176,7 +2176,7 @@ namespace RawRabbit.Logging.LogProviders
 	{
 		//private static readonly Regex Pattern = new Regex(@"\{@?\w{1,}\}");
 #if LIBLOG_PORTABLE
-		private static readonly Regex _pattern = new Regex(@"(?<!{){@?(?<arg>[^\d{][^ }]*)}");
+		private static readonly Regex _pattern = new(@"(?<!{){@?(?<arg>[^\d{][^ }]*)}");
 #else
 		private static readonly Regex Pattern = new Regex(@"(?<!{){@?(?<arg>[^ :{}]+)(?<format>:[^}]+)?}", RegexOptions.Compiled);
 #endif
@@ -2224,7 +2224,7 @@ namespace RawRabbit.Logging.LogProviders
 				return targetMessage;
 			}
 
-			List<string> processedArguments = new List<string>();
+			List<string> processedArguments = new();
 			patternMatches = processedArguments;
 
 			foreach (Match match in _pattern.Matches(targetMessage))

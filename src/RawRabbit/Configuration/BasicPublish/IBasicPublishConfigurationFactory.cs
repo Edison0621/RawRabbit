@@ -1,11 +1,10 @@
 using System;
 
-namespace RawRabbit.Configuration.BasicPublish
+namespace RawRabbit.Configuration.BasicPublish;
+
+public interface IBasicPublishConfigurationFactory
 {
-	public interface IBasicPublishConfigurationFactory
-	{
-		BasicPublishConfiguration Create();
-		BasicPublishConfiguration Create(Type type);
-		BasicPublishConfiguration Create(object message);
-	}
+	BasicPublishConfiguration Create();
+	BasicPublishConfiguration Create(Type type);
+	BasicPublishConfiguration Create(object message);
 }

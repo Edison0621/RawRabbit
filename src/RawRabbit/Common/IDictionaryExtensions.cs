@@ -1,12 +1,11 @@
 ﻿using System.Collections.Generic;
 
-namespace RawRabbit.Common
+namespace RawRabbit.Common;
+
+public static class DictionaryExtensions
 {
-	public static class DictionaryExtensions
+	public static TValue GetOrDefault<TKey, TValue>(this IDictionary<TKey, TValue> dictionary, TKey key)
 	{
-		public static TValue GetOrDefault<TKey, TValue>(this IDictionary<TKey, TValue> dictionary, TKey key)
-		{
-			return dictionary.ContainsKey(key) ? dictionary[key] : default(TValue);
-		}
+		return dictionary.ContainsKey(key) ? dictionary[key] : default(TValue);
 	}
 }

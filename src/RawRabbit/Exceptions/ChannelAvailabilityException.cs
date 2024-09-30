@@ -1,10 +1,9 @@
 ﻿using System;
 
-namespace RawRabbit.Exceptions
+namespace RawRabbit.Exceptions;
+
+public class ChannelAvailabilityException : Exception
 {
-	public class ChannelAvailabilityException : Exception
-	{
-		public ChannelAvailabilityException(string message) : base(message)
-		{ }
-	}
+	public ChannelAvailabilityException(string message) : base(message)
+	{ }
 }

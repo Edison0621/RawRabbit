@@ -1,7 +1,7 @@
 ﻿	using System;
 
-namespace RawRabbit.Configuration.Queue
-{
+	namespace RawRabbit.Configuration.Queue;
+
 	public static class QueueDecclarationExtensions
 	{
 		internal static readonly string DirectQueueName = "amq.rabbitmq.reply-to";
@@ -11,4 +11,3 @@ namespace RawRabbit.Configuration.Queue
 			return string.Equals(queue.Name, DirectQueueName, StringComparison.CurrentCultureIgnoreCase);
 		}
 	}
-}

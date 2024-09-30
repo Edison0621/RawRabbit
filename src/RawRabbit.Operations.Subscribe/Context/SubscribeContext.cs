@@ -1,14 +1,13 @@
 ﻿using RawRabbit.Pipe;
 
-namespace RawRabbit.Operations.Subscribe.Context
-{
-	public interface ISubscribeContext : IPipeContext { }
+namespace RawRabbit.Operations.Subscribe.Context;
 
-	public class SubscribeContext : PipeContext, ISubscribeContext
+public interface ISubscribeContext : IPipeContext { }
+
+public class SubscribeContext : PipeContext, ISubscribeContext
+{
+	public SubscribeContext(IPipeContext context)
 	{
-		public SubscribeContext(IPipeContext context)
-		{
-			this.Properties = context.Properties;
-		}
+		this.Properties = context.Properties;
 	}
 }

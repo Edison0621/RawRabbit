@@ -5,50 +5,49 @@ using RawRabbit.Common;
 using RawRabbit.Configuration.Queue;
 using RawRabbit.Logging;
 
-namespace RawRabbit.Pipe.Middleware
+namespace RawRabbit.Pipe.Middleware;
+
+public class QueueDeclareOptions
 {
-	public class QueueDeclareOptions
+	public Func<IPipeContext, QueueDeclaration> QueueDeclarationFunc { get; set; }
+}
+
+public class QueueDeclareMiddleware : Middleware
+{
+	protected readonly Func<IPipeContext, QueueDeclaration> _queueDeclareFunc;
+	protected readonly ITopologyProvider _topology;
+	private readonly ILog _logger = LogProvider.For<QueueDeclareMiddleware>();
+
+	public QueueDeclareMiddleware(ITopologyProvider topology, QueueDeclareOptions options = null )
 	{
-		public Func<IPipeContext, QueueDeclaration> QueueDeclarationFunc { get; set; }
+		this._topology = topology;
+		this._queueDeclareFunc = options?.QueueDeclarationFunc ?? (context => context.GetQueueDeclaration());
 	}
 
-	public class QueueDeclareMiddleware : Middleware
+	public override async Task InvokeAsync(IPipeContext context, CancellationToken token = default (CancellationToken))
 	{
-		protected readonly Func<IPipeContext, QueueDeclaration> _queueDeclareFunc;
-		protected readonly ITopologyProvider _topology;
-		private readonly ILog _logger = LogProvider.For<QueueDeclareMiddleware>();
+		QueueDeclaration queue = this.GetQueueDeclaration(context);
 
-		public QueueDeclareMiddleware(ITopologyProvider topology, QueueDeclareOptions options = null )
+		if (queue != null)
 		{
-			this._topology = topology;
-			this._queueDeclareFunc = options?.QueueDeclarationFunc ?? (context => context.GetQueueDeclaration());
+			this._logger.Debug("Declaring queue '{queueName}'.", queue.Name);
+			await this.DeclareQueueAsync(queue, context, token);
+		}
+		else
+		{
+			this._logger.Info("Queue will not be declaired: no queue declaration found in context.");
 		}
 
-		public override async Task InvokeAsync(IPipeContext context, CancellationToken token = default (CancellationToken))
-		{
-			QueueDeclaration queue = this.GetQueueDeclaration(context);
+		await this.Next.InvokeAsync(context, token);
+	}
 
-			if (queue != null)
-			{
-				this._logger.Debug("Declaring queue '{queueName}'.", queue.Name);
-				await this.DeclareQueueAsync(queue, context, token);
-			}
-			else
-			{
-				this._logger.Info("Queue will not be declaired: no queue declaration found in context.");
-			}
+	protected virtual QueueDeclaration GetQueueDeclaration(IPipeContext context)
+	{
+		return this._queueDeclareFunc(context);
+	}
 
-			await this.Next.InvokeAsync(context, token);
-		}
-
-		protected virtual QueueDeclaration GetQueueDeclaration(IPipeContext context)
-		{
-			return this._queueDeclareFunc(context);
-		}
-
-		protected virtual Task DeclareQueueAsync(QueueDeclaration queue, IPipeContext context, CancellationToken token)
-		{
-			return this._topology.DeclareQueueAsync(queue);
-		}
+	protected virtual Task DeclareQueueAsync(QueueDeclaration queue, IPipeContext context, CancellationToken token)
+	{
+		return this._topology.DeclareQueueAsync(queue);
 	}
 }

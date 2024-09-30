@@ -2,22 +2,20 @@
 using RawRabbit.Configuration.Get;
 using RawRabbit.Pipe;
 
-namespace RawRabbit.Operations.Get
+namespace RawRabbit.Operations.Get;
+
+public static class GetPipeExtensions
 {
+	public const string GetConfiguration = "GetConfiguration";
+	public const string BasicGetResult = "BasicGetResult";
 
-	public static class GetPipeExtensions
+	public static GetConfiguration GetGetConfiguration(this IPipeContext context)
 	{
-		public const string GetConfiguration = "GetConfiguration";
-		public const string BasicGetResult = "BasicGetResult";
+		return context.Get<GetConfiguration>(GetConfiguration);
+	}
 
-		public static GetConfiguration GetGetConfiguration(this IPipeContext context)
-		{
-			return context.Get<GetConfiguration>(GetConfiguration);
-		}
-
-		public static BasicGetResult GetBasicGetResult(this IPipeContext context)
-		{
-			return context.Get<BasicGetResult>(BasicGetResult);
-		}
+	public static BasicGetResult GetBasicGetResult(this IPipeContext context)
+	{
+		return context.Get<BasicGetResult>(BasicGetResult);
 	}
 }

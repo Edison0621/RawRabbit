@@ -3,54 +3,53 @@ using System.Threading;
 using System.Threading.Tasks;
 using RawRabbit.Logging;
 
-namespace RawRabbit.Pipe.Middleware
-{
-	public class ExceptionHandlingOptions
-	{
-		public Func<Exception, IPipeContext, CancellationToken, Task> HandlingFunc { get; set; }
+namespace RawRabbit.Pipe.Middleware;
 
-		public Action<IPipeBuilder> InnerPipe { get; set; }
+public class ExceptionHandlingOptions
+{
+	public Func<Exception, IPipeContext, CancellationToken, Task> HandlingFunc { get; set; }
+
+	public Action<IPipeBuilder> InnerPipe { get; set; }
+}
+
+public class ExceptionHandlingMiddleware : Middleware
+{
+	protected readonly Func<Exception, IPipeContext, CancellationToken, Task> _handlingFunc;
+	public readonly Middleware _innerPipe;
+	private readonly ILog _logger = LogProvider.For<ExceptionHandlingMiddleware>();
+
+	public ExceptionHandlingMiddleware(IPipeBuilderFactory factory, ExceptionHandlingOptions options = null)
+	{
+		this._handlingFunc = options?.HandlingFunc ?? ((exception, context, token) => Task.FromResult(0));
+		this._innerPipe = factory.Create(options?.InnerPipe);
 	}
 
-	public class ExceptionHandlingMiddleware : Middleware
+	public override async Task InvokeAsync(IPipeContext context, CancellationToken token = default(CancellationToken))
 	{
-		protected readonly Func<Exception, IPipeContext, CancellationToken, Task> _handlingFunc;
-		public readonly Middleware _innerPipe;
-		private readonly ILog _logger = LogProvider.For<ExceptionHandlingMiddleware>();
-
-		public ExceptionHandlingMiddleware(IPipeBuilderFactory factory, ExceptionHandlingOptions options = null)
+		try
 		{
-			this._handlingFunc = options?.HandlingFunc ?? ((exception, context, token) => Task.FromResult(0));
-			this._innerPipe = factory.Create(options?.InnerPipe);
+			await this._innerPipe.InvokeAsync(context, token);
+			await this.Next.InvokeAsync(context, token);
 		}
-
-		public override async Task InvokeAsync(IPipeContext context, CancellationToken token = default(CancellationToken))
+		catch (Exception e)
 		{
-			try
-			{
-				await this._innerPipe.InvokeAsync(context, token);
-				await this.Next.InvokeAsync(context, token);
-			}
-			catch (Exception e)
-			{
-				this._logger.Error(e, "Exception thrown. Will be handled by Exception Handler");
-				await this.OnExceptionAsync(e, context, token);
-			}
+			this._logger.Error(e, "Exception thrown. Will be handled by Exception Handler");
+			await this.OnExceptionAsync(e, context, token);
 		}
+	}
 
-		protected virtual Task OnExceptionAsync(Exception exception, IPipeContext context, CancellationToken token)
-		{
-			return this._handlingFunc(exception, context, token);
-		}
+	protected virtual Task OnExceptionAsync(Exception exception, IPipeContext context, CancellationToken token)
+	{
+		return this._handlingFunc(exception, context, token);
+	}
 
-		protected static Exception UnwrapInnerException(Exception exception)
+	protected static Exception UnwrapInnerException(Exception exception)
+	{
+		if (exception is AggregateException && exception.InnerException != null)
 		{
-			if (exception is AggregateException && exception.InnerException != null)
-			{
-				// ReSharper disable once TailRecursiveCall
-				return UnwrapInnerException(exception.InnerException);
-			}
-			return exception;
+			// ReSharper disable once TailRecursiveCall
+			return UnwrapInnerException(exception.InnerException);
 		}
+		return exception;
 	}
 }
