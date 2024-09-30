@@ -10,7 +10,7 @@ namespace RawRabbit.Operations.Get.Middleware
 	public class AckableResultOptions<TResult>
 	{
 		public Func<IPipeContext, TResult> ContentFunc { get; set; }
-		public Func<IPipeContext, IModel> ChannelFunc { get; internal set; }
+		public Func<IPipeContext, IChannel> ChannelFunc { get; internal set; }
 		public Func<IPipeContext, ulong> DeliveryTagFunc { get; internal set; }
 		public Action<IPipeContext, Ackable<TResult>> PostExecutionAction { get; internal set; }
 	}
@@ -26,7 +26,7 @@ namespace RawRabbit.Operations.Get.Middleware
 	public class AckableResultMiddleware<TResult> : Pipe.Middleware.Middleware
 	{
 		protected readonly Func<IPipeContext, TResult> _getResultFunc;
-		protected readonly Func<IPipeContext, IModel> _channelFunc;
+		protected readonly Func<IPipeContext, IChannel> _channelFunc;
 		protected readonly Action<IPipeContext, Ackable<TResult>> _postExecutionAction;
 		protected readonly Func<IPipeContext, ulong> _deliveryTagFunc;
 
@@ -40,7 +40,7 @@ namespace RawRabbit.Operations.Get.Middleware
 
 		public override Task InvokeAsync(IPipeContext context, CancellationToken token = default(CancellationToken))
 		{
-			IModel channel = this.GetChannel(context);
+			IChannel channel = this.GetChannel(context);
 			TResult getResult = this.GetResult(context);
 			ulong deliveryTag = this.GetDeliveryTag(context);
 			Ackable<TResult> ackableResult = this.CreateAckableResult(channel, getResult, deliveryTag);
@@ -54,12 +54,12 @@ namespace RawRabbit.Operations.Get.Middleware
 			return this._deliveryTagFunc(context);
 		}
 
-		protected virtual Ackable<TResult> CreateAckableResult(IModel channel, TResult result, ulong deliveryTag)
+		protected virtual Ackable<TResult> CreateAckableResult(IChannel channel, TResult result, ulong deliveryTag)
 		{
 			return new Ackable<TResult>(result, channel, deliveryTag);
 		}
 
-		protected virtual IModel GetChannel(IPipeContext context)
+		protected virtual IChannel GetChannel(IPipeContext context)
 		{
 			return this._channelFunc(context);
 		}

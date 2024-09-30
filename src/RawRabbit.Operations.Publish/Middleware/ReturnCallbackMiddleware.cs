@@ -11,14 +11,14 @@ namespace RawRabbit.Operations.Publish.Middleware
 	public class ReturnCallbackOptions
 	{
 		public Func<IPipeContext, EventHandler<BasicReturnEventArgs>> CallbackFunc { get; set; }
-		public Func<IPipeContext, IModel> ChannelFunc { get; set; }
+		public Func<IPipeContext, IChannel> ChannelFunc { get; set; }
 		public Action<IPipeContext, EventHandler<BasicReturnEventArgs>> PostInvokeAction { get; set; }
 	}
 
 	public class ReturnCallbackMiddleware : Pipe.Middleware.Middleware
 	{
 		protected readonly Func<IPipeContext, EventHandler<BasicReturnEventArgs>> _callbackFunc;
-		protected readonly Func<IPipeContext, IModel> _channelFunc;
+		protected readonly Func<IPipeContext, IChannel> _channelFunc;
 		protected readonly Action<IPipeContext, EventHandler<BasicReturnEventArgs>> _postInvoke;
 		private readonly ILog _logger = LogProvider.For<ReturnCallbackMiddleware>();
 
@@ -39,7 +39,7 @@ namespace RawRabbit.Operations.Publish.Middleware
 				return;
 			}
 
-			IModel channel = this.GetChannel(context);
+			IChannel channel = this.GetChannel(context);
 			if (channel == null)
 			{
 				this._logger.Warn("Channel not found in Pipe Context. Mandatory Callback not registered.");
@@ -56,7 +56,7 @@ namespace RawRabbit.Operations.Publish.Middleware
 			channel.BasicReturn -= callback;
 		}
 
-		protected virtual IModel GetChannel(IPipeContext context)
+		protected virtual IChannel GetChannel(IPipeContext context)
 		{
 			return this._channelFunc(context);
 		}

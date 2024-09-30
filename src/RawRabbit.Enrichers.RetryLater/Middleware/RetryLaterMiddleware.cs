@@ -46,16 +46,16 @@ namespace RawRabbit.Middleware
 		public override async Task InvokeAsync(IPipeContext context, CancellationToken token = default(CancellationToken))
 		{
 			Acknowledgement ack = this.GetMessageAcknowledgement(context);
-			if (!(ack is Retry retryAck))
+			if (ack is not Retry retryAck)
 			{
 				await this.Next.InvokeAsync(context, token);
 				return;
 			}
 
-			string deadLeterExchangeName = this.GetDeadLetterExchangeName(retryAck.Span);
+			string deadLetterExchangeName = this.GetDeadLetterExchangeName(retryAck.Span);
 			await this._topologyProvider.DeclareExchangeAsync(new ExchangeDeclaration
 			{
-				Name = deadLeterExchangeName,
+				Name = deadLetterExchangeName,
 				Durable = true,
 				ExchangeType = ExchangeType.Direct
 			});
@@ -76,12 +76,20 @@ namespace RawRabbit.Middleware
 					{QueueArgument.MessageTtl, Convert.ToInt32(retryAck.Span.TotalMilliseconds)}
 				}
 			});
-			await this._topologyProvider.BindQueueAsync(deadLetterQueueName, deadLeterExchangeName, deliveryArgs.RoutingKey, deliveryArgs.BasicProperties.Headers);
-			using (IModel publishChannel = await this._channelFactory.CreateChannelAsync(token))
+
+			await this._topologyProvider.BindQueueAsync(deadLetterQueueName, deadLetterExchangeName, deliveryArgs.RoutingKey, deliveryArgs.BasicProperties.Headers);
+			using (IChannel publishChannel = await this._channelFactory.CreateChannelAsync(token))
 			{
-				publishChannel.BasicPublish(deadLeterExchangeName, deliveryArgs.RoutingKey, false, deliveryArgs.BasicProperties, deliveryArgs.Body);
+				BasicProperties basicProperties = new()
+				{
+					//TODO 
+					Headers = deliveryArgs.BasicProperties.Headers
+				};
+
+				await publishChannel.BasicPublishAsync(deadLetterExchangeName, deliveryArgs.RoutingKey, false, basicProperties, deliveryArgs.Body, token);
 			}
-			await this._topologyProvider.UnbindQueueAsync(deadLetterQueueName, deadLeterExchangeName, deliveryArgs.RoutingKey, deliveryArgs.BasicProperties.Headers);
+
+			await this._topologyProvider.UnbindQueueAsync(deadLetterQueueName, deadLetterExchangeName, deliveryArgs.RoutingKey, deliveryArgs.BasicProperties.Headers);
 
 			context?.Properties.AddOrReplace(PipeKey.MessageAcknowledgement, new Ack());
 			await this.Next.InvokeAsync(context, token);

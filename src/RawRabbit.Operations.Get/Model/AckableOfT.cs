@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Threading.Tasks;
 using RabbitMQ.Client;
 
 namespace RawRabbit.Operations.Get.Model
@@ -9,44 +10,44 @@ namespace RawRabbit.Operations.Get.Model
 		public TType Content { get; set; }
 		public bool Acknowledged { get; private set; }
 		public IEnumerable<ulong> DeliveryTags => this._deliveryTagFunc(this.Content);
-		internal readonly IModel _channel;
+		internal readonly IChannel _channel;
 		internal readonly Func<TType, ulong[]> _deliveryTagFunc;
 
-		public Ackable(TType content, IModel channel, params ulong[] deliveryTag) : this(content, channel, type => deliveryTag)
+		public Ackable(TType content, IChannel channel, params ulong[] deliveryTag) : this(content, channel, type => deliveryTag)
 		{ }
 
-		public Ackable(TType content, IModel channel, Func<TType, ulong[]> deliveryTagFunc)
+		public Ackable(TType content, IChannel channel, Func<TType, ulong[]> deliveryTagFunc)
 		{
 			this.Content = content;
 			this._channel = channel;
 			this._deliveryTagFunc = deliveryTagFunc;
 		}
 
-		public void Ack()
+		public async Task Ack()
 		{
 			foreach (ulong deliveryTag in this._deliveryTagFunc(this.Content))
 			{
-				this._channel.BasicAck(deliveryTag, false);
+				await this._channel.BasicAckAsync(deliveryTag, false);
 			}
 
 			this.Acknowledged = true;
 		}
 
-		public void Nack(bool requeue = true)
+		public async Task Nack(bool requeue = true)
 		{
 			foreach (ulong deliveryTag in this._deliveryTagFunc(this.Content))
 			{
-				this._channel.BasicNack(deliveryTag, false, requeue);
+				await this._channel.BasicNackAsync(deliveryTag, false, requeue);
 			}
 
 			this.Acknowledged = true;
 		}
 
-		public void Reject(bool requeue = true)
+		public async Task Reject(bool requeue = true)
 		{
 			foreach (ulong deliveryTag in this._deliveryTagFunc(this.Content))
 			{
-				this._channel.BasicReject(deliveryTag, requeue);
+				await this._channel.BasicRejectAsync(deliveryTag, requeue);
 			}
 
 			this.Acknowledged = true;

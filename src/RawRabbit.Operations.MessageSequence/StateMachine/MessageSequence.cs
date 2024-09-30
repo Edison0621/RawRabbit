@@ -30,7 +30,7 @@ namespace RawRabbit.Operations.MessageSequence.StateMachine
 		private readonly Queue<StepDefinition> _stepDefinitions;
 		private readonly List<ISubscription> _subscriptions;
 		private readonly ILog _logger = LogProvider.For<MessageSequence>();
-		private IModel _channel;
+		private IChannel _channel;
 
 		public MessageSequence(IBusClient client, INamingConventions naming, RawRabbitConfiguration clientCfg, SequenceModel model = null) : base(model)
 		{
@@ -241,7 +241,7 @@ namespace RawRabbit.Operations.MessageSequence.StateMachine
 				{
 					context.Properties.Add(StateMachineKey.ModelId, this._model.Id);
 					context.Properties.Add(StateMachineKey.Machine, this);
-					context.Properties.TryAdd(PipeKey.Channel, this._channel);
+					CollectionExtensions.TryAdd(context.Properties, PipeKey.Channel, this._channel);
 				};
 				IPipeContext ctx = this._client.InvokeAsync(triggerCfg.Pipe, triggerCfg.Context).GetAwaiter().GetResult();
 				this._subscriptions.Add(ctx.GetSubscription());

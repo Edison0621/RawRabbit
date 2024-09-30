@@ -63,15 +63,15 @@ namespace RawRabbit.Operations.Request.Middleware
 			return this._responseTypeFunc?.Invoke(context);
 		}
 
-		protected virtual byte[] GetMessageBody(IPipeContext context)
+		protected virtual ReadOnlyMemory<byte> GetMessageBody(IPipeContext context)
 		{
 			BasicDeliverEventArgs deliveryArgs = this.GetDeliverEventArgs(context);
-			return deliveryArgs?.Body ?? new byte[0];
+			return deliveryArgs?.Body ?? new ReadOnlyMemory<byte>();
 		}
 
 		protected virtual ExceptionInformation GetExceptionInfo(IPipeContext context)
 		{
-			byte[] body = this.GetMessageBody(context);
+			ReadOnlyMemory<byte> body = this.GetMessageBody(context);
 			try
 			{
 				return this._serializer.Deserialize<ExceptionInformation>(body);
@@ -81,7 +81,7 @@ namespace RawRabbit.Operations.Request.Middleware
 				return new ExceptionInformation
 				{
 					Message =
-						$"An unhandled exception was thrown by the responder, but the requesting client was unable to deserialize exception info. {Encoding.UTF8.GetString(body)}.",
+						$"An unhandled exception was thrown by the responder, but the requesting client was unable to deserialize exception info. {Encoding.UTF8.GetString(body.ToArray())}.",
 					InnerMessage = e.Message,
 					StackTrace = e.StackTrace,
 					ExceptionType = e.GetType().Name

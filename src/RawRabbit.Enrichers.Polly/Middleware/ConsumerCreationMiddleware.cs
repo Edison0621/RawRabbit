@@ -14,7 +14,7 @@ namespace RawRabbit.Enrichers.Polly.Middleware
 		public ConsumerCreationMiddleware(IConsumerFactory consumerFactory, ConsumerCreationOptions options = null)
 			: base(consumerFactory, options) { }
 
-		protected override Task<IBasicConsumer> GetOrCreateConsumerAsync(IPipeContext context, CancellationToken token)
+		protected override Task<IAsyncBasicConsumer> GetOrCreateConsumerAsync(IPipeContext context, CancellationToken token)
 		{
 			Policy policy = context.GetPolicy(PolicyKeys.QueueDeclare);
 			return policy.ExecuteAsync(

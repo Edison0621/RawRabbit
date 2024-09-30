@@ -1,7 +1,7 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <TargetFrameworks>netstandard1.5;net451</TargetFrameworks>
+	  <TargetFrameworks>net8.0</TargetFrameworks>
     <VersionPrefix>2.0.0</VersionPrefix>
     <Description>This package contains operations for bind/unbind queues, declaring exchanges/queues and more.</Description>
     <PackageProjectUrl>https://github.com/pardahlman/RawRabbit</PackageProjectUrl>

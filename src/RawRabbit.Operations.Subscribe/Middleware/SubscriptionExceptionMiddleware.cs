@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Threading;
 using System.Threading.Tasks;
+using RabbitMQ.Client;
 using RabbitMQ.Client.Events;
 using RawRabbit.Channel.Abstraction;
 using RawRabbit.Common;
@@ -9,13 +10,12 @@ using RawRabbit.Configuration.Exchange;
 using RawRabbit.Logging;
 using RawRabbit.Pipe;
 using RawRabbit.Pipe.Middleware;
-using IModel = RabbitMQ.Client.IModel;
 
 namespace RawRabbit.Operations.Subscribe.Middleware
 {
 	public class SubscriptionExceptionOptions
 	{
-		public Func<IPipeContext, IChannelFactory, Task<IModel>> ChannelFunc { get; set; }
+		public Func<IPipeContext, IChannelFactory, Task<IChannel>> ChannelFunc { get; set; }
 		public Action<IPipeBuilder> InnerPipe { get; set; }
 	}
 
@@ -25,7 +25,7 @@ namespace RawRabbit.Operations.Subscribe.Middleware
 		private readonly ITopologyProvider _provider;
 		private readonly INamingConventions _conventions;
 		private readonly ILog _logger = LogProvider.For<SubscriptionExceptionMiddleware>();
-		protected readonly Func<IPipeContext, IChannelFactory, Task<IModel>> _channelFunc;
+		protected readonly Func<IPipeContext, IChannelFactory, Task<IChannel>> _channelFunc;
 
 		public SubscriptionExceptionMiddleware(
 			IPipeBuilderFactory factory,
@@ -48,7 +48,7 @@ namespace RawRabbit.Operations.Subscribe.Middleware
 			{
 				ExchangeDeclaration exchangeCfg = this.GetExchangeDeclaration(context);
 				await this.DeclareErrorExchangeAsync(exchangeCfg);
-				IModel channel = await this.GetChannelAsync(context);
+				IChannel channel = await this.GetChannelAsync(context);
 				await this.PublishToErrorExchangeAsync(context, channel, exception, exchangeCfg);
 				channel.Dispose();
 			}
@@ -66,7 +66,7 @@ namespace RawRabbit.Operations.Subscribe.Middleware
 			}
 		}
 
-		protected virtual Task<IModel> GetChannelAsync(IPipeContext context)
+		protected virtual Task<IChannel> GetChannelAsync(IPipeContext context)
 		{
 			return this._channelFunc(context, this._channelFactory);
 		}
@@ -85,42 +85,43 @@ namespace RawRabbit.Operations.Subscribe.Middleware
 			};
 		}
 
-		protected virtual Task PublishToErrorExchangeAsync(IPipeContext context, IModel channel, Exception exception, ExchangeDeclaration exchange)
+		protected virtual async Task PublishToErrorExchangeAsync(IPipeContext context, IChannel channel, Exception exception, ExchangeDeclaration exchange)
 		{
 			BasicDeliverEventArgs args = context.GetDeliveryEventArgs();
-			args.BasicProperties.Headers?.TryAdd(PropertyHeaders.Host, Environment.MachineName);
-			args.BasicProperties.Headers?.TryAdd(PropertyHeaders.ExceptionType, exception.GetType().Name);
-			args.BasicProperties.Headers?.TryAdd(PropertyHeaders.ExceptionStackTrace, exception.StackTrace);
-			channel.BasicPublish(exchange.Name, args.RoutingKey, false, args.BasicProperties, args.Body);
-			return Task.FromResult(0);
+
+			BasicProperties basicProperties = new();
+			basicProperties.Headers?.TryAdd(PropertyHeaders.Host, Environment.MachineName);
+			basicProperties.Headers?.TryAdd(PropertyHeaders.ExceptionType, exception.GetType().Name);
+			basicProperties.Headers?.TryAdd(PropertyHeaders.ExceptionStackTrace, exception.StackTrace);
+
+			await channel.BasicPublishAsync(exchange.Name, args.RoutingKey, false, basicProperties, args.Body);
 		}
 
-		protected virtual Task AckMessageIfApplicable(IPipeContext context)
+		protected virtual async Task AckMessageIfApplicable(IPipeContext context)
 		{
 			bool? autoAck = context.GetConsumeConfiguration()?.AutoAck;
 			if (!autoAck.HasValue)
 			{
 				this._logger.Debug("Unable to ack original message. Can not determine if AutoAck is configured.");
-				return Task.FromResult(0);
+				return;
 			}
 			if (autoAck.Value)
 			{
 				this._logger.Debug("Consuming in AutoAck mode. No ack'ing will be performed");
-				return Task.FromResult(0);
+				return;
 			}
 			ulong? deliveryTag = context.GetDeliveryEventArgs()?.DeliveryTag;
 			if (deliveryTag == null)
 			{
 				this._logger.Info("Unable to ack original message. Delivery tag not found.");
-				return Task.FromResult(0);
+				return;
 			}
-			IModel consumerChannel = context.GetConsumer()?.Model;
+			IChannel consumerChannel = context.GetConsumer()?.Channel;
 			if (consumerChannel != null && consumerChannel.IsOpen)
 			{
 				this._logger.Debug("Acking message with {deliveryTag} on channel {channelNumber}", deliveryTag, consumerChannel.ChannelNumber);
-				consumerChannel.BasicAck(deliveryTag.Value, false);
+				await consumerChannel.BasicAckAsync(deliveryTag.Value, false);
 			}
-			return Task.FromResult(0);
 		}
 	}
 }

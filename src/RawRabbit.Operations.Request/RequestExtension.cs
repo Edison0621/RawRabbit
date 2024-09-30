@@ -53,7 +53,7 @@ namespace RawRabbit
 				{
 					ExchangeNameFunc = c => c.GetRequestConfiguration()?.Request.ExchangeName,
 					RoutingKeyFunc = c => c.GetRequestConfiguration()?.Request.RoutingKey,
-					ChannelFunc = c => c.Get<IBasicConsumer>(PipeKey.Consumer)?.Model,
+					ChannelFunc = c => c.Get<IAsyncBasicConsumer>(PipeKey.Consumer)?.Channel,
 					BodyFunc = c => c.Get<byte[]>(PipeKey.SerializedMessage)
 				});
 

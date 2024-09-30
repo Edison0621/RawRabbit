@@ -14,12 +14,12 @@ namespace RawRabbit
 	{
 		public static async Task<Ackable<List<Ackable<TMessage>>>> GetManyAsync<TMessage>(this IBusClient busClient, int batchSize, Action<IGetConfigurationBuilder> config = null, CancellationToken token = default(CancellationToken))
 		{
-			IModel channel = await busClient.CreateChannelAsync(token:token);
+			IChannel channel = await busClient.CreateChannelAsync(token:token);
 			List<Ackable<TMessage>> result = new List<Ackable<TMessage>>();
 
 			while (result.Count < batchSize)
 			{
-				Ackable<TMessage> ackableMessage = await busClient.GetAsync<TMessage>(config, c => c.Properties.TryAdd(PipeKey.Channel, channel), token);
+				Ackable<TMessage> ackableMessage = await busClient.GetAsync<TMessage>(config, c => { CollectionExtensions.TryAdd(c.Properties, PipeKey.Channel, channel); }, token);
 				if (ackableMessage.Content == null)
 				{
 					break;

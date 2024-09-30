@@ -18,17 +18,17 @@ namespace RawRabbit.Enrichers.Protobuf
 			}
 		}
 
-		public object Deserialize(Type type, byte[] bytes)
+		public object Deserialize(Type type, ReadOnlyMemory<byte>? bytes)
 		{
-			using (MemoryStream memoryStream = new MemoryStream(bytes))
+			using (MemoryStream memoryStream = new MemoryStream(bytes?.ToArray()))
 			{
 				return Serializer.Deserialize(type, memoryStream);
 			}
 		}
 
-		public TType Deserialize<TType>(byte[] bytes)
+		public TType Deserialize<TType>(ReadOnlyMemory<byte>? bytes)
 		{
-			using (MemoryStream memoryStream = new MemoryStream(bytes))
+			using (MemoryStream memoryStream = new MemoryStream(bytes?.ToArray()))
 			{
 				return Serializer.Deserialize<TType>(memoryStream);
 			}

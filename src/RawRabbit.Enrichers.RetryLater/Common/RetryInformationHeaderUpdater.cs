@@ -27,23 +27,23 @@ namespace RawRabbit.Common
 		private void AddOrUpdateNumberOfRetries(BasicDeliverEventArgs args)
 		{
 			int currentRetry = 0;
-			if (args.BasicProperties.Headers.ContainsKey(RetryHeaders.NumberOfRetries))
+			if (args.BasicProperties.Headers != null && args.BasicProperties.Headers.ContainsKey(RetryHeaders.NumberOfRetries))
 			{
 				string valueStr = GetHeaderString(args.BasicProperties.Headers, RetryHeaders.NumberOfRetries);
 				currentRetry = int.Parse(valueStr);
 				args.BasicProperties.Headers.Remove(RetryHeaders.NumberOfRetries);
 			}
 			string nextRetry = (++currentRetry).ToString();
-			args.BasicProperties.Headers.Add(RetryHeaders.NumberOfRetries, nextRetry);
+			args.BasicProperties.Headers?.Add(RetryHeaders.NumberOfRetries, nextRetry);
 		}
 
 		private static void TryAddOriginalDelivered(BasicDeliverEventArgs args, DateTime originalDelivered)
 		{
-			if (args.BasicProperties.Headers.ContainsKey(RetryHeaders.OriginalDelivered))
+			if (args.BasicProperties.Headers != null && args.BasicProperties.Headers.ContainsKey(RetryHeaders.OriginalDelivered))
 			{
 				return;
 			}
-			args.BasicProperties.Headers.Add(RetryHeaders.OriginalDelivered, originalDelivered.ToString("u"));
+			args.BasicProperties.Headers?.Add(RetryHeaders.OriginalDelivered, originalDelivered.ToString("u"));
 		}
 
 		private static string GetHeaderString(IDictionary<string, object> headers, string key)
@@ -52,11 +52,11 @@ namespace RawRabbit.Common
 			{
 				return null;
 			}
-			if (!headers.ContainsKey(key))
+			if (!headers.TryGetValue(key, out object header))
 			{
 				return null;
 			}
-			if (!(headers[key] is byte[] headerBytes))
+			if (!(header is byte[] headerBytes))
 			{
 				return null;
 			}

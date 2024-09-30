@@ -8,7 +8,7 @@ namespace RawRabbit.Operations.Get.Middleware
 {
 	public class BasicGetOptions
 	{
-		public Func<IPipeContext, IModel> ChannelFunc { get; set; }
+		public Func<IPipeContext, IChannel> ChannelFunc { get; set; }
 		public Func<IPipeContext, bool> AutoAckFunc { get; internal set; }
 		public Action<IPipeContext, BasicGetResult> PostExecutionAction { get; set; }
 		public Func<IPipeContext, string> QueueNameFunc { get; internal set; }
@@ -16,7 +16,7 @@ namespace RawRabbit.Operations.Get.Middleware
 
 	public class BasicGetMiddleware : Pipe.Middleware.Middleware
 	{
-		protected readonly Func<IPipeContext, IModel> _channelFunc;
+		protected readonly Func<IPipeContext, IChannel> _channelFunc;
 		protected readonly Func<IPipeContext, string> _queueNameFunc;
 		protected readonly Func<IPipeContext, bool> _autoAckFunc;
 		protected readonly Action<IPipeContext, BasicGetResult> _postExecutionAction;
@@ -29,20 +29,20 @@ namespace RawRabbit.Operations.Get.Middleware
 			this._postExecutionAction = options?.PostExecutionAction;
 		}
 
-		public override Task InvokeAsync(IPipeContext context, CancellationToken token = default(CancellationToken))
+		public override async Task InvokeAsync(IPipeContext context, CancellationToken token = default(CancellationToken))
 		{
-			IModel channel = this.GetChannel(context);
+			IChannel channel = this.GetChannel(context);
 			string queueNamme = this.GetQueueName(context);
 			bool autoAck = this.GetAutoAck(context);
-			BasicGetResult getResult = this.PerformBasicGet(channel, queueNamme, autoAck);
+			BasicGetResult getResult = await this.PerformBasicGet(channel, queueNamme, autoAck);
 			context.Properties.TryAdd(GetPipeExtensions.BasicGetResult, getResult);
 			this._postExecutionAction?.Invoke(context, getResult);
-			return this.Next.InvokeAsync(context, token);
+			await this.Next.InvokeAsync(context, token);
 		}
 
-		protected virtual BasicGetResult PerformBasicGet(IModel channel, string queueName, bool autoAck)
+		protected virtual async Task<BasicGetResult> PerformBasicGet(IChannel channel, string queueName, bool autoAck)
 		{
-			return channel.BasicGet(queueName, autoAck);
+			return await channel.BasicGetAsync(queueName, autoAck);
 		}
 
 		protected virtual bool GetAutoAck(IPipeContext context)
@@ -55,7 +55,7 @@ namespace RawRabbit.Operations.Get.Middleware
 			return this._queueNameFunc(context);
 		}
 
-		protected virtual IModel GetChannel(IPipeContext context)
+		protected virtual IChannel GetChannel(IPipeContext context)
 		{
 			return this._channelFunc(context);
 		}

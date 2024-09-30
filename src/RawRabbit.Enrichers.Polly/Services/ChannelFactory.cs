@@ -47,7 +47,7 @@ namespace RawRabbit.Enrichers.Polly.Services
 			);
 		}
 
-		public override Task<IModel> CreateChannelAsync(CancellationToken token = default(CancellationToken))
+		public override Task<IChannel> CreateChannelAsync(CancellationToken token = default(CancellationToken))
 		{
 			return this._createChannelPolicy.ExecuteAsync(
 				action: ct => base.CreateChannelAsync(ct),

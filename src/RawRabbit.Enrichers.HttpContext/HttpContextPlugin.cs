@@ -1,4 +1,5 @@
-﻿using RawRabbit.Enrichers.HttpContext;
+﻿using Microsoft.AspNetCore.Http;
+using RawRabbit.Enrichers.HttpContext;
 using RawRabbit.Instantiation;
 
 namespace RawRabbit
@@ -7,17 +8,10 @@ namespace RawRabbit
 	{
 		public static IClientBuilder UseHttpContext(this IClientBuilder builder)
 		{
-#if NET451
-			builder.Register(p => p
-				.Use<NetFxHttpContextMiddleware>()
-			);
-#endif
-#if NETSTANDARD1_6
 			builder.Register(
 				p => p.Use<AspNetCoreHttpContextMiddleware>(),
-				p => p.AddSingleton<Microsoft.AspNetCore.Http.IHttpContextAccessor, Microsoft.AspNetCore.Http.HttpContextAccessor>()
+				p => p.AddSingleton<IHttpContextAccessor, HttpContextAccessor>()
 			);
-#endif
 			return builder;
 		}
 	}

@@ -33,15 +33,15 @@ namespace RawRabbit.Enrichers.MessagePack
 				.Invoke(null, new[] { obj });
 		}
 
-		public object Deserialize(Type type, byte[] bytes)
+		public object Deserialize(Type type, ReadOnlyMemory<byte>? bytes)
 		{
 			return this._deserializeType.MakeGenericMethod(type)
 				.Invoke(null, new object[] { bytes });
 		}
 
-		public TType Deserialize<TType>(byte[] bytes)
+		public TType Deserialize<TType>(ReadOnlyMemory<byte>? bytes)
 		{
-			return MessagePackSerializer.Deserialize<TType>(bytes);
+			return MessagePackSerializer.Deserialize<TType>(bytes?.ToArray());
 		}
 	}
 }

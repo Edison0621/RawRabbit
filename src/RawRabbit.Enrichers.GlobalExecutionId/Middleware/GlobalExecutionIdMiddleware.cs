@@ -5,10 +5,6 @@ using RawRabbit.Logging;
 using RawRabbit.Pipe;
 using RawRabbit.Pipe.Middleware;
 
-#if NET451
-using System.Runtime.Remoting.Messaging;
-#endif
-
 namespace RawRabbit.Enrichers.GlobalExecutionId.Middleware
 {
 	public class GlobalExecutionOptions
@@ -23,11 +19,7 @@ namespace RawRabbit.Enrichers.GlobalExecutionId.Middleware
 		protected readonly Func<IPipeContext, string> _idFunc;
 		protected readonly Action<IPipeContext, string> _persistAction;
 
-#if NETSTANDARD1_5
 		protected static readonly AsyncLocal<string> ExecutionId = new AsyncLocal<string>();
-#elif NET451
-		protected const string GlobalExecutionId = "RawRabbit:GlobalExecutionId";
-#endif
 		private readonly ILog _logger = LogProvider.For<GlobalExecutionIdMiddleware>();
 
 		public GlobalExecutionIdMiddleware(GlobalExecutionOptions options = null)
@@ -66,11 +58,7 @@ namespace RawRabbit.Enrichers.GlobalExecutionId.Middleware
 
 		protected virtual string GetExecutionIdFromProcess()
 		{
-#if NETSTANDARD1_5
 			string executionId = ExecutionId?.Value;
-#elif NET451
-			string executionId = CallContext.LogicalGetData(GlobalExecutionId) as string;
-#endif
 			return executionId;
 		}
 
@@ -86,11 +74,7 @@ namespace RawRabbit.Enrichers.GlobalExecutionId.Middleware
 
 		protected virtual void SaveIdInProcess(string executionId)
 		{
-#if NETSTANDARD1_5
 			ExecutionId.Value = executionId;
-#elif NET451
-			CallContext.LogicalSetData(GlobalExecutionId, executionId);
-#endif
 		}
 	}
 }

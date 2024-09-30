@@ -13,7 +13,7 @@ namespace RawRabbit.Enrichers.Polly.Middleware
 		public TransientChannelMiddleware(IChannelFactory factory)
 			: base(factory) { }
 
-		protected override Task<IModel> CreateChannelAsync(IPipeContext context, CancellationToken token)
+		protected override Task<IChannel> CreateChannelAsync(IPipeContext context, CancellationToken token)
 		{
 			Policy policy = context.GetPolicy(PolicyKeys.ChannelCreate);
 			return policy.ExecuteAsync(

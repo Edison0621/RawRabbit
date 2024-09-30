@@ -8,6 +8,7 @@ using RabbitMQ.Client;
 using RawRabbit.Common;
 using RawRabbit.Exceptions;
 using RawRabbit.Logging;
+using RawRabbit.Operations.Publish;
 using RawRabbit.Operations.Publish.Context;
 using RawRabbit.Pipe;
 
@@ -16,7 +17,7 @@ namespace RawRabbit.Operations.Publish.Middleware
 	public class PublishAcknowledgeOptions
 	{
 		public Func<IPipeContext, TimeSpan> TimeOutFunc { get; set; }
-		public Func<IPipeContext, IModel> ChannelFunc { get; set; }
+		public Func<IPipeContext, IChannel> ChannelFunc { get; set; }
 		public Func<IPipeContext, bool> EnabledFunc { get; set; }
 	}
 
@@ -25,13 +26,13 @@ namespace RawRabbit.Operations.Publish.Middleware
 		private readonly IExclusiveLock _exclusive;
 		private readonly ILog _logger = LogProvider.For<PublishAcknowledgeMiddleware>();
 		protected readonly Func<IPipeContext, TimeSpan> _timeOutFunc;
-		protected readonly Func<IPipeContext, IModel> _channelFunc;
+		protected readonly Func<IPipeContext, IChannel> _channelFunc;
 		protected readonly Func<IPipeContext, bool> _enabledFunc;
 
-		protected static readonly Dictionary<IModel, ConcurrentDictionary<ulong, TaskCompletionSource<ulong>>> ConfirmsDictionary =
-			new Dictionary<IModel, ConcurrentDictionary<ulong, TaskCompletionSource<ulong>>>();
-		protected static readonly ConcurrentDictionary<IModel, object> ChannelLocks = new ConcurrentDictionary<IModel, object>();
-		protected static Dictionary<IModel, ulong> ChannelSequences = new Dictionary<IModel, ulong>();
+		protected static readonly Dictionary<IChannel, ConcurrentDictionary<ulong, TaskCompletionSource<ulong>>> ConfirmsDictionary =
+			new Dictionary<IChannel, ConcurrentDictionary<ulong, TaskCompletionSource<ulong>>>();
+		protected static readonly ConcurrentDictionary<IChannel, object> ChannelLocks = new ConcurrentDictionary<IChannel, object>();
+		protected static Dictionary<IChannel, ulong> ChannelSequences = new Dictionary<IChannel, ulong>();
 
 		public PublishAcknowledgeMiddleware(IExclusiveLock exclusive, PublishAcknowledgeOptions options = null)
 		{
@@ -50,7 +51,7 @@ namespace RawRabbit.Operations.Publish.Middleware
 				await this.Next.InvokeAsync(context, token);
 				return;
 			}
-			IModel channel = this.GetChannel(context);
+			IChannel channel = this.GetChannel(context);
 
 			if (!this.PublishAcknowledgeEnabled(channel))
 			{
@@ -81,12 +82,12 @@ namespace RawRabbit.Operations.Publish.Middleware
 			return this._timeOutFunc(context);
 		}
 
-		protected virtual bool PublishAcknowledgeEnabled(IModel channel)
+		protected virtual bool PublishAcknowledgeEnabled(IChannel channel)
 		{
 			return channel.NextPublishSeqNo != 0UL;
 		}
 
-		protected virtual IModel GetChannel(IPipeContext context)
+		protected virtual IChannel GetChannel(IPipeContext context)
 		{
 			return this._channelFunc(context);
 		}
@@ -96,7 +97,7 @@ namespace RawRabbit.Operations.Publish.Middleware
 			return this._enabledFunc(context);
 		}
 
-		protected virtual ConcurrentDictionary<ulong, TaskCompletionSource<ulong>> GetChannelDictionary(IModel channel)
+		protected virtual ConcurrentDictionary<ulong, TaskCompletionSource<ulong>> GetChannelDictionary(IChannel channel)
 		{
 			if (!ConfirmsDictionary.ContainsKey(channel))
 			{
@@ -105,16 +106,16 @@ namespace RawRabbit.Operations.Publish.Middleware
 			return ConfirmsDictionary[channel];
 		}
 
-		protected virtual void EnableAcknowledgement(IModel channel, CancellationToken token)
+		protected virtual void EnableAcknowledgement(IChannel channel, CancellationToken token)
 		{
 			this._logger.Info("Setting 'Publish Acknowledge' for channel '{channelNumber}'", channel.ChannelNumber);
-			this._exclusive.Execute(channel, c =>
+			this._exclusive.Execute(channel, async c =>
 			{
 				if (this.PublishAcknowledgeEnabled(c))
 				{
 					return;
 				}
-				c.ConfirmSelect();
+				await c.ConfirmSelectAsync(cancellationToken: token);
 				ConcurrentDictionary<ulong, TaskCompletionSource<ulong>> dictionary = this.GetChannelDictionary(c);
 				c.BasicAcks += (sender, args) =>
 				{
@@ -179,7 +180,7 @@ namespace RawRabbit
 	{
 		public static IPublishContext UsePublishAcknowledge(this IPublishContext context, TimeSpan timeout)
 		{
-			context.Properties.TryAdd(Operations.Publish.PublishKey.PublishAcknowledgeTimeout, timeout);
+			CollectionExtensions.TryAdd(context.Properties, PublishKey.PublishAcknowledgeTimeout, timeout);
 			return context;
 		}
 

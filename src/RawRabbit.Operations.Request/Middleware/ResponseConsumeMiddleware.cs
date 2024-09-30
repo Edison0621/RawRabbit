@@ -23,8 +23,8 @@ namespace RawRabbit.Operations.Request.Middleware
 
 	public class ResponseConsumeMiddleware : Pipe.Middleware.Middleware
 	{
-		protected static readonly ConcurrentDictionary<IBasicConsumer, ConcurrentDictionary<string, TaskCompletionSource<BasicDeliverEventArgs>>> AllResponses =
-			new ConcurrentDictionary<IBasicConsumer, ConcurrentDictionary<string, TaskCompletionSource<BasicDeliverEventArgs>>>();
+		protected static readonly ConcurrentDictionary<IAsyncBasicConsumer, ConcurrentDictionary<string, TaskCompletionSource<BasicDeliverEventArgs>>> AllResponses =
+			new ConcurrentDictionary<IAsyncBasicConsumer, ConcurrentDictionary<string, TaskCompletionSource<BasicDeliverEventArgs>>>();
 		
 		protected readonly IConsumerFactory _consumerFactory;
 		protected readonly Pipe.Middleware.Middleware _responsePipe;
@@ -49,11 +49,11 @@ namespace RawRabbit.Operations.Request.Middleware
 			bool dedicatedConsumer = this.GetDedicatedConsumer(context);
 			TaskCompletionSource<BasicDeliverEventArgs> responseTsc = new TaskCompletionSource<BasicDeliverEventArgs>();
 
-			IBasicConsumer consumer;
+			IAsyncBasicConsumer consumer;
 			if (dedicatedConsumer)
 			{
 				consumer = await this._consumerFactory.CreateConsumerAsync(token: token);
-				this._consumerFactory.ConfigureConsume(consumer, respondCfg.Consume);
+				await this._consumerFactory.ConfigureConsumeAsync(consumer, respondCfg.Consume);
 			}
 			else
 			{
@@ -66,8 +66,10 @@ namespace RawRabbit.Operations.Request.Middleware
 					c.OnMessage((sender, args) =>
 					{
 						if (!pendings.TryRemove(args.BasicProperties.CorrelationId, out TaskCompletionSource<BasicDeliverEventArgs> tsc))
-							return;
+							return Task.CompletedTask;
+
 						tsc.TrySetResult(args);
+						return Task.CompletedTask;
 					});
 					return pendings;
 				}
@@ -81,7 +83,7 @@ namespace RawRabbit.Operations.Request.Middleware
 			if (dedicatedConsumer)
 			{
 				this._logger.Info("Disposing dedicated consumer on queue {queueName}", respondCfg.Consume.QueueName);
-				consumer.Model.Dispose();
+				consumer.Channel?.Dispose();
 				AllResponses.TryRemove(consumer, out _);
 			}
 			context.Properties.Add(PipeKey.DeliveryEventArgs, responseTsc.Task.Result);

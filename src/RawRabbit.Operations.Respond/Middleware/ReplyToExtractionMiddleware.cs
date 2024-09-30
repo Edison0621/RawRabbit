@@ -58,7 +58,7 @@ namespace RawRabbit.Operations.Respond.Middleware
 			}
 			else
 			{
-				args.BasicProperties.ReplyTo = replyTo.RoutingKey;
+				//TODO args.BasicProperties.ReplyTo = replyTo.RoutingKey;
 				this._logger.Info("Using reply address with exchange {exchangeName} and routing key '{routingKey}'", replyTo.ExchangeName, replyTo.RoutingKey);
 			}
 			return replyTo;
