@@ -17,68 +17,66 @@ using Serilog;
 using Serilog.Events;
 using ILogger = Serilog.ILogger;
 
-namespace RawRabbit.AspNet.Sample
+namespace RawRabbit.AspNet.Sample;
+
+public class Startup
 {
-	public class Startup
+	private readonly string _rootPath;
+
+	public Startup(IWebHostEnvironment env)
 	{
-		private readonly string _rootPath;
+		this._rootPath = env.ContentRootPath;
+		IConfigurationBuilder builder = new ConfigurationBuilder()
+			.SetBasePath(this._rootPath)
+			.AddJsonFile("appsettings.json")
+			.AddEnvironmentVariables();
+		this.Configuration = builder.Build();
+	}
 
-		public Startup(IHostingEnvironment env)
-		{
-			this._rootPath = env.ContentRootPath;
-			IConfigurationBuilder builder = new ConfigurationBuilder()
-				.SetBasePath(this._rootPath)
-				.AddJsonFile("appsettings.json")
-				.AddEnvironmentVariables();
-			this.Configuration = builder.Build();
-		}
+	public IConfigurationRoot Configuration { get; }
 
-		public IConfigurationRoot Configuration { get; }
-
-		public void ConfigureServices(IServiceCollection services)
-		{
-			services
-				.AddRawRabbit(new RawRabbitOptions
-					{
-						ClientConfiguration = this.GetRawRabbitConfiguration(),
-						Plugins = p => p
-							.UseStateMachine()
-							.UseGlobalExecutionId()
-							.UseHttpContext()
-							.UseMessageContext(c => new MessageContext
-							{
-								Source = c.GetHttpContext().Request.GetDisplayUrl()
-							})
-					})
-				.AddMvc();
-		}
-
-		public void Configure(IApplicationBuilder app, IHostingEnvironment env, ILoggerFactory loggerFactory)
-		{
-			Log.Logger = this.GetConfiguredSerilogger();
-			loggerFactory
-				.AddSerilog()
-				.AddConsole(this.Configuration.GetSection("Logging"));
-
-			app.UseMvc();
-		}
-
-		private ILogger GetConfiguredSerilogger()
-		{
-			return new LoggerConfiguration()
-				.WriteTo.File($"{this._rootPath}/Logs/serilog.log", LogEventLevel.Debug)
-				.WriteTo.LiterateConsole()
-				.CreateLogger();
-		}
-
-		private RawRabbitConfiguration GetRawRabbitConfiguration()
-		{
-			IConfigurationSection section = this.Configuration.GetSection("RawRabbit");
-			if (!section.GetChildren().Any())
+	public void ConfigureServices(IServiceCollection services)
+	{
+		services
+			.AddRawRabbit(new RawRabbitOptions
 			{
-				throw new ArgumentException("Unable to configuration section 'RawRabbit'. Make sure it exists in the provided configuration");
-			}
-			return section.Get<RawRabbitConfiguration>();
+				ClientConfiguration = this.GetRawRabbitConfiguration(),
+				Plugins = p => p
+					.UseStateMachine()
+					.UseGlobalExecutionId()
+					.UseHttpContext()
+					.UseMessageContext(c => new MessageContext
+					{
+						Source = c.GetHttpContext().Request.GetDisplayUrl()
+					})
+			})
+			.AddMvc();
+	}
+
+	public void Configure(IApplicationBuilder app, IWebHostEnvironment env, ILoggerFactory loggerFactory)
+	{
+		Log.Logger = this.GetConfiguredSerilogger();
+		loggerFactory
+			.AddSerilog();
+
+		app.UseMvc();
+	}
+
+	private ILogger GetConfiguredSerilogger()
+	{
+		return new LoggerConfiguration()
+			.WriteTo.File($"{this._rootPath}/Logs/serilog.log", LogEventLevel.Debug)
+			.WriteTo.LiterateConsole()
+			.CreateLogger();
+	}
+
+	private RawRabbitConfiguration GetRawRabbitConfiguration()
+	{
+		IConfigurationSection section = this.Configuration.GetSection("RawRabbit");
+		if (!section.GetChildren().Any())
+		{
+			throw new ArgumentException("Unable to configuration section 'RawRabbit'. Make sure it exists in the provided configuration");
 		}
+		return section.Get<RawRabbitConfiguration>();
 	}
 }

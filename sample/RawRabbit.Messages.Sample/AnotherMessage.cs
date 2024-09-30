@@ -1,6 +1,5 @@
-﻿namespace RawRabbit.Messages.Sample
+﻿namespace RawRabbit.Messages.Sample;
+
+public class AnotherMessage
 {
-	public class AnotherMessage
-	{
-	}
 }

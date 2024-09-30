@@ -1,7 +1,6 @@
-﻿namespace RawRabbit.Messages.Sample
+﻿namespace RawRabbit.Messages.Sample;
+
+public class ValuesRequested
 {
-	public class ValuesRequested
-	{
-		public int NumberOfValues { get; set; }
-	}
+	public int NumberOfValues { get; set; }
 }

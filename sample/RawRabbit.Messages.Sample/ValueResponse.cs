@@ -1,7 +1,6 @@
-﻿namespace RawRabbit.Messages.Sample
+﻿namespace RawRabbit.Messages.Sample;
+
+public class ValueResponse
 {
-	public class ValueResponse
-	{
-		public string Value { get; set; }
-	}
+	public string Value { get; set; }
 }

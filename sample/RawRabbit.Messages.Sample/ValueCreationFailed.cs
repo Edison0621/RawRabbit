@@ -1,9 +1,8 @@
 ﻿using System;
 
-namespace RawRabbit.Messages.Sample
+namespace RawRabbit.Messages.Sample;
+
+public class ValueCreationFailed
 {
-	public class ValueCreationFailed
-	{
-		public Exception Exception { get; set; }
-	}
+	public Exception Exception { get; set; }
 }

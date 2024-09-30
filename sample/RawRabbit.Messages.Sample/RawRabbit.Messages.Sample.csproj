@@ -1,7 +1,7 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <TargetFrameworks>netstandard1.5;net451</TargetFrameworks>
+	  <TargetFramework>net8.0</TargetFramework>
     <AssemblyName>RawRabbit.Messages.Sample</AssemblyName>
     <PackageId>RawRabbit.Messages.Sample</PackageId>
     <GenerateAssemblyConfigurationAttribute>false</GenerateAssemblyConfigurationAttribute>
