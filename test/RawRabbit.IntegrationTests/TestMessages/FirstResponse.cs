@@ -1,9 +1,8 @@
 ﻿using System;
 
-namespace RawRabbit.IntegrationTests.TestMessages
+namespace RawRabbit.IntegrationTests.TestMessages;
+
+public class FirstResponse
 {
-	public class FirstResponse
-	{
-		public Guid Infered { get; set; }
-	}
+	public Guid Infered { get; set; }
 }

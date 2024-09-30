@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Threading.Tasks;
 using BenchmarkDotNet.Attributes;
+using RabbitMQ.Client;
 using RawRabbit.Instantiation;
 // ReSharper disable All
 #pragma warning disable CS4014 // Because this call is not awaited, execution of the current method continues before the call is completed
@@ -15,7 +16,7 @@ namespace RawRabbit.PerformanceTest
 		public event EventHandler MessageReceived;
 		public delegate void MessageReceivedEventHandler(EventHandler e);
 
-		[Setup]
+		//[Setup]
 		public void Setup()
 		{
 			this._busClient = RawRabbitFactory.CreateSingleton();
@@ -28,7 +29,7 @@ namespace RawRabbit.PerformanceTest
 			});
 		}
 
-		[Cleanup]
+		//[Cleanup]
 		public void Cleanup()
 		{
 			this._busClient.DeleteQueueAsync<Message>();
@@ -71,7 +72,7 @@ namespace RawRabbit.PerformanceTest
 
 			this._busClient.PublishAsync(this._message, ctx => ctx
 				.UsePublishConfiguration(cfg => cfg
-					.WithProperties(p => p.DeliveryMode = 1))
+					.WithProperties(p => p.DeliveryMode = DeliveryModes.Transient))
 			);
 			await msgTsc.Task;
 			this.MessageReceived -= onMessageReceived;
@@ -87,7 +88,7 @@ namespace RawRabbit.PerformanceTest
 
 			this._busClient.PublishAsync(this._message, ctx => ctx
 				.UsePublishConfiguration(cfg => cfg
-					.WithProperties(p => p.DeliveryMode = 2))
+					.WithProperties(p => p.DeliveryMode = DeliveryModes.Persistent))
 			);
 			await msgTsc.Task;
 			this.MessageReceived -= onMessageReceived;

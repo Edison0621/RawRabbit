@@ -682,14 +682,13 @@ namespace RawRabbit.Logging
 		internal
 #endif
 			static readonly List<Tuple<IsLoggerAvailable, CreateLogProvider>> LogProviderResolvers =
-				new()
-				{
-					new Tuple<IsLoggerAvailable, CreateLogProvider>(SerilogLogProvider.IsLoggerAvailable, () => new SerilogLogProvider()),
-					new Tuple<IsLoggerAvailable, CreateLogProvider>(NLogLogProvider.IsLoggerAvailable, () => new NLogLogProvider()),
-					new Tuple<IsLoggerAvailable, CreateLogProvider>(Log4NetLogProvider.IsLoggerAvailable, () => new Log4NetLogProvider()),
-					new Tuple<IsLoggerAvailable, CreateLogProvider>(EntLibLogProvider.IsLoggerAvailable, () => new EntLibLogProvider()),
-					new Tuple<IsLoggerAvailable, CreateLogProvider>(LoupeLogProvider.IsLoggerAvailable, () => new LoupeLogProvider()),
-				};
+			[
+				new(SerilogLogProvider.IsLoggerAvailable, () => new SerilogLogProvider()),
+				new(NLogLogProvider.IsLoggerAvailable, () => new NLogLogProvider()),
+				new(Log4NetLogProvider.IsLoggerAvailable, () => new Log4NetLogProvider()),
+				new(EntLibLogProvider.IsLoggerAvailable, () => new EntLibLogProvider()),
+				new(LoupeLogProvider.IsLoggerAvailable, () => new LoupeLogProvider())
+			];
 
 #if !LIBLOG_PROVIDERS_ONLY
 		private static void RaiseOnCurrentLogProviderSet()
@@ -1837,12 +1836,11 @@ namespace RawRabbit.Logging.LogProviders
 			ParameterExpression propertyNameParam = Expression.Parameter(typeof(string), "propertyName");
 			ParameterExpression valueParam = Expression.Parameter(typeof(object), "value");
 			ParameterExpression destructureObjectsParam = Expression.Parameter(typeof(bool), "destructureObjects");
-			MethodCallExpression methodCall = Expression.Call(null, method, new Expression[]
-			{
+			MethodCallExpression methodCall = Expression.Call(null, method, [
 				propertyNameParam,
 				valueParam,
 				destructureObjectsParam
-			});
+			]);
 			Func<string, object, bool, object> func = Expression.Lambda<Func<string, object, bool, object>>(
 					methodCall,
 					propertyNameParam,
@@ -2218,11 +2216,11 @@ namespace RawRabbit.Logging.LogProviders
 		{
 			if (formatParameters.Length == 0)
 			{
-				patternMatches = Enumerable.Empty<string>();
+				patternMatches = [];
 				return targetMessage;
 			}
 
-			List<string> processedArguments = new();
+			List<string> processedArguments = [];
 			patternMatches = processedArguments;
 
 			foreach (Match match in _pattern.Matches(targetMessage))

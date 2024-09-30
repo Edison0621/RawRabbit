@@ -11,7 +11,7 @@ public class ResponseHandlerOptionFactory
 	{
 		return new HandlerInvocationOptions
 		{
-			HandlerArgsFunc = options?.HandlerArgsFunc ?? (context => new[] {context.GetMessage()}),
+			HandlerArgsFunc = options?.HandlerArgsFunc ?? (context => [context.GetMessage()]),
 			PostInvokeAction = options?.PostInvokeAction ?? ((context, task) =>
 			{
 				if (task is Ack ack)

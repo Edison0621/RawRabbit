@@ -129,7 +129,7 @@ public sealed class NamingConventions : INamingConventions
 	public static string GetNonGenericTypeName(Type type)
 	{
 		string[] name = !type.GetTypeInfo().IsGenericType
-			? new[] { type.Name }
+			? [type.Name]
 			: type.Name.Split('`');
 
 		return name[0];

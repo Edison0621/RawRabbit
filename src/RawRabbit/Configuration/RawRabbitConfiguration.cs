@@ -92,7 +92,7 @@ public class RawRabbitConfiguration
 		this.RecoveryInterval = TimeSpan.FromSeconds(10);
 		this.GracefulShutdown = TimeSpan.FromSeconds(10);
 		this.Ssl = new SslOption { Enabled = false };
-		this.Hostnames = new List<string>();
+		this.Hostnames = [];
 		this.Exchange = new GeneralExchangeConfiguration
 		{
 			AutoDelete = false,
@@ -113,7 +113,7 @@ public class RawRabbitConfiguration
 		Username = "guest",
 		Password = "guest",
 		Port = 5672,
-		Hostnames = new List<string> { "localhost" }
+		Hostnames = ["localhost"]
 	};
 }
 

@@ -4,22 +4,21 @@ using RawRabbit.Configuration;
 using RawRabbit.Instantiation;
 using Xunit;
 
-namespace RawRabbit.IntegrationTests.DependencyInjection
+namespace RawRabbit.IntegrationTests.DependencyInjection;
+
+public class SimpleDependencyTests
 {
-	public class SimpleDependencyTests
+	[Fact]
+	public async Task Should_Honor_Client_Config_From_Options()
 	{
-		[Fact]
-		public async Task Should_Honor_Client_Config_From_Options()
+		RawRabbitConfiguration config = RawRabbitConfiguration.Local;
+		const string nonExistingVhost = "/foo";
+		config.VirtualHost = nonExistingVhost;
+		await Assert.ThrowsAnyAsync<Exception>(async () =>
 		{
-			RawRabbitConfiguration config = RawRabbitConfiguration.Local;
-			const string nonExistingVhost = "/foo";
-			config.VirtualHost = nonExistingVhost;
-			await Assert.ThrowsAnyAsync<Exception>(async () =>
-			{
-				InstanceFactory factory = RawRabbitFactory.CreateTestInstanceFactory(new RawRabbitOptions {ClientConfiguration = config});
-				IBusClient client = factory.Create();
-				await client.CreateChannelAsync();
-			});
-		}
+			InstanceFactory factory = RawRabbitFactory.CreateTestInstanceFactory(new RawRabbitOptions {ClientConfiguration = config});
+			IBusClient client = factory.Create();
+			await client.CreateChannelAsync();
+		});
 	}
 }

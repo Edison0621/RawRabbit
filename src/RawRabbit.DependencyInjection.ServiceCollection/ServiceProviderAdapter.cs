@@ -25,7 +25,7 @@ public class ServiceProviderAdapter : IDependencyResolver
 
 	public object GetService(Type serviceType, params object[] additional)
 	{
-		additional = additional ?? new object[0];
+		additional = additional ?? [];
 		object service = this._provider.GetService(serviceType);
 		return service ?? ActivatorUtilities.CreateInstance(this._provider, serviceType, additional);
 	}

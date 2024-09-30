@@ -52,8 +52,8 @@ namespace RawRabbit.IntegrationTests.Compatibility
 			Assert.Equal(message.Prop, tsc.Task.Result.Prop);
 			Assert.NotNull(receivedContext);
 
-			this.TestChannel.QueueDelete(subscription.QueueName, false, false);
-			this.TestChannel.ExchangeDelete("rawrabbit.integrationtests.testmessages", false);
+			await this.TestChannel.QueueDeleteAsync(subscription.QueueName, false, false);
+			await this.TestChannel.ExchangeDeleteAsync("rawrabbit.integrationtests.testmessages", false);
 			(publisher as IDisposable)?.Dispose();
 			(subscriber as IDisposable)?.Dispose();
 		}
@@ -175,8 +175,8 @@ namespace RawRabbit.IntegrationTests.Compatibility
 			Assert.Equal(receivedRequest.Number, request.Number);
 			Assert.NotNull(receivedContext);
 
-			this.TestChannel.QueueDelete(subscription.QueueName, false, false);
-			this.TestChannel.ExchangeDelete("rawrabbit.integrationtests.testmessages", false);
+			await this.TestChannel.QueueDeleteAsync(subscription.QueueName, false, false);
+			await this.TestChannel.ExchangeDeleteAsync("rawrabbit.integrationtests.testmessages", false);
 
 			(requester as IDisposable)?.Dispose();
 			(responder as IDisposable)?.Dispose();
@@ -260,7 +260,7 @@ namespace RawRabbit.IntegrationTests.Compatibility
 			Assert.NotNull(receivedRequest);
 			Assert.NotNull(response);
 
-			this.TestChannel.QueueDelete(sub.QueueName, false, false);
+			await this.TestChannel.QueueDeleteAsync(sub.QueueName, false, false);
 			(requester as IDisposable)?.Dispose();
 			(responder as IDisposable)?.Dispose();
 		}

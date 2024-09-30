@@ -7,7 +7,7 @@ public class SubscribeInvocationMiddleware : HandlerInvocationMiddleware
 {
 	public SubscribeInvocationMiddleware() : base(new HandlerInvocationOptions
 	{
-		HandlerArgsFunc = context => new []{ context.GetMessage()}
+		HandlerArgsFunc = context => [context.GetMessage()]
 	})
 	{ }
 }

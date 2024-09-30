@@ -53,7 +53,7 @@ public class Program
 
 	private static Task ServerValuesAsync(ValuesRequested message, MessageContext ctx)
 	{
-		List<string> values = new List<string>();
+		List<string> values = new();
 		for (int i = 0; i < message.NumberOfValues; i++)
 		{
 			values.Add($"value{i}");

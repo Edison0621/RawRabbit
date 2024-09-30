@@ -5,121 +5,112 @@ using RawRabbit.IntegrationTests.TestMessages;
 using RawRabbit.Operations.Respond.Acknowledgement;
 using Xunit;
 
-namespace RawRabbit.IntegrationTests.Rpc
+namespace RawRabbit.IntegrationTests.Rpc;
+
+public class AcknowledgementRespondTests
 {
-	public class AcknowledgementRespondTests
+	[Fact]
+	public async Task Should_Be_Able_To_Auto_Ack()
 	{
-		[Fact]
-		public async Task Should_Be_Able_To_Auto_Ack()
+		using Instantiation.Disposable.BusClient requester = RawRabbitFactory.CreateTestClient();
+		using Instantiation.Disposable.BusClient responder = RawRabbitFactory.CreateTestClient();
+		/* Setup */
+		BasicResponse sent = new()
 		{
-			using (Instantiation.Disposable.BusClient requester = RawRabbitFactory.CreateTestClient())
-			using (Instantiation.Disposable.BusClient responder = RawRabbitFactory.CreateTestClient())
-			{
-				/* Setup */
-				BasicResponse sent = new BasicResponse
-				{
-					Prop = "I am the response"
-				};
-				await responder.RespondAsync<BasicRequest, BasicResponse>(async request =>
-					sent
-				);
+			Prop = "I am the response"
+		};
+		await responder.RespondAsync<BasicRequest, BasicResponse>(async request =>
+			sent
+		);
 
-				/* Test */
-				BasicResponse received = await requester.RequestAsync<BasicRequest, BasicResponse>(new BasicRequest());
+		/* Test */
+		BasicResponse received = await requester.RequestAsync<BasicRequest, BasicResponse>(new BasicRequest());
 
-				/* Assert */
-				Assert.Equal(received.Prop, sent.Prop);
-			}
-		}
+		/* Assert */
+		Assert.Equal(received.Prop, sent.Prop);
+	}
 
-		[Fact]
-		public async Task Should_Be_Able_To_Return_Ack()
+	[Fact]
+	public async Task Should_Be_Able_To_Return_Ack()
+	{
+		using Instantiation.Disposable.BusClient requester = RawRabbitFactory.CreateTestClient();
+		using Instantiation.Disposable.BusClient responder = RawRabbitFactory.CreateTestClient();
+		/* Setup */
+		BasicResponse sent = new()
 		{
-			using (Instantiation.Disposable.BusClient requester = RawRabbitFactory.CreateTestClient())
-			using (Instantiation.Disposable.BusClient responder = RawRabbitFactory.CreateTestClient())
+			Prop = "I am the response"
+		};
+		await responder.RespondAsync<BasicRequest, BasicResponse>(async request =>
+			new Ack<BasicResponse>(sent)
+		);
+
+		/* Test */
+		BasicResponse received = await requester.RequestAsync<BasicRequest, BasicResponse>(new BasicRequest());
+
+		/* Assert */
+		Assert.Equal(received.Prop, sent.Prop);
+	}
+
+	[Fact]
+	public async Task Should_Be_Able_To_Return_Nack()
+	{
+		using Instantiation.Disposable.BusClient requester = RawRabbitFactory.CreateTestClient();
+		using Instantiation.Disposable.BusClient responder = RawRabbitFactory.CreateTestClient();
+		/* Setup */
+		TaskCompletionSource<BasicRequest> firstTsc = new();
+		TaskCompletionSource<BasicRequest> secondTsc = new();
+		BasicResponse sent = new() {Prop = "I'm from the second handler"};
+
+		await responder.RespondAsync<BasicRequest, BasicResponse>(async request =>
 			{
-				/* Setup */
-				BasicResponse sent = new BasicResponse
-				{
-					Prop = "I am the response"
-				};
-				await responder.RespondAsync<BasicRequest, BasicResponse>(async request =>
-						new Ack<BasicResponse>(sent)
-				);
-
-				/* Test */
-				BasicResponse received = await requester.RequestAsync<BasicRequest, BasicResponse>(new BasicRequest());
-
-				/* Assert */
-				Assert.Equal(received.Prop, sent.Prop);
+				firstTsc.TrySetResult(request);
+				return Respond.Nack<BasicResponse>();
 			}
-		}
-
-		[Fact]
-		public async Task Should_Be_Able_To_Return_Nack()
-		{
-			using (Instantiation.Disposable.BusClient requester = RawRabbitFactory.CreateTestClient())
-			using (Instantiation.Disposable.BusClient responder = RawRabbitFactory.CreateTestClient())
+		);
+		await responder.RespondAsync<BasicRequest, BasicResponse>(async request =>
 			{
-				/* Setup */
-				TaskCompletionSource<BasicRequest> firstTsc = new TaskCompletionSource<BasicRequest>();
-				TaskCompletionSource<BasicRequest> secondTsc = new TaskCompletionSource<BasicRequest>();
-				BasicResponse sent = new BasicResponse {Prop = "I'm from the second handler"};
-
-				await responder.RespondAsync<BasicRequest, BasicResponse>(async request =>
-					{
-						firstTsc.TrySetResult(request);
-						return Respond.Nack<BasicResponse>();
-					}
-				);
-				await responder.RespondAsync<BasicRequest, BasicResponse>(async request =>
-				{
-					secondTsc.TrySetResult(request);
-					return Respond.Ack(sent);
-				}
-				);
-
-				/* Test */
-				BasicResponse received = await requester.RequestAsync<BasicRequest, BasicResponse>(new BasicRequest());
-				await firstTsc.Task;
-				await secondTsc.Task;
-				/* Assert */
-				Assert.Equal(received.Prop, sent.Prop);
+				secondTsc.TrySetResult(request);
+				return Respond.Ack(sent);
 			}
-		}
+		);
 
-		[Fact]
-		public async Task Should_Be_Able_To_Return_Reject()
-		{
-			using (Instantiation.Disposable.BusClient requester = RawRabbitFactory.CreateTestClient())
-			using (Instantiation.Disposable.BusClient responder = RawRabbitFactory.CreateTestClient())
+		/* Test */
+		BasicResponse received = await requester.RequestAsync<BasicRequest, BasicResponse>(new BasicRequest());
+		await firstTsc.Task;
+		await secondTsc.Task;
+		/* Assert */
+		Assert.Equal(received.Prop, sent.Prop);
+	}
+
+	[Fact]
+	public async Task Should_Be_Able_To_Return_Reject()
+	{
+		using Instantiation.Disposable.BusClient requester = RawRabbitFactory.CreateTestClient();
+		using Instantiation.Disposable.BusClient responder = RawRabbitFactory.CreateTestClient();
+		/* Setup */
+		TaskCompletionSource<BasicRequest> firstTsc = new();
+		TaskCompletionSource<BasicRequest> secondTsc = new();
+		BasicResponse sent = new() { Prop = "I'm from the second handler" };
+
+		await responder.RespondAsync<BasicRequest, BasicResponse>(async request =>
 			{
-				/* Setup */
-				TaskCompletionSource<BasicRequest> firstTsc = new TaskCompletionSource<BasicRequest>();
-				TaskCompletionSource<BasicRequest> secondTsc = new TaskCompletionSource<BasicRequest>();
-				BasicResponse sent = new BasicResponse { Prop = "I'm from the second handler" };
-
-				await responder.RespondAsync<BasicRequest, BasicResponse>(async request =>
-				{
-					firstTsc.TrySetResult(request);
-					return Respond.Reject<BasicResponse>();
-				}
-				);
-				await responder.RespondAsync<BasicRequest, BasicResponse>(async request =>
-				{
-					secondTsc.TrySetResult(request);
-					return Respond.Ack(sent);
-				}
-				);
-
-				/* Test */
-				BasicResponse received = await requester.RequestAsync<BasicRequest, BasicResponse>(new BasicRequest());
-				await firstTsc.Task;
-				await secondTsc.Task;
-				/* Assert */
-				Assert.Equal(received.Prop, sent.Prop);
+				firstTsc.TrySetResult(request);
+				return Respond.Reject<BasicResponse>();
 			}
-		}
+		);
+		await responder.RespondAsync<BasicRequest, BasicResponse>(async request =>
+			{
+				secondTsc.TrySetResult(request);
+				return Respond.Ack(sent);
+			}
+		);
+
+		/* Test */
+		BasicResponse received = await requester.RequestAsync<BasicRequest, BasicResponse>(new BasicRequest());
+		await firstTsc.Task;
+		await secondTsc.Task;
+		/* Assert */
+		Assert.Equal(received.Prop, sent.Prop);
 	}
 }
 #pragma warning restore CS1998 // Async method lacks 'await' operators and will run synchronously

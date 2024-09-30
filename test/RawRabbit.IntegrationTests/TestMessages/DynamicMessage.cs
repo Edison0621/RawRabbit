@@ -1,7 +1,6 @@
-﻿namespace RawRabbit.IntegrationTests.TestMessages
+﻿namespace RawRabbit.IntegrationTests.TestMessages;
+
+public class DynamicMessage
 {
-	public class DynamicMessage
-	{
-		public dynamic Body { get; set; }
-	}
+	public dynamic Body { get; set; }
 }

@@ -48,11 +48,11 @@ public static class TriggerFromMessageExtension
 			StateMachineContext stateMachineContext = new(context);
 			stateMachineContext.Properties.Add(StateMachineKey.Type, typeof(TStateMachine));
 			stateMachineContext.Properties.Add(StateMachineKey.CorrelationFunc, genericCorrFunc);
-			stateMachineContext.UseLazyCorrelationArgs(ctx => new[] { ctx.GetMessage()});
+			stateMachineContext.UseLazyCorrelationArgs(ctx => [ctx.GetMessage()]);
 			stateMachineContext.Properties.Add(PipeKey.MessageType, typeof(TMessage));
 			stateMachineContext.Properties.Add(PipeKey.ConfigurationAction, consumeConfig);
 			stateMachineContext.Properties.Add(PipeKey.MessageHandler, genericHandler);
-			stateMachineContext.UseLazyHandlerArgs(ctx => new[] { ctx.GetStateMachine(), ctx.GetMessage() });
+			stateMachineContext.UseLazyHandlerArgs(ctx => [ctx.GetStateMachine(), ctx.GetMessage()]);
 		});
 	}
 

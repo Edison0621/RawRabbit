@@ -18,7 +18,7 @@ namespace RawRabbit.PerformanceTest
 		public event EventHandler MessageReceived;
 		public delegate void MessageReceivedEventHandler(EventHandler e);
 
-		[Setup]
+		//[Setup]
 		public void Setup()
 		{
 			this._withoutContext = RawRabbitFactory.CreateSingleton();
@@ -41,7 +41,7 @@ namespace RawRabbit.PerformanceTest
 			});
 		}
 
-		[Cleanup]
+		//[Cleanup]
 		public void Cleanup()
 		{
 			this._withoutContext.DeleteQueueAsync<MessageA>();

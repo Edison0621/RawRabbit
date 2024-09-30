@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Linq;
 using System.Threading.Tasks;
+using RabbitMQ.Client;
 using RawRabbit.IntegrationTests.TestMessages;
 using RawRabbit.Operations.Request.Middleware;
 using Xunit;
@@ -62,7 +63,7 @@ namespace RawRabbit.IntegrationTests.Rpc
 								.WithName("custom_exchange")
 								.WithAutoDelete())
 							.WithRoutingKey("custom_key")
-							.WithProperties(prop => prop.DeliveryMode = 1))
+							.WithProperties(prop => prop.DeliveryMode = DeliveryModes.Transient))
 						.ConsumeResponse(r => r
 							.Consume(c => c
 								.WithRoutingKey("response_key"))

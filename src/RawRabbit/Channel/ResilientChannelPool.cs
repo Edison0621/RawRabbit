@@ -16,7 +16,7 @@ public class ResilientChannelPool : DynamicChannelPool
 		: this(factory, CreateSeed(factory, channelCount)) { }
 
 	public ResilientChannelPool(IChannelFactory factory)
-		: this(factory, Enumerable.Empty<IChannel>()) { }
+		: this(factory, []) { }
 
 	public ResilientChannelPool(IChannelFactory factory, IEnumerable<IChannel> seed) : base(seed)
 	{

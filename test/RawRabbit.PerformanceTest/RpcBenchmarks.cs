@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Threading.Tasks;
 using BenchmarkDotNet.Attributes;
+using RabbitMQ.Client;
 using RawRabbit.Instantiation;
 // ReSharper disable All
 #pragma warning disable CS0067 // Event is never used
@@ -15,7 +16,7 @@ namespace RawRabbit.PerformanceTest
 		public event EventHandler MessageReceived;
 		public delegate void MessageReceivedEventHandler(EventHandler e);
 
-		[Setup]
+		//[Setup]
 		public void Setup()
 		{
 			this._busClient = RawRabbitFactory.CreateSingleton();
@@ -38,7 +39,7 @@ namespace RawRabbit.PerformanceTest
 			);
 		}
 
-		[Cleanup]
+		//[Cleanup]
 		public void Cleanup()
 		{
 			this._busClient.DeleteQueueAsync<Request>();
@@ -51,7 +52,7 @@ namespace RawRabbit.PerformanceTest
 			await this._busClient.RequestAsync<Request, Respond>(this._request, ctx => ctx
 				.UseRequestConfiguration(cfg => cfg
 					.PublishRequest(p => p
-						.WithProperties(prop => prop.DeliveryMode = 1)))
+						.WithProperties(prop => prop.DeliveryMode = DeliveryModes.Transient)))
 			);
 		}
 
@@ -65,7 +66,7 @@ namespace RawRabbit.PerformanceTest
 							.WithName("custom_exchange")
 							.WithAutoDelete())
 						.WithRoutingKey("custom_key")
-						.WithProperties(prop => prop.DeliveryMode = 1))
+						.WithProperties(prop => prop.DeliveryMode = DeliveryModes.Transient))
 					.ConsumeResponse(r => r
 						.Consume(c => c
 							.WithRoutingKey("response_key"))

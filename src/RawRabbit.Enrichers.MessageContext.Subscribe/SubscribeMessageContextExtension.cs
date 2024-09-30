@@ -28,11 +28,11 @@ public static class SubscribeMessageContextExtension
 				.Use<StageMarkerMiddleware>(StageMarkerOptions.For(MessageContextSubscibeStage.MessageContextDeserialized))
 				.Use<HandlerInvocationMiddleware>(new HandlerInvocationOptions
 				{
-					HandlerArgsFunc = context => new[]
-					{
+					HandlerArgsFunc = context =>
+					[
 						context.GetMessage(),
 						context.GetMessageContextResolver()?.Invoke(context) ?? context.GetMessageContext()
-					}
+					]
 				})
 		})
 		.Use<StageMarkerMiddleware>(StageMarkerOptions.For(StageMarker.HandlerInvoked))

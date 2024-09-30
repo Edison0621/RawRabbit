@@ -41,7 +41,7 @@ public class SimpleDependencyInjection : IDependencyRegister, IDependencyResolve
 
 	public IDependencyRegister AddSingleton<TService, TImplementation>() where TImplementation : class, TService where TService : class
 	{
-		Lazy<TImplementation> lazy = new(() => (TImplementation)this.CreateInstance(typeof(TImplementation), Enumerable.Empty<object>()));
+		Lazy<TImplementation> lazy = new(() => (TImplementation)this.CreateInstance(typeof(TImplementation), []));
 		this.AddTransient<TService, TImplementation>(_ => lazy.Value);
 		return this;
 	}

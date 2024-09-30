@@ -1,10 +1,9 @@
 ﻿using System;
 
-namespace RawRabbit.IntegrationTests.TestMessages
+namespace RawRabbit.IntegrationTests.TestMessages;
+
+public class BasicResponse
 {
-	public class BasicResponse
-	{
-		public string Prop { get; set; }
-		public Guid Payload { get; set; }
-	}
+	public string Prop { get; set; }
+	public Guid Payload { get; set; }
 }

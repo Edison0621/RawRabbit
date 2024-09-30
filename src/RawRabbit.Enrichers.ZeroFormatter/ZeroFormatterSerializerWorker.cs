@@ -15,7 +15,7 @@ internal class ZeroFormatterSerializerWorker : ISerializer
 	public ZeroFormatterSerializerWorker()
 	{
 		this._deserializeType = typeof(ZeroFormatterSerializer)
-			.GetMethod(nameof(ZeroFormatterSerializer.Deserialize), new[] { typeof(byte[]) });
+			.GetMethod(nameof(ZeroFormatterSerializer.Deserialize), [typeof(byte[])]);
 		this._serializeType = typeof(ZeroFormatterSerializer)
 			.GetMethods()
 			.FirstOrDefault(s => s.Name == nameof(ZeroFormatterSerializer.Serialize) && s.ReturnType == typeof(byte[]));
@@ -28,13 +28,13 @@ internal class ZeroFormatterSerializerWorker : ISerializer
 
 		return (byte[])this._serializeType
 			.MakeGenericMethod(obj.GetType())
-			.Invoke(null, new[] { obj });
+			.Invoke(null, [obj]);
 	}
 
 	public object Deserialize(Type type, ReadOnlyMemory<byte>? bytes)
 	{
 		return this._deserializeType.MakeGenericMethod(type)
-			.Invoke(null, new object[] { bytes });
+			.Invoke(null, [bytes]);
 	}
 
 	public TType Deserialize<TType>(ReadOnlyMemory<byte> bytes)

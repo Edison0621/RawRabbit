@@ -17,7 +17,7 @@ internal class MessagePackSerializerWorker : ISerializer
 		Type tp = typeof(MessagePackSerializer);
 
 		this._deserializeType = tp
-			.GetMethod(nameof(MessagePackSerializer.Deserialize), new[] { typeof(byte[]) });
+			.GetMethod(nameof(MessagePackSerializer.Deserialize), [typeof(byte[])]);
 		this._serializeType = tp
 			.GetMethods()
 			.FirstOrDefault(s => s.Name == nameof(MessagePackSerializer.Serialize) && s.ReturnType == typeof(byte[]));
@@ -30,13 +30,13 @@ internal class MessagePackSerializerWorker : ISerializer
 
 		return (byte[])this._serializeType
 			.MakeGenericMethod(obj.GetType())
-			.Invoke(null, new[] { obj });
+			.Invoke(null, [obj]);
 	}
 
 	public object Deserialize(Type type, ReadOnlyMemory<byte>? bytes)
 	{
 		return this._deserializeType.MakeGenericMethod(type)
-			.Invoke(null, new object[] { bytes });
+			.Invoke(null, [bytes]);
 	}
 
 	public TType Deserialize<TType>(ReadOnlyMemory<byte> bytes)

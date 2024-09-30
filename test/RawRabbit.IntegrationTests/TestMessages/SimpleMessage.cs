@@ -1,7 +1,6 @@
-﻿namespace RawRabbit.IntegrationTests.TestMessages
+﻿namespace RawRabbit.IntegrationTests.TestMessages;
+
+public class SimpleMessage
 {
-	public class SimpleMessage
-	{
-		public bool IsSimple { get; set; }
-	}
+	public bool IsSimple { get; set; }
 }

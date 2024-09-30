@@ -1,7 +1,6 @@
-﻿namespace RawRabbit.IntegrationTests.TestMessages
+﻿namespace RawRabbit.IntegrationTests.TestMessages;
+
+public class BasicMessage
 {
-	public class BasicMessage
-	{
-		public string Prop { get; set; }
-	}
+	public string Prop { get; set; }
 }

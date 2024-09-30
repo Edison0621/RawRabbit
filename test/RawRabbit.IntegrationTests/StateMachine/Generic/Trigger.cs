@@ -1,11 +1,10 @@
-﻿namespace RawRabbit.IntegrationTests.StateMachine.Generic
+﻿namespace RawRabbit.IntegrationTests.StateMachine.Generic;
+
+public enum Trigger
 {
-	public enum Trigger
-	{
-		Start,
-		Cancel,
-		Completion,
-		Pausing,
-		Resuming
-	}
+	Start,
+	Cancel,
+	Completion,
+	Pausing,
+	Resuming
 }

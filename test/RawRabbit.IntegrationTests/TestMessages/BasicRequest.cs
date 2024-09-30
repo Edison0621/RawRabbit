@@ -1,7 +1,6 @@
-﻿namespace RawRabbit.IntegrationTests.TestMessages
+﻿namespace RawRabbit.IntegrationTests.TestMessages;
+
+public class BasicRequest
 {
-	public class BasicRequest
-	{
-		public int Number { get; set; }
-	}
+	public int Number { get; set; }
 }

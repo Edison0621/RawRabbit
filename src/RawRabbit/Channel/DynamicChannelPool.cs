@@ -7,7 +7,7 @@ namespace RawRabbit.Channel;
 public class DynamicChannelPool : StaticChannelPool
 {
 	public DynamicChannelPool()
-		: this(Enumerable.Empty<IChannel>()) { }
+		: this([]) { }
 
 	public DynamicChannelPool(IEnumerable<IChannel> seed)
 		: base(seed) { }

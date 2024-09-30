@@ -28,7 +28,7 @@ public static class BasicConsumeExtension
 							Pipe = p => p
 								.Use<HandlerInvocationMiddleware>(new HandlerInvocationOptions
 								{
-									HandlerArgsFunc = ctx => new object[] { ctx.GetDeliveryEventArgs()},
+									HandlerArgsFunc = ctx => [ctx.GetDeliveryEventArgs()],
 								})
 								.Use<ExplicitAckMiddleware>()
 						})

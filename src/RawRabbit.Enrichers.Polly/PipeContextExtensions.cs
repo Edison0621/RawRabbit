@@ -12,7 +12,7 @@ public static class PipeContextExtensions
 		return context.Get(policyName, fallback);
 	}
 
-	public static TPipeContext UsePolicy<TPipeContext>(this TPipeContext context, Policy policy, string policyName = null) where TPipeContext : IPipeContext
+	public static TPipeContext UsePolicy<TPipeContext>(this TPipeContext context, AsyncPolicy policy, string policyName = null) where TPipeContext : IPipeContext
 	{
 		policyName = policyName ?? PolicyKeys.DefaultPolicy;
 		context.Properties.TryAdd(policyName, policy);

@@ -1,9 +1,8 @@
 ﻿using System;
 
-namespace RawRabbit.IntegrationTests.TestMessages
+namespace RawRabbit.IntegrationTests.TestMessages;
+
+public class SecondResponse
 {
-	public class SecondResponse
-	{
-		public Guid Source { get; set; }
-	}
+	public Guid Source { get; set; }
 }

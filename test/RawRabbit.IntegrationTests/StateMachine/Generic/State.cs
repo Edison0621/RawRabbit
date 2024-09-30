@@ -1,11 +1,10 @@
-﻿namespace RawRabbit.IntegrationTests.StateMachine.Generic
+﻿namespace RawRabbit.IntegrationTests.StateMachine.Generic;
+
+public enum State
 {
-	public enum State
-	{
-		Created,
-		InProgress,
-		Paused,
-		Completed,
-		Aborted
-	}
+	Created,
+	InProgress,
+	Paused,
+	Completed,
+	Aborted
 }

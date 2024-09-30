@@ -29,7 +29,7 @@ public static class RespondMessageContextExtension
 						.Use<StageMarkerMiddleware>(StageMarkerOptions.For(RespondStage.MessageDeserialized))
 						.Use<HandlerInvocationMiddleware >(ResponseHandlerOptionFactory.Create(new HandlerInvocationOptions
 						{
-							HandlerArgsFunc = context => new[] { context.GetMessage(), context.GetMessageContext() }
+							HandlerArgsFunc = context => [context.GetMessage(), context.GetMessageContext()]
 						}))
 				})
 				.Use<StageMarkerMiddleware>(StageMarkerOptions.For(StageMarker.HandlerInvoked))
