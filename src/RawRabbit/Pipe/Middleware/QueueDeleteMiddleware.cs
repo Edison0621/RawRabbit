@@ -8,14 +8,14 @@ namespace RawRabbit.Pipe.Middleware
 	public class QueueDeleteOptions
 	{
 		public Func<IPipeContext, string> QueueNameFunc { get; set; }
-		public Func<IPipeContext, IModel> ChannelFunc { get; set; }
+		public Func<IPipeContext, IChannel> ChannelFunc { get; set; }
 		public Func<IPipeContext, bool> IfUnusedFunc { get; set; }
 		public Func<IPipeContext, bool> IfEmptyFunc { get; set; }
 	}
 
 	public class QueueDeleteMiddleware : Middleware
 	{
-		protected readonly Func<IPipeContext, IModel> _channelFunc;
+		protected readonly Func<IPipeContext, IChannel> _channelFunc;
 		protected readonly Func<IPipeContext, string> _queueNameFunc;
 		protected readonly Func<IPipeContext, bool> _ifUnusedFunc;
 		protected readonly Func<IPipeContext, bool> _ifEmptyFunc;
@@ -30,7 +30,7 @@ namespace RawRabbit.Pipe.Middleware
 
 		public override async Task InvokeAsync(IPipeContext context, CancellationToken token = new CancellationToken())
 		{
-			IModel channel = this.GetChannel(context);
+			IChannel channel = this.GetChannel(context);
 			string queueName = this.GetQueueName(context);
 			bool ifEmpty = this.GetIfEmpty(context);
 			bool ifUnused = this.GetIfUnused(context);
@@ -38,13 +38,12 @@ namespace RawRabbit.Pipe.Middleware
 			await this.Next.InvokeAsync(context, token);
 		}
 
-		private Task DeleteQueueAsync(IModel channel, string queueName, bool ifUnused, bool ifEmpty)
+		private async Task DeleteQueueAsync(IChannel channel, string queueName, bool ifUnused, bool ifEmpty)
 		{
-			channel?.QueueDelete(queueName, ifUnused, ifEmpty);
-			return Task.FromResult(true);
+			await channel.QueueDeleteAsync(queueName, ifUnused, ifEmpty);
 		}
 
-		protected virtual IModel GetChannel(IPipeContext context)
+		protected virtual IChannel GetChannel(IPipeContext context)
 		{
 			return this._channelFunc(context);
 		}

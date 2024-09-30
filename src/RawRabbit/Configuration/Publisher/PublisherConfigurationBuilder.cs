@@ -1,7 +1,6 @@
 ﻿using System;
 using RabbitMQ.Client;
 using RabbitMQ.Client.Events;
-using RabbitMQ.Client.Framing;
 using RawRabbit.Common;
 using RawRabbit.Configuration.BasicPublish;
 using RawRabbit.Configuration.Exchange;

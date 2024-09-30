@@ -9,22 +9,22 @@ namespace RawRabbit.Pipe.Middleware
 {
 	public class BasicPublishOptions
 	{
-		public Func<IPipeContext, IModel> ChannelFunc { get; set; }
+		public Func<IPipeContext, IChannel> ChannelFunc { get; set; }
 		public Func<IPipeContext, string> ExchangeNameFunc { get; set; }
 		public Func<IPipeContext, string> RoutingKeyFunc { get; set; }
 		public Func<IPipeContext, bool> MandatoryFunc { get; set; }
-		public Func<IPipeContext, IBasicProperties> BasicPropsFunc { get; set; }
+		public Func<IPipeContext, BasicProperties> BasicPropsFunc { get; set; }
 		public Func<IPipeContext, byte[]> BodyFunc { get; set; }
 	}
 
 	public class BasicPublishMiddleware : Middleware
 	{
 		protected readonly IExclusiveLock _exclusive;
-		protected readonly Func<IPipeContext, IModel> _channelFunc;
+		protected readonly Func<IPipeContext, IChannel> _channelFunc;
 		protected readonly Func<IPipeContext, string> _exchangeNameFunc;
 		protected readonly Func<IPipeContext, string> _routingKeyFunc;
 		protected readonly Func<IPipeContext, bool> _mandatoryFunc;
-		protected readonly Func<IPipeContext, IBasicProperties> _basicPropsFunc;
+		protected readonly Func<IPipeContext, BasicProperties> _basicPropsFunc;
 		protected readonly Func<IPipeContext, byte[]> _bodyFunc;
 		private ILog _logger = LogProvider.For<BasicPublishMiddleware>();
 
@@ -41,16 +41,16 @@ namespace RawRabbit.Pipe.Middleware
 
 		public override async Task InvokeAsync(IPipeContext context, CancellationToken token = default(CancellationToken))
 		{
-			IModel channel = this.GetOrCreateChannel(context);
+			IChannel channel = this.GetOrCreateChannel(context);
 			string exchangeName = this.GetExchangeName(context);
 			string routingKey = this.GetRoutingKey(context);
 			bool mandatory = this.GetMandatoryOptions(context);
-			IBasicProperties basicProps = this.GetBasicProps(context);
+			BasicProperties basicProps = this.GetBasicProps(context);
 			byte[] body = this.GetMessageBody(context);
 
 			this._logger.Info("Performing basic publish with routing key {routingKey} on exchange {exchangeName}.", routingKey, exchangeName);
 
-			this.ExclusiveExecute(channel, c => this.BasicPublish(
+			this.ExclusiveExecute(channel, async c => await this.BasicPublishAsync(
 						channel: c,
 						exchange: exchangeName,
 						routingKey: routingKey,
@@ -64,9 +64,9 @@ namespace RawRabbit.Pipe.Middleware
 			await this.Next.InvokeAsync(context, token);
 		}
 
-		protected virtual void BasicPublish(IModel channel, string exchange, string routingKey, bool mandatory, IBasicProperties basicProps, byte[] body, IPipeContext context)
+		protected virtual async Task BasicPublishAsync(IChannel channel, string exchange, string routingKey, bool mandatory, BasicProperties basicProps, ReadOnlyMemory<byte> body, IPipeContext context)
 		{
-			channel.BasicPublish(
+			await channel.BasicPublishAsync(
 				exchange: exchange,
 				routingKey: routingKey,
 				mandatory: mandatory,
@@ -75,7 +75,7 @@ namespace RawRabbit.Pipe.Middleware
 			);
 		}
 
-		protected virtual void ExclusiveExecute(IModel channel, Action<IModel> action, CancellationToken token)
+		protected virtual void ExclusiveExecute(IChannel channel, Action<IChannel> action, CancellationToken token)
 		{
 			this._exclusive.Execute(channel, action, token);
 		}
@@ -90,9 +90,9 @@ namespace RawRabbit.Pipe.Middleware
 			return body;
 		}
 
-		protected virtual IBasicProperties GetBasicProps(IPipeContext context)
+		protected virtual BasicProperties GetBasicProps(IPipeContext context)
 		{
-			IBasicProperties props = this._basicPropsFunc(context);
+			BasicProperties props = this._basicPropsFunc(context);
 			if (props == null)
 			{
 				this._logger.Warn("No basic properties found in the Pipe context.");
@@ -125,9 +125,9 @@ namespace RawRabbit.Pipe.Middleware
 			return exchange;
 		}
 
-		protected virtual IModel GetOrCreateChannel(IPipeContext context)
+		protected virtual IChannel GetOrCreateChannel(IPipeContext context)
 		{
-			IModel channel = this._channelFunc(context);
+			IChannel channel = this._channelFunc(context);
 			if (channel == null)
 			{
 				this._logger.Warn("No channel to perform publish found.");

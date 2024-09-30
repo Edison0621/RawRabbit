@@ -12,7 +12,7 @@ namespace RawRabbit.Pipe.Middleware
 		public Func<IPipeContext, Type> BodyTypeFunc { get; set; }
 		public Func<IPipeContext, string> BodyContentTypeFunc { get; set; }
 		public Func<IPipeContext, bool> ActivateContentTypeCheck{ get; set; }
-		public Func<IPipeContext, byte[]> BodyFunc { get; set; }
+		public Func<IPipeContext, ReadOnlyMemory<byte>?> BodyFunc { get; set; }
 		public Action<IPipeContext, object> PersistAction { get; set; }
 	}
 
@@ -20,7 +20,7 @@ namespace RawRabbit.Pipe.Middleware
 	{
 		protected readonly ISerializer _serializer;
 		protected readonly Func<IPipeContext, Type> _messageTypeFunc;
-		protected readonly Func<IPipeContext, byte[]> _bodyBytesFunc;
+		protected readonly Func<IPipeContext, ReadOnlyMemory<byte>?> _bodyBytesFunc;
 		protected Func<IPipeContext, string> BodyContentTypeFunc { get; set; }
 		protected Func<IPipeContext, bool> ActivateContentTypeCheck { get; set; }
 		protected readonly Action<IPipeContext, object> _persistAction;
@@ -73,7 +73,7 @@ namespace RawRabbit.Pipe.Middleware
 
 		protected virtual object GetMessage(IPipeContext context)
 		{
-			byte[] bodyBytes = this.GetBodyBytes(context);
+			ReadOnlyMemory<byte>? bodyBytes = this.GetBodyBytes(context);
 			Type messageType = this.GetMessageType(context);
 			return this._serializer.Deserialize(messageType, bodyBytes);
 		}
@@ -88,9 +88,9 @@ namespace RawRabbit.Pipe.Middleware
 			return msgType;
 		}
 
-		protected virtual byte[] GetBodyBytes(IPipeContext context)
+		protected virtual ReadOnlyMemory<byte>? GetBodyBytes(IPipeContext context)
 		{
-			byte[] bodyBytes = this._bodyBytesFunc(context);
+			ReadOnlyMemory<byte>? bodyBytes = this._bodyBytesFunc(context);
 			if (bodyBytes == null)
 			{
 				this._logger.Warn("Unable to find Body (bytes) in Pipe context");

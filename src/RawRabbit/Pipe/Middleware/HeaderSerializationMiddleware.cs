@@ -44,7 +44,7 @@ namespace RawRabbit.Pipe.Middleware
 			}
 			IBasicProperties properties = this.GetBasicProperties(context);
 			string headerKey = this.GetHeaderKey(context);
-			if (properties.Headers.ContainsKey(headerKey))
+			if (properties.Headers != null && properties.Headers.ContainsKey(headerKey))
 			{
 				await this.Next.InvokeAsync(context, token);
 				return;

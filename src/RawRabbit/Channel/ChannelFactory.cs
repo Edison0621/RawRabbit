@@ -16,22 +16,22 @@ namespace RawRabbit.Channel
 		private readonly ILog _logger = LogProvider.For<ChannelFactory>();
 		protected readonly IConnectionFactory _connectionFactory;
 		protected readonly RawRabbitConfiguration _clientConfig;
-		protected readonly ConcurrentBag<IModel> _channels;
+		protected readonly ConcurrentBag<IChannel> _channels;
 		protected IConnection _connection;
 
 		public ChannelFactory(IConnectionFactory connectionFactory, RawRabbitConfiguration config)
 		{
 			this._connectionFactory = connectionFactory;
 			this._clientConfig = config;
-			this._channels = new ConcurrentBag<IModel>();
+			this._channels = new ConcurrentBag<IChannel>();
 		}
 
-		public virtual Task ConnectAsync(CancellationToken token = default(CancellationToken))
+		public virtual async Task ConnectAsync(CancellationToken token = default(CancellationToken))
 		{
 			try
 			{
 				this._logger.Debug("Creating a new connection for {hostNameCount} hosts.", this._clientConfig.Hostnames.Count);
-				this._connection = this._connectionFactory.CreateConnection(this._clientConfig.Hostnames, this._clientConfig.ClientProvidedName);
+				this._connection = await this._connectionFactory.CreateConnectionAsync(this._clientConfig.Hostnames, this._clientConfig.ClientProvidedName, token);
 				this._connection.ConnectionShutdown += (sender, args) => this._logger.Warn("Connection was shutdown by {Initiator}. ReplyText {ReplyText}", args.Initiator, args.ReplyText);
 			}
 			catch (BrokerUnreachableException e)
@@ -39,14 +39,13 @@ namespace RawRabbit.Channel
 				this._logger.Info("Unable to connect to broker", e);
 				throw;
 			}
-			return Task.FromResult(true);
 		}
 
-		public virtual async Task<IModel> CreateChannelAsync(CancellationToken token = default(CancellationToken))
+		public virtual async Task<IChannel> CreateChannelAsync(CancellationToken token = default(CancellationToken))
 		{
 			IConnection connection = await this.GetConnectionAsync(token);
 			token.ThrowIfCancellationRequested();
-			IModel channel = connection.CreateModel();
+			IChannel channel = await connection.CreateChannelAsync(cancellationToken: token);
 			this._channels.Add(channel);
 			return channel;
 		}
@@ -105,7 +104,7 @@ namespace RawRabbit.Channel
 
 		public void Dispose()
 		{
-			foreach (IModel channel in this._channels)
+			foreach (IChannel channel in this._channels)
 			{
 				channel?.Dispose();
 			}

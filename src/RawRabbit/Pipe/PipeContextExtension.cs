@@ -32,9 +32,9 @@ namespace RawRabbit.Pipe
 			return context.Get<object>(PipeKey.MessageContext);
 		}
 
-		public static IBasicConsumer GetConsumer(this IPipeContext context)
+		public static IAsyncBasicConsumer GetConsumer(this IPipeContext context)
 		{
-			return context.Get<IBasicConsumer>(PipeKey.Consumer);
+			return context.Get<IAsyncBasicConsumer>(PipeKey.Consumer);
 		}
 
 		public static QueueDeclaration GetQueueDeclaration(this IPipeContext context)
@@ -87,19 +87,19 @@ namespace RawRabbit.Pipe
 			return context.Get<ISubscription>(PipeKey.Subscription);
 		}
 
-		public static IModel GetChannel(this IPipeContext context)
+		public static IChannel GetChannel(this IPipeContext context)
 		{
-			return context.Get<IModel>(PipeKey.Channel);
+			return context.Get<IChannel>(PipeKey.Channel);
 		}
 
-		public static IModel GetTransientChannel(this IPipeContext context)
+		public static IChannel GetTransientChannel(this IPipeContext context)
 		{
-			return context.Get<IModel>(PipeKey.TransientChannel);
+			return context.Get<IChannel>(PipeKey.TransientChannel);
 		}
 
-		public static IBasicProperties GetBasicProperties(this IPipeContext context)
+		public static BasicProperties GetBasicProperties(this IPipeContext context)
 		{
-			return context.Get<IBasicProperties>(PipeKey.BasicProperties);
+			return context.Get<BasicProperties>(PipeKey.BasicProperties);
 		}
 
 		public static BasicDeliverEventArgs GetDeliveryEventArgs(this IPipeContext context)

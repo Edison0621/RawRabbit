@@ -9,7 +9,7 @@ namespace RawRabbit.Pipe.Middleware
 	public class SubscriptionOptions
 	{
 		public Func<IPipeContext, string> QueueNameFunc { get; set; }
-		public Func<IPipeContext, IBasicConsumer> ConsumeFunc{ get; set; }
+		public Func<IPipeContext, IAsyncBasicConsumer> ConsumeFunc{ get; set; }
 		public Action<IPipeContext, ISubscription> SaveInContext { get; set; }
 	}
 
@@ -17,7 +17,7 @@ namespace RawRabbit.Pipe.Middleware
 	{
 		protected readonly ISubscriptionRepository _repo;
 		protected readonly Func<IPipeContext, string> _queueNameFunc;
-		protected readonly Func<IPipeContext, IBasicConsumer> _consumerFunc;
+		protected readonly Func<IPipeContext, IAsyncBasicConsumer> _consumerFunc;
 		protected readonly Action<IPipeContext, ISubscription> _saveInContext;
 
 		public SubscriptionMiddleware(ISubscriptionRepository repo, SubscriptionOptions options = null)
@@ -30,7 +30,7 @@ namespace RawRabbit.Pipe.Middleware
 
 		public override async Task InvokeAsync(IPipeContext context, CancellationToken token = default(CancellationToken))
 		{
-			IBasicConsumer consumer = this.GetConsumer(context);
+			IAsyncBasicConsumer consumer = this.GetConsumer(context);
 			string queueName = this.GetQueueName(context);
 			ISubscription subscription = this.CreateSubscription(consumer, queueName);
 			this.SaveSubscriptionInContext(context, subscription);
@@ -38,7 +38,7 @@ namespace RawRabbit.Pipe.Middleware
 			await this.Next.InvokeAsync(context, token);
 		}
 
-		protected virtual IBasicConsumer GetConsumer(IPipeContext context)
+		protected virtual IAsyncBasicConsumer GetConsumer(IPipeContext context)
 		{
 			return this._consumerFunc(context);
 		}
@@ -48,7 +48,7 @@ namespace RawRabbit.Pipe.Middleware
 			return this._queueNameFunc(context);
 		}
 
-		protected virtual ISubscription CreateSubscription(IBasicConsumer consumer, string queueName)
+		protected virtual ISubscription CreateSubscription(IAsyncBasicConsumer consumer, string queueName)
 		{
 			return new Subscription.Subscription(consumer, queueName);
 		}

@@ -11,26 +11,26 @@ namespace RawRabbit.Channel
 {
 	public interface IChannelPool
 	{
-		Task<IModel> GetAsync(CancellationToken ct = default(CancellationToken));
+		Task<IChannel> GetAsync(CancellationToken ct = default(CancellationToken));
 	}
 
 	public class StaticChannelPool : IDisposable, IChannelPool
 	{
-		protected readonly LinkedList<IModel> _pool;
+		protected readonly LinkedList<IChannel> _pool;
 		protected readonly List<IRecoverable> _recoverables;
 		protected readonly ConcurrentChannelQueue _channelRequestQueue;
 		private readonly object _workLock = new object();
-		private LinkedListNode<IModel> _current;
+		private LinkedListNode<IChannel> _current;
 		private readonly ILog _logger = LogProvider.For<StaticChannelPool>();
 
-		public StaticChannelPool(IEnumerable<IModel> seed)
+		public StaticChannelPool(IEnumerable<IChannel> seed)
 		{
 			seed = seed.ToList();
-			this._pool = new LinkedList<IModel>(seed);
+			this._pool = new LinkedList<IChannel>(seed);
 			this._recoverables = new List<IRecoverable>();
 			this._channelRequestQueue = new ConcurrentChannelQueue();
 			this._channelRequestQueue._queued += (sender, args) => this.StartServeChannels();
-			foreach (IModel channel in seed)
+			foreach (IChannel channel in seed)
 			{
 				this.ConfigureRecovery(channel);
 			}
@@ -76,7 +76,7 @@ namespace RawRabbit.Channel
 						this._logger.Info("No open channels in pool, but {recoveryCount} waiting for recovery", this._recoverables.Count);
 						return;
 					}
-					if (this._channelRequestQueue.TryDequeue(out TaskCompletionSource<IModel> cTsc))
+					if (this._channelRequestQueue.TryDequeue(out TaskCompletionSource<IChannel> cTsc))
 					{
 						cTsc.TrySetResult(this._current.Value);
 					}
@@ -100,14 +100,14 @@ namespace RawRabbit.Channel
 				.Count();
 		}
 
-		protected void ConfigureRecovery(IModel channel)
+		protected void ConfigureRecovery(IChannel channel)
 		{
 			if (!(channel is IRecoverable recoverable))
 			{
 				this._logger.Debug("Channel {channelNumber} is not recoverable. Recovery disabled for this channel.", channel.ChannelNumber);
 				return;
 			}
-			if (channel.IsClosed && channel.CloseReason != null && channel.CloseReason.Initiator == ShutdownInitiator.Application)
+			if (channel.IsClosed && channel.CloseReason is { Initiator: ShutdownInitiator.Application })
 			{
 				this._logger.Debug("{Channel {channelNumber} is closed by the application. Channel will remain closed and not be part of the channel pool", channel.ChannelNumber);
 				return;
@@ -125,7 +125,7 @@ namespace RawRabbit.Channel
 				this._pool.AddLast(channel);
 				this.StartServeChannels();
 			};
-			channel.ModelShutdown += (sender, args) =>
+			channel.ChannelShutdown += (sender, args) =>
 			{
 				if (args.Initiator == ShutdownInitiator.Application)
 				{
@@ -135,22 +135,22 @@ namespace RawRabbit.Channel
 			};
 		}
 
-		public virtual Task<IModel> GetAsync(CancellationToken ct = default(CancellationToken))
+		public virtual Task<IChannel> GetAsync(CancellationToken ct = default(CancellationToken))
 		{
-			TaskCompletionSource<IModel> channelTcs = this._channelRequestQueue.Enqueue();
+			TaskCompletionSource<IChannel> channelTcs = this._channelRequestQueue.Enqueue();
 			ct.Register(() => channelTcs.TrySetCanceled());
 			return channelTcs.Task;
 		}
 
 		public virtual void Dispose()
 		{
-			foreach (IModel channel in this._pool)
+			foreach (IChannel channel in this._pool)
 			{
 				channel?.Dispose();
 			}
 			foreach (IRecoverable recoverable in this._recoverables)
 			{
-				(recoverable as IModel)?.Dispose();
+				(recoverable as IChannel)?.Dispose();
 			}
 		}
 	}

@@ -16,15 +16,15 @@ namespace RawRabbit.Channel
 			: this(factory, CreateSeed(factory, channelCount)) { }
 
 		public ResilientChannelPool(IChannelFactory factory)
-			: this(factory, Enumerable.Empty<IModel>()) { }
+			: this(factory, Enumerable.Empty<IChannel>()) { }
 
-		public ResilientChannelPool(IChannelFactory factory, IEnumerable<IModel> seed) : base(seed)
+		public ResilientChannelPool(IChannelFactory factory, IEnumerable<IChannel> seed) : base(seed)
 		{
 			this._channelFactory = factory;
 			this._desiredChannelCount = seed.Count();
 		}
 
-		private static IEnumerable<IModel> CreateSeed(IChannelFactory factory, int channelCount)
+		private static IEnumerable<IChannel> CreateSeed(IChannelFactory factory, int channelCount)
 		{
 			for (int i = 0; i < channelCount; i++)
 			{
@@ -32,7 +32,7 @@ namespace RawRabbit.Channel
 			}
 		}
 
-		public override async Task<IModel> GetAsync(CancellationToken ct = default(CancellationToken))
+		public override async Task<IChannel> GetAsync(CancellationToken ct = default(CancellationToken))
 		{
 			int currentCount = this.GetActiveChannelCount();
 			if (currentCount < this._desiredChannelCount)
@@ -40,7 +40,7 @@ namespace RawRabbit.Channel
 				int createCount = this._desiredChannelCount - currentCount;
 				for (int i = 0; i < createCount; i++)
 				{
-					IModel channel = await this._channelFactory.CreateChannelAsync(ct);
+					IChannel channel = await this._channelFactory.CreateChannelAsync(ct);
 					this.Add(channel);
 				}
 			}

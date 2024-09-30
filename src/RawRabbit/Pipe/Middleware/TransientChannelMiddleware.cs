@@ -18,7 +18,7 @@ namespace RawRabbit.Pipe.Middleware
 
 		public override async Task InvokeAsync(IPipeContext context, CancellationToken token = default(CancellationToken))
 		{
-			using (IModel channel = await this.CreateChannelAsync(context, token))
+			using (IChannel channel = await this.CreateChannelAsync(context, token))
 			{
 				this._logger.Debug("Adding channel {channelNumber} to Execution Context.", channel.ChannelNumber);
 				context.Properties.Add(PipeKey.TransientChannel, channel);
@@ -26,7 +26,7 @@ namespace RawRabbit.Pipe.Middleware
 			}
 		}
 
-		protected virtual Task<IModel> CreateChannelAsync(IPipeContext context, CancellationToken ct)
+		protected virtual Task<IChannel> CreateChannelAsync(IPipeContext context, CancellationToken ct)
 		{
 			return this._channelFactory.CreateChannelAsync(ct);
 		}

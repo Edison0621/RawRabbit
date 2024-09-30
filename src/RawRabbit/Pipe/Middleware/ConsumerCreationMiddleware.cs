@@ -10,14 +10,14 @@ namespace RawRabbit.Pipe.Middleware
 {
 	public class ConsumerCreationOptions
 	{
-		public Func<IConsumerFactory, CancellationToken, IPipeContext, Task<IBasicConsumer>> ConsumerFunc { get; set; }
+		public Func<IConsumerFactory, CancellationToken, IPipeContext, Task<IAsyncBasicConsumer>> ConsumerFunc { get; set; }
 	}
 
 	public class ConsumerCreationMiddleware : Middleware
 	{
 		protected readonly IConsumerFactory _consumerFactory;
 		protected Func<IPipeContext, ConsumeConfiguration> _configFunc;
-		protected readonly Func<IConsumerFactory, CancellationToken, IPipeContext, Task<IBasicConsumer>> _consumerFunc;
+		protected readonly Func<IConsumerFactory, CancellationToken, IPipeContext, Task<IAsyncBasicConsumer>> _consumerFunc;
 		private readonly ILog _logger = LogProvider.For<ConsumerCreationMiddleware>();
 
 		public ConsumerCreationMiddleware(IConsumerFactory consumerFactory, ConsumerCreationOptions options = null)
@@ -28,14 +28,14 @@ namespace RawRabbit.Pipe.Middleware
 
 		public override async Task InvokeAsync(IPipeContext context, CancellationToken token = default(CancellationToken))
 		{
-			IBasicConsumer consumer = await this.GetOrCreateConsumerAsync(context, token);
+			IAsyncBasicConsumer consumer = await this.GetOrCreateConsumerAsync(context, token);
 			context.Properties.TryAdd(PipeKey.Consumer, consumer);
 			await this.Next.InvokeAsync(context, token);
 		}
 
-		protected virtual Task<IBasicConsumer> GetOrCreateConsumerAsync(IPipeContext context, CancellationToken token)
+		protected virtual Task<IAsyncBasicConsumer> GetOrCreateConsumerAsync(IPipeContext context, CancellationToken token)
 		{
-			Task<IBasicConsumer> consumerTask = this._consumerFunc(this._consumerFactory, token, context);
+			Task<IAsyncBasicConsumer> consumerTask = this._consumerFunc(this._consumerFactory, token, context);
 			if (consumerTask == null)
 			{
 				this._logger.Warn("No Consumer creation task found in Pipe context.");

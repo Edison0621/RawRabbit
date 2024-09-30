@@ -7,14 +7,14 @@ namespace RawRabbit.Pipe.Middleware
 {
 	public class ExchangeDeleteOptions
 	{
-		public Func<IPipeContext, IModel> ChannelFunc { get; set; }
+		public Func<IPipeContext, IChannel> ChannelFunc { get; set; }
 		public Func<IPipeContext, string> ExchangeNameFunc { get; set; }
 		public Func<IPipeContext, bool> IfUsedFunc { get; set; }
 	}
 
 	public class ExchangeDeleteMiddleware : Middleware
 	{
-		protected readonly Func<IPipeContext, IModel> _channelFunc;
+		protected readonly Func<IPipeContext, IChannel> _channelFunc;
 		protected readonly Func<IPipeContext, string> _exchangeNameFunc;
 		protected readonly Func<IPipeContext, bool> _ifUsedFunc;
 
@@ -27,19 +27,19 @@ namespace RawRabbit.Pipe.Middleware
 
 		public override async Task InvokeAsync(IPipeContext context, CancellationToken token = new CancellationToken())
 		{
-			IModel channel = this.GetChannel(context);
+			IChannel channel = this.GetChannel(context);
 			string exchangeName = this.GetExchangeName(context);
 			bool ifUsed = this.GetIfUsed(context);
-			this.DeleteEchange(channel, exchangeName, ifUsed);
+			await this.DeleteExchangeAsync(channel, exchangeName, ifUsed);
 			await this.Next.InvokeAsync(context, token);
 		}
 
-		protected virtual void DeleteEchange(IModel channel, string exchangeName, bool ifUsed)
+		protected virtual async Task DeleteExchangeAsync(IChannel channel, string exchangeName, bool ifUsed)
 		{
-			channel.ExchangeDelete(exchangeName, ifUsed);
+			await channel.ExchangeDeleteAsync(exchangeName, ifUsed);
 		}
 
-		protected virtual IModel GetChannel(IPipeContext context)
+		protected virtual IChannel GetChannel(IPipeContext context)
 		{
 			return this._channelFunc?.Invoke(context);
 		}

@@ -7,9 +7,9 @@ namespace RawRabbit.Consumer
 {
 	public interface IConsumerFactory
 	{
-		Task<IBasicConsumer> GetConsumerAsync(ConsumeConfiguration cfg, IModel channel = null, CancellationToken token = default(CancellationToken));
-		Task<IBasicConsumer> CreateConsumerAsync(IModel channel = null, CancellationToken token = default(CancellationToken));
-		IBasicConsumer ConfigureConsume(IBasicConsumer consumer, ConsumeConfiguration cfg);
-		Task<IBasicConsumer> GetConfiguredConsumerAsync(ConsumeConfiguration cfg, IModel channel = null, CancellationToken token = default(CancellationToken));
+		Task<IAsyncBasicConsumer> GetConsumerAsync(ConsumeConfiguration cfg, IChannel channel = null, CancellationToken token = default(CancellationToken));
+		Task<IAsyncBasicConsumer> CreateConsumerAsync(IChannel channel = null, CancellationToken token = default(CancellationToken));
+		Task<IAsyncBasicConsumer> ConfigureConsumeAsync(IAsyncBasicConsumer consumer, ConsumeConfiguration cfg);
+		Task<IAsyncBasicConsumer> GetConfiguredConsumerAsync(ConsumeConfiguration cfg, IChannel channel = null, CancellationToken token = default(CancellationToken));
 	}
 }

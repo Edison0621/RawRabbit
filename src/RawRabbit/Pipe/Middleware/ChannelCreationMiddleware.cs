@@ -9,16 +9,16 @@ namespace RawRabbit.Pipe.Middleware
 	public class ChannelCreationOptions
 	{
 		public Predicate<IPipeContext> CreatePredicate { get; set; }
-		public Action<IPipeContext, IModel> PostExecuteAction { get; set; }
-		public Func<IChannelFactory, CancellationToken, Task<IModel>> CreateFunc { get; set; }
+		public Action<IPipeContext, IChannel> PostExecuteAction { get; set; }
+		public Func<IChannelFactory, CancellationToken, Task<IChannel>> CreateFunc { get; set; }
 	}
 
 	public class ChannelCreationMiddleware : Middleware
 	{
 		protected readonly IChannelFactory _channelFactory;
 		protected readonly Predicate<IPipeContext> _createPredicate;
-		protected readonly Func<IChannelFactory, CancellationToken, Task<IModel>> _createFunc;
-		protected readonly Action<IPipeContext, IModel> _postExecuteAction;
+		protected readonly Func<IChannelFactory, CancellationToken, Task<IChannel>> _createFunc;
+		protected readonly Action<IPipeContext, IChannel> _postExecuteAction;
 
 		public ChannelCreationMiddleware(IChannelFactory channelFactory, ChannelCreationOptions options = null)
 		{
@@ -32,7 +32,7 @@ namespace RawRabbit.Pipe.Middleware
 		{
 			if (this.ShouldCreateChannel(context))
 			{
-				IModel channel = await this.GetOrCreateChannelAsync(this._channelFactory, token);
+				IChannel channel = await this.GetOrCreateChannelAsync(this._channelFactory, token);
 				context.Properties.TryAdd(PipeKey.Channel, channel);
 				this._postExecuteAction?.Invoke(context, channel);
 			}
@@ -41,7 +41,7 @@ namespace RawRabbit.Pipe.Middleware
 
 		}
 
-		protected virtual Task<IModel> GetOrCreateChannelAsync(IChannelFactory factory, CancellationToken token)
+		protected virtual Task<IChannel> GetOrCreateChannelAsync(IChannelFactory factory, CancellationToken token)
 		{
 			return this._createFunc(factory, token);
 		}

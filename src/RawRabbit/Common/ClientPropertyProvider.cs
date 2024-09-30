@@ -17,7 +17,7 @@ namespace RawRabbit.Common
 			Dictionary<string, object> props = new Dictionary<string, object>
 			{
 				{ "product", "RawRabbit" },
-				{ "version", typeof(IBusClient).GetTypeInfo().Assembly.GetName().Version.ToString() },
+				{ "version", typeof(IBusClient).GetTypeInfo().Assembly.GetName().Version?.ToString() },
 				{ "platform", ".NET" },
 				{ "client_directory", typeof(IBusClient).GetTypeInfo().Assembly.CodeBase},
 				{ "client_server", Environment.MachineName },

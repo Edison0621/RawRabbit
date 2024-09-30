@@ -11,7 +11,7 @@ namespace RawRabbit.Pipe.Middleware
 	public class ExplicitAckOptions
 	{
 		public Func<IPipeContext, Task> InvokeMessageHandlerFunc { get; set; }
-		public Func<IPipeContext, IBasicConsumer> ConsumerFunc { get; set; }
+		public Func<IPipeContext, IAsyncBasicConsumer> ConsumerFunc { get; set; }
 		public Func<IPipeContext, BasicDeliverEventArgs> DeliveryArgsFunc { get; set; }
 		public Func<IPipeContext, bool> AutoAckFunc { get; set; }
 		public Func<IPipeContext, Acknowledgement> GetMessageAcknowledgement { get; set; }
@@ -24,7 +24,7 @@ namespace RawRabbit.Pipe.Middleware
 		protected readonly ITopologyProvider _topology;
 		protected readonly IChannelFactory _channelFactory;
 		protected readonly Func<IPipeContext, BasicDeliverEventArgs> _deliveryArgsFunc;
-		protected readonly Func<IPipeContext, IBasicConsumer> _consumerFunc;
+		protected readonly Func<IPipeContext, IAsyncBasicConsumer> _consumerFunc;
 		protected readonly Func<IPipeContext, Acknowledgement> _messageAcknowledgementFunc;
 		protected readonly Predicate<Acknowledgement> _abortExecution;
 		protected readonly Func<IPipeContext, bool> _autoAckFunc;
@@ -63,7 +63,7 @@ namespace RawRabbit.Pipe.Middleware
 				throw new NotSupportedException("Invocation Result of Message Handler not found.");
 			}
 			BasicDeliverEventArgs deliveryArgs = this._deliveryArgsFunc(context);
-			IModel channel = this._consumerFunc(context).Model;
+			IChannel channel = this._consumerFunc(context).Channel;
 
 			if (channel == null)
 			{
@@ -92,32 +92,32 @@ namespace RawRabbit.Pipe.Middleware
 			switch (ack)
 			{
 				case Ack async:
-					this.HandleAck(async, channel, deliveryArgs);
+					await this.HandleAckAsync(async, channel, deliveryArgs);
 					return async;
 				case Nack nack:
-					this.HandleNack(nack, channel, deliveryArgs);
+					await this.HandleNackAsync(nack, channel, deliveryArgs);
 					return nack;
 				case Reject reject:
-					this.HandleReject(reject, channel, deliveryArgs);
+					await this.HandleRejectAsync(reject, channel, deliveryArgs);
 					return reject;
 				default:
 					throw new NotSupportedException($"Unable to handle {ack.GetType()} as an Acknowledgement.");
 			}
 		}
 
-		protected virtual void HandleAck(Ack ack, IModel channel, BasicDeliverEventArgs deliveryArgs)
+		protected virtual async Task HandleAckAsync(Ack ack, IChannel channel, BasicDeliverEventArgs deliveryArgs)
 		{
-			channel.BasicAck(deliveryArgs.DeliveryTag, false);
+			await channel.BasicAckAsync(deliveryArgs.DeliveryTag, false);
 		}
 
-		protected virtual void HandleNack(Nack nack, IModel channel, BasicDeliverEventArgs deliveryArgs)
+		protected virtual async Task HandleNackAsync(Nack nack, IChannel channel, BasicDeliverEventArgs deliveryArgs)
 		{
-			channel.BasicNack(deliveryArgs.DeliveryTag, false, nack.Requeue);
+			await channel.BasicNackAsync(deliveryArgs.DeliveryTag, false, nack.Requeue);
 		}
 
-		protected virtual void HandleReject(Reject reject, IModel channel, BasicDeliverEventArgs deliveryArgs)
+		protected virtual async Task HandleRejectAsync(Reject reject, IChannel channel, BasicDeliverEventArgs deliveryArgs)
 		{
-			channel.BasicReject(deliveryArgs.DeliveryTag, reject.Requeue);
+			await channel.BasicRejectAsync(deliveryArgs.DeliveryTag, reject.Requeue);
 		}
 
 		protected virtual bool GetAutoAck(IPipeContext context)

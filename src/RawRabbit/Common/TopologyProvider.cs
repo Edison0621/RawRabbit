@@ -25,9 +25,9 @@ namespace RawRabbit.Common
 	public class TopologyProvider : ITopologyProvider, IDisposable
 	{
 		private readonly IChannelFactory _channelFactory;
-		private IModel _channel;
+		private IChannel _channel;
 		private readonly object _processLock = new object();
-		private readonly Task _completed = Task.FromResult(true);
+		private readonly Task _completed = Task.CompletedTask;
 		private readonly List<string> _initExchanges;
 		private readonly List<string> _initQueues;
 		private readonly List<string> _queueBinds;
@@ -43,33 +43,31 @@ namespace RawRabbit.Common
 			this._topologyTasks = new ConcurrentQueue<ScheduledTopologyTask>();
 		}
 
-		public Task DeclareExchangeAsync(ExchangeDeclaration exchange)
+		public async Task DeclareExchangeAsync(ExchangeDeclaration exchange)
 		{
 			if (this.IsDeclared(exchange))
 			{
-				return this._completed;
+				return;
 			}
 
 			ScheduledExchangeTask scheduled = new ScheduledExchangeTask(exchange);
 			this._topologyTasks.Enqueue(scheduled);
-			this.EnsureWorker();
-			return scheduled.TaskCompletionSource.Task;
+			await this.EnsureWorkerAsync();
 		}
 
-		public Task DeclareQueueAsync(QueueDeclaration queue)
+		public async Task DeclareQueueAsync(QueueDeclaration queue)
 		{
 			if (this.IsDeclared(queue))
 			{
-				return this._completed;
+				return;
 			}
 
 			ScheduledQueueTask scheduled = new ScheduledQueueTask(queue);
 			this._topologyTasks.Enqueue(scheduled);
-			this.EnsureWorker();
-			return scheduled.TaskCompletionSource.Task;
+			await this.EnsureWorkerAsync();
 		}
 
-		public Task BindQueueAsync(string queue, string exchange, string routingKey, IDictionary<string,object> arguments)
+		public async Task BindQueueAsync(string queue, string exchange, string routingKey, IDictionary<string,object> arguments)
 		{
 			if (string.Equals(exchange, string.Empty))
 			{
@@ -78,13 +76,13 @@ namespace RawRabbit.Common
 					with a routing key equal to the queue name. It it not possible
 					to explicitly bind to, or unbind from the default exchange."
 				*/
-				return this._completed;
+				return;
 			}
 
 			string bindKey = CreateBindKey(queue, exchange, routingKey, arguments);
 			if (this._queueBinds.Contains(bindKey))
 			{
-				return this._completed;
+				return;
 			}
 			ScheduledBindQueueTask scheduled = new ScheduledBindQueueTask
 			{
@@ -94,11 +92,10 @@ namespace RawRabbit.Common
 				Arguments = arguments
 			};
 			this._topologyTasks.Enqueue(scheduled);
-			this.EnsureWorker();
-			return scheduled.TaskCompletionSource.Task;
+			await this.EnsureWorkerAsync();
 		}
 
-		public Task UnbindQueueAsync(string queue, string exchange, string routingKey, IDictionary<string, object> arguments)
+		public async Task UnbindQueueAsync(string queue, string exchange, string routingKey, IDictionary<string, object> arguments)
 		{
 			ScheduledUnbindQueueTask scheduled = new ScheduledUnbindQueueTask
 			{
@@ -107,9 +104,9 @@ namespace RawRabbit.Common
 				RoutingKey = routingKey,
 				Arguments = arguments
 			};
+
 			this._topologyTasks.Enqueue(scheduled);
-			this.EnsureWorker();
-			return scheduled.TaskCompletionSource.Task;
+			await this.EnsureWorkerAsync();
 		}
 
 		public bool IsDeclared(ExchangeDeclaration exchange)
@@ -122,7 +119,7 @@ namespace RawRabbit.Common
 			return queue.IsDirectReplyTo() || this._initQueues.Contains(queue.Name);
 		}
 
-		private void BindQueueToExchange(ScheduledBindQueueTask bind)
+		private async Task BindQueueToExchange(ScheduledBindQueueTask bind)
 		{
 			string bindKey = CreateBindKey(bind);
 			if (this._queueBinds.Contains(bindKey))
@@ -132,8 +129,8 @@ namespace RawRabbit.Common
 
 			this._logger.Info("Binding queue {queueName} to exchange {exchangeName} with routing key {routingKey}", bind.Queue, bind.Exchange, bind.RoutingKey);
 
-			IModel channel = this.GetOrCreateChannel();
-			channel.QueueBind(
+			IChannel channel = await this.GetOrCreateChannel();
+			await channel.QueueBindAsync(
 				queue: bind.Queue,
 				exchange: bind.Exchange,
 				routingKey: bind.RoutingKey,
@@ -142,12 +139,12 @@ namespace RawRabbit.Common
 			this._queueBinds.Add(bindKey);
 		}
 
-		private void UnbindQueueFromExchange(ScheduledUnbindQueueTask bind)
+		private async Task UnbindQueueFromExchange(ScheduledUnbindQueueTask bind)
 		{
 			this._logger.Info("Unbinding queue {queueName} from exchange {exchangeName} with routing key {routingKey}", bind.Queue, bind.Exchange, bind.RoutingKey);
 
-			IModel channel = this.GetOrCreateChannel();
-			channel.QueueUnbind(
+			IChannel channel = await this.GetOrCreateChannel();
+			await channel.QueueUnbindAsync(
 				queue: bind.Queue,
 				exchange: bind.Exchange,
 				routingKey: bind.RoutingKey,
@@ -182,7 +179,7 @@ namespace RawRabbit.Common
 			return bindKey;
 		}
 
-		private void DeclareQueue(QueueDeclaration queue)
+		private async Task DeclareQueue(QueueDeclaration queue)
 		{
 			if (this.IsDeclared(queue))
 			{
@@ -191,8 +188,8 @@ namespace RawRabbit.Common
 
 			this._logger.Info("Declaring queue {queueName}.", queue.Name);
 
-			IModel channel = this.GetOrCreateChannel();
-			channel.QueueDeclare(
+			IChannel channel = await this.GetOrCreateChannel();
+			await channel.QueueDeclareAsync(
 				queue.Name,
 				queue.Durable,
 				queue.Exclusive,
@@ -205,7 +202,7 @@ namespace RawRabbit.Common
 			}
 		}
 
-		private void DeclareExchange(ExchangeDeclaration exchange)
+		private async Task DeclareExchange(ExchangeDeclaration exchange)
 		{
 			if (this.IsDeclared(exchange))
 			{
@@ -213,8 +210,8 @@ namespace RawRabbit.Common
 			}
 
 			this._logger.Info("Declaring exchange {exchangeName}.", exchange.Name);
-			IModel channel = this.GetOrCreateChannel();
-			channel.ExchangeDeclare(
+			IChannel channel = await this.GetOrCreateChannel();
+			await channel.ExchangeDeclareAsync(
 				exchange.Name,
 				exchange.ExchangeType,
 				exchange.Durable,
@@ -226,7 +223,7 @@ namespace RawRabbit.Common
 			}
 		}
 
-		private void EnsureWorker()
+		private async Task EnsureWorkerAsync()
 		{
 			if (!Monitor.TryEnter(this._processLock))
 			{
@@ -241,7 +238,7 @@ namespace RawRabbit.Common
 					case ScheduledExchangeTask exchange:
 						try
 						{
-							this.DeclareExchange(exchange.Declaration);
+							await this.DeclareExchange(exchange.Declaration);
 							exchange.TaskCompletionSource.TrySetResult(true);
 						}
 						catch (Exception e)
@@ -254,7 +251,7 @@ namespace RawRabbit.Common
 					case ScheduledQueueTask queue:
 						try
 						{
-							this.DeclareQueue(queue.Configuration);
+							await this.DeclareQueue(queue.Configuration);
 							queue.TaskCompletionSource.TrySetResult(true);
 						}
 						catch (Exception e)
@@ -267,7 +264,7 @@ namespace RawRabbit.Common
 					case ScheduledBindQueueTask bind:
 						try
 						{
-							this.BindQueueToExchange(bind);
+							await this.BindQueueToExchange(bind);
 							bind.TaskCompletionSource.TrySetResult(true);
 						}
 						catch (Exception e)
@@ -279,7 +276,7 @@ namespace RawRabbit.Common
 					case ScheduledUnbindQueueTask unbind:
 						try
 						{
-							this.UnbindQueueFromExchange(unbind);
+							await this.UnbindQueueFromExchange(unbind);
 							unbind.TaskCompletionSource.TrySetResult(true);
 						}
 						catch (Exception e)
@@ -296,17 +293,14 @@ namespace RawRabbit.Common
 			Monitor.Exit(this._processLock);
 		}
 
-		private IModel GetOrCreateChannel()
+		private async Task<IChannel> GetOrCreateChannel()
 		{
 			if (this._channel?.IsOpen ?? false)
 			{
 				return this._channel;
 			}
 
-			this._channel = this._channelFactory
-				.CreateChannelAsync()
-				.GetAwaiter()
-				.GetResult();
+			this._channel = await this._channelFactory.CreateChannelAsync();
 			return this._channel;
 		}
 

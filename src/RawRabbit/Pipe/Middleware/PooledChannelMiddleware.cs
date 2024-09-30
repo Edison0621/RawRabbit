@@ -9,14 +9,14 @@ namespace RawRabbit.Pipe.Middleware
 	public class PooledChannelOptions
 	{
 		public Func<IPipeContext, string> PoolNameFunc { get; set; }
-		public Action<IPipeContext, IModel> SaveInContextAction { get; set; }
+		public Action<IPipeContext, IChannel> SaveInContextAction { get; set; }
 	}
 
 	public class PooledChannelMiddleware : Middleware
 	{
 		protected readonly IChannelPoolFactory _poolFactory;
 		protected readonly Func<IPipeContext, string> _poolNameFunc;
-		protected readonly Action<IPipeContext, IModel> _saveInContextAction;
+		protected readonly Action<IPipeContext, IChannel> _saveInContextAction;
 
 		public PooledChannelMiddleware(IChannelPoolFactory poolFactory, PooledChannelOptions options = null)
 		{
@@ -27,7 +27,7 @@ namespace RawRabbit.Pipe.Middleware
 
 		public override async Task InvokeAsync(IPipeContext context, CancellationToken token = default(CancellationToken))
 		{
-			IModel channel = await this.GetChannelAsync(context, token);
+			IChannel channel = await this.GetChannelAsync(context, token);
 			this.SaveInContext(context, channel);
 			await this.Next.InvokeAsync(context, token);
 		}
@@ -43,13 +43,13 @@ namespace RawRabbit.Pipe.Middleware
 			return this._poolFactory.GetChannelPool(poolName);
 		}
 
-		protected virtual Task<IModel> GetChannelAsync(IPipeContext context, CancellationToken ct)
+		protected virtual Task<IChannel> GetChannelAsync(IPipeContext context, CancellationToken ct)
 		{
 			IChannelPool channelPool = this.GetChannelPool(context);
 			return channelPool.GetAsync(ct);
 		}
 
-		protected virtual void SaveInContext(IPipeContext context, IModel channel)
+		protected virtual void SaveInContext(IPipeContext context, IChannel channel)
 		{
 			this._saveInContextAction?.Invoke(context, channel);
 		}

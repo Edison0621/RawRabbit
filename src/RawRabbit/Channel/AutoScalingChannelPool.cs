@@ -39,7 +39,7 @@ namespace RawRabbit.Channel
 			}
 		}
 
-		public override async Task<IModel> GetAsync(CancellationToken ct = default(CancellationToken))
+		public override async Task<IChannel> GetAsync(CancellationToken ct = default(CancellationToken))
 		{
 			int activeChannels = this.GetActiveChannelCount();
 			if (activeChannels  < this._options.MinimunPoolSize)
@@ -48,7 +48,7 @@ namespace RawRabbit.Channel
 				int delta = this._options.MinimunPoolSize - this._pool.Count;
 				for (int i = 0; i < delta; i++)
 				{
-					IModel channel = await this._factory.CreateChannelAsync(ct);
+					IChannel channel = await this._factory.CreateChannelAsync(ct);
 					this.Add(channel);
 				}
 			}
@@ -90,12 +90,12 @@ namespace RawRabbit.Channel
 				if (scaleDown && workPerChannel < this._options.DesiredAverageWorkload)
 				{
 					this._logger.Debug("The estimated workload is {averageWorkload} operations/channel, which is lower than the desired workload ({desiredAverageWorkload}). Creating channel.", workPerChannel, this._options.DesiredAverageWorkload);
-					IModel toRemove = this._pool.FirstOrDefault();
+					IChannel toRemove = this._pool.FirstOrDefault();
 					this._pool.Remove(toRemove);
 					Timer disposeTimer = null;
 					disposeTimer = new Timer(o =>
 					{
-						(o as IModel)?.Dispose();
+						(o as IChannel)?.Dispose();
 						// ReSharper disable once AccessToModifiedClosure
 						disposeTimer?.Dispose();
 					}, toRemove, this._options.GracefulCloseInterval, new TimeSpan(-1));

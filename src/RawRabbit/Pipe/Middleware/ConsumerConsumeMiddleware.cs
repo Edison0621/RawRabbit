@@ -11,7 +11,7 @@ namespace RawRabbit.Pipe.Middleware
 	public class BasicConsumeOptions
 	{
 		public Func<IPipeContext, ConsumeConfiguration> ConsumeConfigFunc { get; set; }
-		public Func<IPipeContext, IBasicConsumer> ConsumerFunc { get; set; }
+		public Func<IPipeContext, IAsyncBasicConsumer> ConsumerFunc { get; set; }
 		public Func<IPipeContext, bool> ConfigValidatePredicate { get; set; }
 	}
 
@@ -19,7 +19,7 @@ namespace RawRabbit.Pipe.Middleware
 	{
 		private readonly IConsumerFactory _factory;
 		protected readonly Func<IPipeContext, ConsumeConfiguration> _consumeConfigFunc;
-		protected readonly Func<IPipeContext, IBasicConsumer> _consumerFunc;
+		protected readonly Func<IPipeContext, IAsyncBasicConsumer> _consumerFunc;
 		protected Func<IPipeContext, bool> _configValidatePredicate;
 		private readonly ILog _logger = LogProvider.For<ConsumerConsumeMiddleware>();
 
@@ -40,7 +40,7 @@ namespace RawRabbit.Pipe.Middleware
 				return;
 			}
 
-			IBasicConsumer consumer = this.GetConsumer(context);
+			IAsyncBasicConsumer consumer = this.GetConsumer(context);
 			if (consumer == null)
 			{
 				this._logger.Info("Consumer not found. Will not consume on queue {queueName}.", config.QueueName);
@@ -56,14 +56,14 @@ namespace RawRabbit.Pipe.Middleware
 			return this._consumeConfigFunc?.Invoke(context);
 		}
 
-		protected virtual IBasicConsumer GetConsumer(IPipeContext context)
+		protected virtual IAsyncBasicConsumer GetConsumer(IPipeContext context)
 		{
 			return this._consumerFunc?.Invoke(context);
 		}
 
-		protected virtual void BasicConsume(IBasicConsumer consumer, ConsumeConfiguration config)
+		protected virtual void BasicConsume(IAsyncBasicConsumer consumer, ConsumeConfiguration config)
 		{
-			this._factory.ConfigureConsume(consumer, config);
+			this._factory.ConfigureConsumeAsync(consumer, config);
 		}
 	}
 }

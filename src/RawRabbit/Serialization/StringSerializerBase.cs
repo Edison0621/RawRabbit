@@ -15,7 +15,7 @@ namespace RawRabbit.Serialization
 			return this.ConvertToBytes(serialized);
 		}
 
-		public object Deserialize(Type type, byte[] bytes)
+		public object Deserialize(Type type, ReadOnlyMemory<byte>? bytes)
 		{
 			if (bytes == null)
 			{
@@ -25,7 +25,7 @@ namespace RawRabbit.Serialization
 			return this.Deserialize(type, serialized);
 		}
 
-		public TType Deserialize<TType>(byte[] bytes)
+		public TType Deserialize<TType>(ReadOnlyMemory<byte>? bytes)
 		{
 			string serialized = this.ConvertToString(bytes);
 			return (TType)this.Deserialize(typeof(TType), serialized);
@@ -36,9 +36,9 @@ namespace RawRabbit.Serialization
 			return Encoding.UTF8.GetBytes(serialzed);
 		}
 
-		protected virtual string ConvertToString(byte[] bytes)
+		protected virtual string ConvertToString(ReadOnlyMemory<byte>? bytes)
 		{
-			return Encoding.UTF8.GetString(bytes);
+			return Encoding.UTF8.GetString(bytes?.ToArray());
 		}
 	}
 }

@@ -12,7 +12,7 @@ namespace RawRabbit.Pipe.Middleware
 	public class ConsumeOptions
 	{
 		public Action<IPipeBuilder> Pipe { get; set; }
-		public Func<IPipeContext, IBasicConsumer> ConsumerFunc { get; set; }
+		public Func<IPipeContext, IAsyncBasicConsumer> ConsumerFunc { get; set; }
 		public Func<IPipeContext, Action<Func<Task>, CancellationToken>> ThrottleFuncFunc { get; set; }
 	}
 
@@ -20,7 +20,7 @@ namespace RawRabbit.Pipe.Middleware
 	{
 		protected readonly IPipeContextFactory _contextFactory;
 		protected readonly Middleware _consumePipe;
-		protected readonly Func<IPipeContext, IBasicConsumer> _consumeFunc;
+		protected readonly Func<IPipeContext, IAsyncBasicConsumer> _consumeFunc;
 		protected Func<IPipeContext, SemaphoreSlim> _semaphoreFunc;
 		protected readonly Func<IPipeContext, Action<Func<Task>, CancellationToken>> _throttledExecutionFunc;
 		private readonly ILog _logger = LogProvider.For<ConsumerMessageHandlerMiddleware>();
@@ -35,11 +35,13 @@ namespace RawRabbit.Pipe.Middleware
 
 		public override async Task InvokeAsync(IPipeContext context, CancellationToken token = default(CancellationToken))
 		{
-			IBasicConsumer consumer = this._consumeFunc(context);
+			IAsyncBasicConsumer consumer = this._consumeFunc(context);
 			Action<Func<Task>, CancellationToken> throttlingFunc = this.GetThrottlingFunc(context);
 			consumer.OnMessage((sender, args) =>
 			{
 				throttlingFunc(() => this.InvokeConsumePipeAsync(context, args, token), token);
+
+				return Task.CompletedTask;
 			});
 
 			await this.Next.InvokeAsync(context, token);
@@ -52,7 +54,7 @@ namespace RawRabbit.Pipe.Middleware
 
 		protected virtual async Task InvokeConsumePipeAsync(IPipeContext context, BasicDeliverEventArgs args, CancellationToken token)
 		{
-			this._logger.Debug("Invoking consumer pipe for message {messageId}", args?.BasicProperties?.MessageId);
+			this._logger.Debug("Invoking consumer pipe for message {messageId}", args?.BasicProperties.MessageId);
 			IPipeContext consumeContext = this._contextFactory.CreateContext(context.Properties.ToArray());
 			consumeContext.Properties.Add(PipeKey.DeliveryEventArgs, args);
 			try

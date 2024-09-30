@@ -1,7 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
 using RabbitMQ.Client;
-using RabbitMQ.Client.Framing;
 using RawRabbit.Common;
 using RawRabbit.Serialization;
 
@@ -71,7 +70,7 @@ namespace RawRabbit.Configuration.BasicPublish
 			{
 				Type = type.GetUserFriendlyName(),
 				MessageId = Guid.NewGuid().ToString(),
-				DeliveryMode = this._config.PersistentDeliveryMode ? Convert.ToByte(2) : Convert.ToByte(1),
+				DeliveryMode = this._config.PersistentDeliveryMode ? DeliveryModes.Persistent : DeliveryModes.Transient,
 				ContentType = this._serializer.ContentType,
 				ContentEncoding = "UTF-8",
 				UserId = this._config.Username,

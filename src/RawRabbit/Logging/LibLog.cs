@@ -952,6 +952,7 @@ namespace RawRabbit.Logging.LogProviders
 			private static readonly object _levelError;
 			private static readonly object _levelFatal;
 
+			// ReSharper disable once FunctionComplexityOverflow
 			static NLogLogger()
 			{
 				try

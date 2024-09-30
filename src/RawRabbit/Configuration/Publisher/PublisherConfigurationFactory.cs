@@ -1,5 +1,5 @@
 ﻿using System;
-using RabbitMQ.Client.Framing;
+using RabbitMQ.Client;
 using RawRabbit.Configuration.BasicPublish;
 using RawRabbit.Configuration.Exchange;
 
