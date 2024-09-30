@@ -2,7 +2,6 @@
 using System.Threading;
 using System.Threading.Tasks;
 using Polly;
-using Polly.NoOp;
 using RabbitMQ.Client;
 using RawRabbit.Configuration;
 
@@ -10,9 +9,9 @@ namespace RawRabbit.Enrichers.Polly.Services;
 
 public class ChannelFactory : Channel.ChannelFactory
 {
-	protected readonly AsyncNoOpPolicy _createChannelPolicy;
-	protected readonly AsyncNoOpPolicy _connectPolicy;
-	protected readonly AsyncNoOpPolicy _getConnectionPolicy;
+	protected readonly AsyncPolicy _createChannelPolicy;
+	protected readonly AsyncPolicy _connectPolicy;
+	protected readonly AsyncPolicy _getConnectionPolicy;
 
 	public ChannelFactory(IConnectionFactory connectionFactory, RawRabbitConfiguration config, ConnectionPolicies policies = null)
 		: base(connectionFactory, config)
@@ -65,15 +64,15 @@ public class ConnectionPolicies
 	/// Used whenever 'CreateChannelAsync' is called.
 	/// Expects an async policy.
 	/// </summary>
-	public AsyncNoOpPolicy CreateChannel { get; set; }
+	public AsyncPolicy CreateChannel { get; set; }
 
 	/// <summary>
 	/// Used whenever an existing connection is retrieved.
 	/// </summary>
-	public AsyncNoOpPolicy GetConnection { get; set; }
+	public AsyncPolicy GetConnection { get; set; }
 
 	/// <summary>
 	/// Used when establishing the initial connection
 	/// </summary>
-	public AsyncNoOpPolicy Connect { get; set; }
+	public AsyncPolicy Connect { get; set; }
 }

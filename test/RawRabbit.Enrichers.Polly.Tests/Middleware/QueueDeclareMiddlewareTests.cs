@@ -17,8 +17,8 @@ namespace RawRabbit.Enrichers.Polly.Tests.Middleware
 		[Fact]
 		public async Task Should_Invoke_Queue_Declare_Policy_With_Correct_Context()
 		{
-			Mock<ITopologyProvider> topology = new Mock<ITopologyProvider>();
-			QueueDeclaration queueDeclaration = new QueueDeclaration();
+			Mock<ITopologyProvider> topology = new();
+			QueueDeclaration queueDeclaration = new();
 			bool policyCalled = false;
 			Context capturedContext = null;
 
@@ -27,7 +27,7 @@ namespace RawRabbit.Enrichers.Polly.Tests.Middleware
 				.Throws(new OperationInterruptedException(null))
 				.Returns(Task.CompletedTask);
 
-			PipeContext context = new PipeContext
+			PipeContext context = new()
 			{
 				Properties = new Dictionary<string, object>
 				{
@@ -42,7 +42,7 @@ namespace RawRabbit.Enrichers.Polly.Tests.Middleware
 					policyCalled = true;
 					capturedContext = pollyContext;
 				}), PolicyKeys.QueueDeclare);
-			QueueDeclareMiddleware middleware = new QueueDeclareMiddleware(topology.Object) {Next = new NoOpMiddleware()};
+			QueueDeclareMiddleware middleware = new(topology.Object) {Next = new NoOpMiddleware()};
 
 			/* Test */
 			await middleware.InvokeAsync(context);
