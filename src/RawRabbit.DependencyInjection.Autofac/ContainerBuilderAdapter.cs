@@ -33,7 +33,7 @@ public class ContainerBuilderAdapter : IDependencyRegister
 	public IDependencyRegister AddSingleton<TService>(TService instance) where TService : class
 	{
 		this._builder
-			.Register<TService>(context => instance)
+			.Register<TService>(_ => instance)
 			.As<TService>()
 			.SingleInstance();
 		return this;

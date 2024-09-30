@@ -25,7 +25,7 @@ public class ChannelFactory : Channel.ChannelFactory
 	public override Task ConnectAsync(CancellationToken token = default)
 	{
 		return this._connectPolicy.ExecuteAsync(
-			action: ct => base.ConnectAsync(token),
+			action: _ => base.ConnectAsync(token),
 			contextData: new Dictionary<string, object>
 			{
 				[RetryKey.ConnectionFactory] = this._connectionFactory,
@@ -37,7 +37,7 @@ public class ChannelFactory : Channel.ChannelFactory
 	protected override Task<IConnection> GetConnectionAsync(CancellationToken token = default)
 	{
 		return this._getConnectionPolicy.ExecuteAsync(
-			action: ct => base.GetConnectionAsync(token),
+			action: _ => base.GetConnectionAsync(token),
 			contextData: new Dictionary<string, object>
 			{
 				[RetryKey.ConnectionFactory] = this._connectionFactory,
@@ -49,7 +49,7 @@ public class ChannelFactory : Channel.ChannelFactory
 	public override Task<IChannel> CreateChannelAsync(CancellationToken token = default)
 	{
 		return this._createChannelPolicy.ExecuteAsync(
-			action: ct => base.CreateChannelAsync(token),
+			action: _ => base.CreateChannelAsync(token),
 			contextData: new Dictionary<string, object>
 			{
 				[RetryKey.ConnectionFactory] = this._connectionFactory,

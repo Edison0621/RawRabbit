@@ -14,7 +14,7 @@ public class ServiceProviderAdapter : IDependencyResolver
 
 	public ServiceProviderAdapter(IServiceCollection collection)
 	{
-		collection.AddSingleton<IDependencyResolver, ServiceProviderAdapter>(provider => this);
+		collection.AddSingleton<IDependencyResolver, ServiceProviderAdapter>(_ => this);
 		this._provider = collection.BuildServiceProvider();
 	}
 

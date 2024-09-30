@@ -14,30 +14,30 @@ public class RawRabbitFactory
 		where TMessageContext : IMessageContext
 	{
 		options = options ?? new RawRabbitOptions();
-		options.DependencyInjection = options.DependencyInjection ?? (register => { });
+		options.DependencyInjection = options.DependencyInjection ?? (_ => { });
 		options.DependencyInjection += register => register.AddSingleton<IConfigurationEvaluator, ConfigurationEvaluator>();
 		options.ClientConfiguration = options.ClientConfiguration ?? RawRabbitConfiguration.Local;
-		options.Plugins = options.Plugins ?? (builder => { });
+		options.Plugins = options.Plugins ?? (_ => { });
 		options.Plugins += builder => builder
-			.UseMessageContext(context => new MessageContext { GlobalRequestId = Guid.NewGuid() })
+			.UseMessageContext(_ => new MessageContext { GlobalRequestId = Guid.NewGuid() })
 			.UseContextForwarding();
 		SimpleDependencyInjection simpleIoc = new();
-		Instantiation.Disposable.BusClient client = Instantiation.RawRabbitFactory.CreateSingleton(options, simpleIoc, ioc => simpleIoc);
+		Instantiation.Disposable.BusClient client = Instantiation.RawRabbitFactory.CreateSingleton(options, simpleIoc, _ => simpleIoc);
 		return new BusClient<TMessageContext>(client, simpleIoc.GetService<IConfigurationEvaluator>());
 	}
 
 	public static IBusClient CreateClient(RawRabbitOptions options = null)
 	{
 		options = options ?? new RawRabbitOptions();
-		options.DependencyInjection = options.DependencyInjection ?? (register => { });
+		options.DependencyInjection = options.DependencyInjection ?? (_ => { });
 		options.DependencyInjection += register => register.AddSingleton<IConfigurationEvaluator, ConfigurationEvaluator>();
 		options.ClientConfiguration = options.ClientConfiguration ?? RawRabbitConfiguration.Local;
-		options.Plugins = options.Plugins ?? (builder => { });
+		options.Plugins = options.Plugins ?? (_ => { });
 		options.Plugins += builder => builder
-			.UseMessageContext(context => new MessageContext {GlobalRequestId = Guid.NewGuid()})
+			.UseMessageContext(_ => new MessageContext {GlobalRequestId = Guid.NewGuid()})
 			.UseContextForwarding();
 		SimpleDependencyInjection simpleIoc = new();
-		Instantiation.Disposable.BusClient client = Instantiation.RawRabbitFactory.CreateSingleton(options, simpleIoc, ioc => simpleIoc);
+		Instantiation.Disposable.BusClient client = Instantiation.RawRabbitFactory.CreateSingleton(options, simpleIoc, _ => simpleIoc);
 		return new BusClient(client, simpleIoc.GetService<IConfigurationEvaluator>());
 	}
 }

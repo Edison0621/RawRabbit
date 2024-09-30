@@ -22,27 +22,27 @@ public class SimpleDependencyInjection : IDependencyRegister, IDependencyResolve
 
 	public IDependencyRegister AddTransient<TService, TImplementation>() where TImplementation : class, TService where TService : class
 	{
-		this.AddTransient<TService, TImplementation>(resolver => this.GetService(typeof(TImplementation)) as TImplementation);
+		this.AddTransient<TService, TImplementation>(_ => this.GetService(typeof(TImplementation)) as TImplementation);
 		return this;
 	}
 
 	public IDependencyRegister AddSingleton<TService>(TService instance) where TService : class
 	{
-		this.AddTransient<TService, TService>(resolver => instance);
+		this.AddTransient<TService, TService>(_ => instance);
 		return this;
 	}
 
 	public IDependencyRegister AddSingleton<TService, TImplementation>(Func<IDependencyResolver, TService> instanceCreator) where TImplementation : class, TService where TService : class
 	{
 		Lazy<TImplementation> lazy = new(() => (TImplementation)instanceCreator(this));
-		this.AddTransient<TService,TImplementation>(resolver => lazy.Value);
+		this.AddTransient<TService,TImplementation>(_ => lazy.Value);
 		return this;
 	}
 
 	public IDependencyRegister AddSingleton<TService, TImplementation>() where TImplementation : class, TService where TService : class
 	{
 		Lazy<TImplementation> lazy = new(() => (TImplementation)this.CreateInstance(typeof(TImplementation), Enumerable.Empty<object>()));
-		this.AddTransient<TService, TImplementation>(resolver => lazy.Value);
+		this.AddTransient<TService, TImplementation>(_ => lazy.Value);
 		return this;
 	}
 
@@ -53,8 +53,7 @@ public class SimpleDependencyInjection : IDependencyRegister, IDependencyResolve
 
 	public object GetService(Type serviceType, params object[] additional)
 	{
-		Func<IDependencyResolver, object> creator;
-		if (this._registrations.TryGetValue(serviceType, out creator))
+		if (this._registrations.TryGetValue(serviceType, out Func<IDependencyResolver, object> creator))
 		{
 			return creator(this);
 		}
@@ -67,8 +66,7 @@ public class SimpleDependencyInjection : IDependencyRegister, IDependencyResolve
 
 	public bool TryGetService(Type serviceType, out object service, params object[] additional)
 	{
-		Func<IDependencyResolver, object> creator;
-		if (this._registrations.TryGetValue(serviceType, out creator))
+		if (this._registrations.TryGetValue(serviceType, out Func<IDependencyResolver, object> creator))
 		{
 			service = creator(this);
 			return true;
@@ -103,8 +101,8 @@ public class SimpleDependencyInjection : IDependencyRegister, IDependencyResolve
 				{
 					return additional.First(a => a.GetType() == parameter.ParameterType);
 				}
-				object service;
-				return this.TryGetService(parameter.ParameterType, out service) ? service : null;
+
+				return this.TryGetService(parameter.ParameterType, out object service) ? service : null;
 			})
 			.ToArray();
 		return ctor.Invoke(dependencies);

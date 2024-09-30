@@ -2,7 +2,7 @@
 
 	namespace RawRabbit.Configuration.Queue;
 
-	public static class QueueDecclarationExtensions
+	public static class QueueDeclarationExtensions
 	{
 		internal static readonly string DirectQueueName = "amq.rabbitmq.reply-to";
 

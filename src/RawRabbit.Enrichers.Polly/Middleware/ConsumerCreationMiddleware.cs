@@ -18,7 +18,7 @@ public class ConsumerCreationMiddleware : Pipe.Middleware.ConsumerCreationMiddle
 	{
 		AsyncNoOpPolicy policy = context.GetPolicy(PolicyKeys.QueueDeclare);
 		return policy.ExecuteAsync(
-			action: ct => base.GetOrCreateConsumerAsync(context, token),
+			action: _ => base.GetOrCreateConsumerAsync(context, token),
 			contextData: new Dictionary<string, object>
 			{
 				[RetryKey.PipeContext] = context,

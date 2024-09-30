@@ -47,7 +47,7 @@ public static class MessageAndContextTriggerExtension
 	{
 		Func<object[], Task<Acknowledgement>> genericHandler = args => 
 			machineFunc((TStateMachine) args[0], (TMessage) args[1], (TMessageContext)args[2])
-				.ContinueWith<Acknowledgement>(t => new Ack());
+				.ContinueWith<Acknowledgement>(_ => new Ack());
 		Func<object, object, Guid> genericCorrFunc = (msg, ctx) => correlationFunc((TMessage) msg, (TMessageContext)ctx);
 
 		return configurer.From(SubscribePipe,context =>

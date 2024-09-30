@@ -16,7 +16,7 @@ public class ConsumeConfigurationBuilder : IConsumeConfigurationBuilder
 
 	public IConsumeConfigurationBuilder OnExchange(string exchange)
 	{
-		Truncator.Truncate(ref exchange);
+		Truncation.Truncate(ref exchange);
 		this.Config.ExchangeName = exchange;
 		this.ExistingExchange = true;
 		return this;
@@ -24,15 +24,10 @@ public class ConsumeConfigurationBuilder : IConsumeConfigurationBuilder
 
 	public IConsumeConfigurationBuilder FromQueue(string queue)
 	{
-		Truncator.Truncate(ref queue);
+		Truncation.Truncate(ref queue);
 		this.Config.QueueName = queue;
 		this.ExistingQueue = true;
 		return this;
-	}
-
-	public IConsumeConfigurationBuilder WithNoAck(bool noAck = true)
-	{
-		return this.WithAutoAck(noAck);
 	}
 
 	public IConsumeConfigurationBuilder WithAutoAck(bool autoAck = true)

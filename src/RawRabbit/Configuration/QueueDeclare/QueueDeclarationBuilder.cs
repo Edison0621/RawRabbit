@@ -13,7 +13,7 @@ public class QueueDeclarationBuilder : IQueueDeclarationBuilder
 
 	public IQueueDeclarationBuilder WithName(string queueName)
 	{
-		Truncator.Truncate(ref queueName);
+		Truncation.Truncate(ref queueName);
 		this.Declaration.Name = queueName;
 		return this;
 	}

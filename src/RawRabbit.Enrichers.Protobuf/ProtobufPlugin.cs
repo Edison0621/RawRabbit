@@ -12,7 +12,7 @@ public static class ProtobufPlugin
 	public static IClientBuilder UseProtobuf(this IClientBuilder builder)
 	{
 		builder.Register(
-			pipe: p => {},
+			pipe: _ => {},
 			ioc: di => di.AddSingleton<ISerializer, ProtobufSerializer>());
 		return builder;
 	}

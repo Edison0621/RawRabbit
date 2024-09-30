@@ -25,19 +25,25 @@ public abstract class StringSerializerBase : ISerializer
 		return this.Deserialize(type, serialized);
 	}
 
-	public TType Deserialize<TType>(ReadOnlyMemory<byte>? bytes)
+	public TType Deserialize<TType>(ReadOnlyMemory<byte> bytes)
 	{
 		string serialized = this.ConvertToString(bytes);
+
 		return (TType)this.Deserialize(typeof(TType), serialized);
 	}
 
-	protected virtual byte[] ConvertToBytes(string serialzed)
+	protected virtual byte[] ConvertToBytes(string serialized)
 	{
-		return Encoding.UTF8.GetBytes(serialzed);
+		return Encoding.UTF8.GetBytes(serialized);
 	}
 
 	protected virtual string ConvertToString(ReadOnlyMemory<byte>? bytes)
 	{
-		return Encoding.UTF8.GetString(bytes?.ToArray());
+		if (bytes == null)
+		{
+			return null;
+		}
+
+		return Encoding.UTF8.GetString(bytes.Value.ToArray());
 	}
 }

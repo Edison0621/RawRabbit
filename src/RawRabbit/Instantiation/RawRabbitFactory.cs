@@ -8,7 +8,7 @@ public class RawRabbitFactory
 	public static Disposable.BusClient CreateSingleton(RawRabbitOptions options = null)
 	{
 		SimpleDependencyInjection ioc = new();
-		return CreateSingleton(options, ioc, register => ioc);
+		return CreateSingleton(options, ioc, _ => ioc);
 	}
 
 	public static Disposable.BusClient CreateSingleton(RawRabbitOptions options, IDependencyRegister register, Func<IDependencyRegister, IDependencyResolver> resolverFunc)
@@ -20,7 +20,7 @@ public class RawRabbitFactory
 	public static InstanceFactory CreateInstanceFactory(RawRabbitOptions options = null)
 	{
 		SimpleDependencyInjection ioc = new();
-		return CreateInstanceFactory(options, ioc, register => ioc);
+		return CreateInstanceFactory(options, ioc, _ => ioc);
 	}
 
 	public static InstanceFactory CreateInstanceFactory(RawRabbitOptions options, IDependencyRegister register, Func<IDependencyRegister, IDependencyResolver> resolverFunc)

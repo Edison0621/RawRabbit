@@ -57,10 +57,10 @@ namespace RawRabbit.Operations.Publish.Middleware
 				this.EnableAcknowledgement(channel, token);
 			}
 
-			object channelLock = ChannelLocks.GetOrAdd(channel, c => new object());
+			object channelLock = ChannelLocks.GetOrAdd(channel, _ => new object());
 			TaskCompletionSource<ulong> ackTcs = new();
 
-			await this._exclusive.ExecuteAsync(channelLock, o =>
+			await this._exclusive.ExecuteAsync(channelLock, _ =>
 			{
 				ulong sequence = channel.NextPublishSeqNo;
 				this.SetupTimeout(context, sequence, ackTcs);
@@ -116,7 +116,7 @@ namespace RawRabbit.Operations.Publish.Middleware
 				}
 				await c.ConfirmSelectAsync(cancellationToken: token);
 				ConcurrentDictionary<ulong, TaskCompletionSource<ulong>> dictionary = this.GetChannelDictionary(c);
-				c.BasicAcks += (sender, args) =>
+				c.BasicAcks += (_, args) =>
 				{
 					Task.Run(() =>
 					{
@@ -154,7 +154,7 @@ namespace RawRabbit.Operations.Publish.Middleware
 			TimeSpan timeout = this.GetAcknowledgeTimeOut(context);
 			Timer ackTimer = null;
 			this._logger.Info("Setting up publish acknowledgement for {publishSequence} with timeout {timeout:g}", sequence, timeout);
-			ackTimer = new Timer(state =>
+			ackTimer = new Timer(_ =>
 			{
 				ackTcs.TrySetException(new PublishConfirmException($"The broker did not send a publish acknowledgement for message {sequence} within {timeout:g}."));
 				// ReSharper disable once AccessToModifiedClosure

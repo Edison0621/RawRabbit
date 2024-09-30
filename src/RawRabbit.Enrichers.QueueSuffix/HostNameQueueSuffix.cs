@@ -9,7 +9,7 @@ public static class HostNameQueueSuffix
 	{
 		builder.UseQueueSuffix(new QueueSuffixOptions
 		{
-			_customSuffixFunc = context => Environment.MachineName.ToLower(),
+			_customSuffixFunc = _ => Environment.MachineName.ToLower(),
 			_activeFunc = context => context.GetHostnameQueueSuffixFlag()
 		});
 

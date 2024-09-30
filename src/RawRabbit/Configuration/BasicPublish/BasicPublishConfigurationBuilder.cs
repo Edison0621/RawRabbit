@@ -32,7 +32,7 @@ public class BasicPublishConfigurationBuilder : IBasicPublishConfigurationBuilde
 
 	public IBasicPublishConfigurationBuilder WithProperties(Action<IBasicProperties> propAction)
 	{
-		this.Configuration.BasicProperties = this.Configuration.BasicProperties ?? new BasicProperties();
+		this.Configuration.BasicProperties ??= new BasicProperties();
 		propAction?.Invoke(this.Configuration.BasicProperties);
 		return this;
 	}

@@ -38,7 +38,7 @@ public class SubscriptionExceptionMiddleware : ExceptionHandlingMiddleware
 		this._channelFactory = channelFactory;
 		this._provider = provider;
 		this._conventions = conventions;
-		this._channelFunc = options.ChannelFunc ?? ((c, f) =>f.CreateChannelAsync());
+		this._channelFunc = options.ChannelFunc ?? ((_, f) =>f.CreateChannelAsync());
 	}
 
 	protected override async Task OnExceptionAsync(Exception exception, IPipeContext context, CancellationToken token)

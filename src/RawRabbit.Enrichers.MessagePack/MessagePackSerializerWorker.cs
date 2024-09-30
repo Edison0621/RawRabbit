@@ -39,8 +39,8 @@ internal class MessagePackSerializerWorker : ISerializer
 			.Invoke(null, new object[] { bytes });
 	}
 
-	public TType Deserialize<TType>(ReadOnlyMemory<byte>? bytes)
+	public TType Deserialize<TType>(ReadOnlyMemory<byte> bytes)
 	{
-		return MessagePackSerializer.Deserialize<TType>(bytes?.ToArray());
+		return MessagePackSerializer.Deserialize<TType>(bytes);
 	}
 }

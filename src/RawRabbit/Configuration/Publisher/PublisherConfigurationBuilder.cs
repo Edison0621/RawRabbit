@@ -27,8 +27,8 @@ public class PublisherConfigurationBuilder : IPublisherConfigurationBuilder
 
 	public IPublisherConfigurationBuilder WithReturnCallback(Action<BasicReturnEventArgs> callback)
 	{
-		this.Config.ReturnCallback = this.Config.ReturnCallback ?? ((sender, args) =>{}) ;
-		this.Config.ReturnCallback += (sender, args) => callback(args);
+		this.Config.ReturnCallback = this.Config.ReturnCallback ?? ((_, _) =>{}) ;
+		this.Config.ReturnCallback += (_, args) => callback(args);
 		this.Config.Mandatory = true;
 		return this;
 	}
@@ -36,7 +36,7 @@ public class PublisherConfigurationBuilder : IPublisherConfigurationBuilder
 	public IBasicPublishConfigurationBuilder OnExchange(string exchange)
 	{
 		this.Config.Exchange = null;
-		Truncator.Truncate(ref exchange);
+		Truncation.Truncate(ref exchange);
 		this.Config.ExchangeName = exchange;
 		return this;
 	}
@@ -55,10 +55,7 @@ public class PublisherConfigurationBuilder : IPublisherConfigurationBuilder
 
 	public IBasicPublishConfigurationBuilder WithProperties(Action<IBasicProperties> propAction)
 	{
-		if (this.Config.BasicProperties == null)
-		{
-			this.Config.BasicProperties = new BasicProperties();
-		}
+		this.Config.BasicProperties ??= new BasicProperties();
 		propAction?.Invoke(this.Config.BasicProperties);
 		return this;
 	}

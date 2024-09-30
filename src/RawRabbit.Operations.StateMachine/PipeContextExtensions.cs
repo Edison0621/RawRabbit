@@ -45,14 +45,14 @@ public static class PipeContextExtensions
 
 	public static IStateMachineContext UseLazyCorrelationArgs(this IStateMachineContext context, Func<IPipeContext, object[]> argsFunc)
 	{
-		Func<IPipeContext, Func<IPipeContext, object[]>> lazyFunc = pipeContext => argsFunc;
+		Func<IPipeContext, Func<IPipeContext, object[]>> lazyFunc = _ => argsFunc;
 		context.Properties.TryAdd(StateMachineKey.LazyCorrelationFuncArgs, lazyFunc);
 		return context;
 	}
 
 	public static IStateMachineContext UseLazyHandlerArgs(this IStateMachineContext context, Func<IPipeContext, object[]> argsFunc)
 	{
-		Func<IPipeContext, Func<IPipeContext, object[]>> lazyFunc = pipeContext => argsFunc;
+		Func<IPipeContext, Func<IPipeContext, object[]>> lazyFunc = _ => argsFunc;
 		context.Properties.TryAdd(StateMachineKey.LazyHandlerArgsFunc, lazyFunc);
 		return context;
 	}

@@ -27,7 +27,7 @@ public class WildcardRoutingKeyMiddleware : StagedMiddleware
 	{
 		this._enableRoutingFunc = options?.EnableRoutingFunc ?? (c => c.GetWildcardRoutingSuffixActive());
 		this._executionIdFunc = options?.ExecutionIdFunc ?? (c => c.GetGlobalExecutionId());
-		this._updateAction = options?.UpdateAction ?? ((context, executionId) =>
+		this._updateAction = options?.UpdateAction ?? ((context, _) =>
 		{
 			ConsumeConfiguration consumeConfig = context.GetConsumeConfiguration();
 			if (consumeConfig != null)

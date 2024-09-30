@@ -16,10 +16,10 @@ public static class AddPropertyPipeContextExtensions
 	{
 		return UseThrottledConsume(context, (asyncAction, ct) => semaphore
 			.WaitAsync(ct)
-			.ContinueWith(tEnter =>
+			.ContinueWith(_ =>
 			{
 				Task.Run(asyncAction, ct)
-					.ContinueWith(tDone => semaphore.Release(), ct);
+					.ContinueWith(_ => semaphore.Release(), ct);
 			}, ct));
 	}
 

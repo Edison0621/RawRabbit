@@ -16,7 +16,7 @@ public static class SubscribeMessageContextExtension
 		.Use<StageMarkerMiddleware>(StageMarkerOptions.For(StageMarker.MessageReceived))
 		.Use<HeaderDeserializationMiddleware>(new HeaderDeserializationOptions
 		{
-			HeaderKeyFunc = c => PropertyHeaders.Context,
+			HeaderKeyFunc = _ => PropertyHeaders.Context,
 			HeaderTypeFunc = c => c.GetMessageContextType(),
 			ContextSaveAction = (pipeCtx, msgCtx) => pipeCtx.Properties.TryAdd(PipeKey.MessageContext, msgCtx)
 		})
@@ -49,7 +49,7 @@ public static class SubscribeMessageContextExtension
 		return client.SubscribeAsync<TMessage, TMessageContext>(
 			(msg, ctx) => subscribeMethod
 				.Invoke(msg, ctx)
-				.ContinueWith<Acknowledgement>(t => new Ack(), ct),
+				.ContinueWith<Acknowledgement>(_ => new Ack(), ct),
 			context, ct);
 	}
 

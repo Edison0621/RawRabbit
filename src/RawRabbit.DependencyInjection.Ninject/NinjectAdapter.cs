@@ -23,7 +23,7 @@ public class NinjectAdapter : IDependencyResolver
 	public object GetService(Type serviceType, params object[] additional)
 	{
 		IParameter[] args = additional
-			.Select(a => new TypeMatchingConstructorArgument(a.GetType(), (context, target) => a))
+			.Select(a => new TypeMatchingConstructorArgument(a.GetType(), (_, _) => a))
 			.ToArray<IParameter>();
 		return this._context.Kernel.Get(serviceType, args);
 	}

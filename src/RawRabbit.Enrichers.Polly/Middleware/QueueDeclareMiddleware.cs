@@ -20,7 +20,7 @@ public class QueueDeclareMiddleware : Pipe.Middleware.QueueDeclareMiddleware
 	{
 		AsyncNoOpPolicy policy = context.GetPolicy(PolicyKeys.QueueDeclare);
 		return policy.ExecuteAsync(
-			action: ct => base.DeclareQueueAsync(queue, context, token),
+			action: _ => base.DeclareQueueAsync(queue, context, token),
 			contextData: new Dictionary<string, object>
 			{
 				[RetryKey.TopologyProvider] = this._topology,

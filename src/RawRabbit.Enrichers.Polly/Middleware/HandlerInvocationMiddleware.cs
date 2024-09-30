@@ -16,7 +16,7 @@ public class HandlerInvocationMiddleware : Pipe.Middleware.HandlerInvocationMidd
 	{
 		AsyncNoOpPolicy policy = context.GetPolicy(PolicyKeys.HandlerInvocation);
 		return policy.ExecuteAsync(
-			action: ct => base.InvokeMessageHandler(context, token),
+			action: _ => base.InvokeMessageHandler(context, token),
 			contextData: new Dictionary<string, object>
 			{
 				[RetryKey.PipeContext] = context,

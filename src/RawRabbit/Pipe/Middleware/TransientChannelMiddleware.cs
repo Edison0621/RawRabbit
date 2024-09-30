@@ -18,12 +18,10 @@ public class TransientChannelMiddleware : Middleware
 
 	public override async Task InvokeAsync(IPipeContext context, CancellationToken token = default)
 	{
-		using (IChannel channel = await this.CreateChannelAsync(context, token))
-		{
-			this._logger.Debug("Adding channel {channelNumber} to Execution Context.", channel.ChannelNumber);
-			context.Properties.Add(PipeKey.TransientChannel, channel);
-			await this.Next.InvokeAsync(context, token);
-		}
+		using IChannel channel = await this.CreateChannelAsync(context, token);
+		this._logger.Debug("Adding channel {channelNumber} to Execution Context.", channel.ChannelNumber);
+		context.Properties.Add(PipeKey.TransientChannel, channel);
+		await this.Next.InvokeAsync(context, token);
 	}
 
 	protected virtual Task<IChannel> CreateChannelAsync(IPipeContext context, CancellationToken ct)

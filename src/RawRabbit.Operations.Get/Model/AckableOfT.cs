@@ -13,7 +13,7 @@ public class Ackable<TType> : IDisposable
 	internal readonly IChannel _channel;
 	internal readonly Func<TType, ulong[]> _deliveryTagFunc;
 
-	public Ackable(TType content, IChannel channel, params ulong[] deliveryTag) : this(content, channel, type => deliveryTag)
+	public Ackable(TType content, IChannel channel, params ulong[] deliveryTag) : this(content, channel, _ => deliveryTag)
 	{ }
 
 	public Ackable(TType content, IChannel channel, Func<TType, ulong[]> deliveryTagFunc)

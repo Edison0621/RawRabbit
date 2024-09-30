@@ -14,11 +14,6 @@ public class GetConfigurationBuilder : IGetConfigurationBuilder
 		return this;
 	}
 
-	public IGetConfigurationBuilder WithNoAck(bool noAck = true)
-	{
-		return this.WithAutoAck(noAck);
-	}
-
 	public IGetConfigurationBuilder WithAutoAck(bool autoAck = true)
 	{
 		this.Configuration.AutoAck = autoAck;

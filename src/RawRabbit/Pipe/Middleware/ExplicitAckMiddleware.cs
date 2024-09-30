@@ -77,7 +77,7 @@ public class ExplicitAckMiddleware : Middleware
 				TaskCompletionSource<bool> recoverTsc = new();
 
 				EventHandler<EventArgs> onRecover = null;
-				onRecover = (sender, args) =>
+				onRecover = (_, _) =>
 				{
 					recoverTsc.TrySetResult(true);
 					recoverable.Recovery -= onRecover;

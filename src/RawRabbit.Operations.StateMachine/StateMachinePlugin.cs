@@ -30,7 +30,7 @@ public static class StateMachinePlugin
 		Func<Guid, Func<Task>, CancellationToken, Task> execute = null)
 	{
 		builder.Register(
-			pipe => {},
+			_ => {},
 			ioc => ioc
 				.AddSingleton<IGlobalLock>(new GlobalLock(execute))
 				.AddSingleton<IModelRepository>(new ModelRepository(get, addOrUpdate))

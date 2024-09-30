@@ -21,7 +21,7 @@ public class GetConfigurationMiddleware : Pipe.Middleware.Middleware
 
 	public GetConfigurationMiddleware(GetConfigurationOptions options = null)
 	{
-		this._createFunc = options?.CreateFunc ?? (context => new GetConfiguration());
+		this._createFunc = options?.CreateFunc ?? (_ => new GetConfiguration());
 		this._postExecutionAction = options?.PostExecuteAction;
 		this._configBuilderFunc = options?.ConfigBuilderFunc ?? (context => context.Get<Action<IGetConfigurationBuilder>>(PipeKey.ConfigurationAction));
 	}

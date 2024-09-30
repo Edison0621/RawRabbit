@@ -22,8 +22,7 @@ public class Subscription : ISubscription
 	{
 		this.Active = true;
 		this._consumer = consumer;
-		AsyncDefaultBasicConsumer basicConsumer = consumer as AsyncDefaultBasicConsumer;
-		if (basicConsumer == null)
+		if (consumer is not AsyncDefaultBasicConsumer basicConsumer)
 		{
 			return;
 		}

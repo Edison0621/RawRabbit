@@ -23,9 +23,9 @@ public class QueueDeleteMiddleware : Middleware
 	public QueueDeleteMiddleware(QueueDeleteOptions options = null)
 	{
 		this._channelFunc = options?.ChannelFunc ?? (context => context.GetTransientChannel());
-		this._queueNameFunc = options?.QueueNameFunc ?? (context => string.Empty);
-		this._ifUnusedFunc = options?.IfUnusedFunc ?? (context => false);
-		this._ifEmptyFunc = options?.IfEmptyFunc ?? (context => false);
+		this._queueNameFunc = options?.QueueNameFunc ?? (_ => string.Empty);
+		this._ifUnusedFunc = options?.IfUnusedFunc ?? (_ => false);
+		this._ifEmptyFunc = options?.IfEmptyFunc ?? (_ => false);
 	}
 
 	public override async Task InvokeAsync(IPipeContext context, CancellationToken token = new())

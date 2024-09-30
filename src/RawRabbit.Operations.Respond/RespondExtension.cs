@@ -27,7 +27,7 @@ public static class RespondExtension
 		.Use<StageMarkerMiddleware>(StageMarkerOptions.For(StageMarker.MessageAcknowledged))
 		.Use<BasicPropertiesMiddleware>(new BasicPropertiesOptions
 		{
-			PropertyModier = (context, properties) =>
+			PropertyModifier = (context, properties) =>
 			{
 				properties.CorrelationId = context.GetDeliveryEventArgs()?.BasicProperties.CorrelationId;
 				properties.Type = context.GetResponseMessage()?.GetType().GetUserFriendlyName();
@@ -42,13 +42,13 @@ public static class RespondExtension
 		.Use<StageMarkerMiddleware>(StageMarkerOptions.For(RespondStage.ResponseSerialized))
 		.Use<ReplyToExtractionMiddleware>()
 		.Use<StageMarkerMiddleware>(StageMarkerOptions.For(RespondStage.ReplyToExtracted))
-		.Use<PooledChannelMiddleware>(new PooledChannelOptions{ PoolNameFunc = c => RespondKey.ChannelPoolName})
+		.Use<PooledChannelMiddleware>(new PooledChannelOptions{ PoolNameFunc = _ => RespondKey.ChannelPoolName})
 		.Use<StageMarkerMiddleware>(StageMarkerOptions.For(RespondStage.RespondChannelCreated))
 		.Use<BasicPublishMiddleware>(new BasicPublishOptions
 		{
 			ExchangeNameFunc = context => context.GetPublicationAddress()?.ExchangeName,
 			RoutingKeyFunc = context => context.GetPublicationAddress()?.RoutingKey,
-			MandatoryFunc = context => true,
+			MandatoryFunc = _ => true,
 			BodyFunc = context => context.Get<byte[]>(RespondKey.SerializedResponse)
 		})
 		.Use<StageMarkerMiddleware>(StageMarkerOptions.For(RespondStage.ResponsePublished));

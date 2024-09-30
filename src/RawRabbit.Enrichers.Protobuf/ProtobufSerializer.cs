@@ -11,26 +11,20 @@ public class ProtobufSerializer : ISerializer
 
 	public byte[] Serialize(object obj)
 	{
-		using (MemoryStream memoryStream = new())
-		{
-			Serializer.Serialize(memoryStream, obj);
-			return memoryStream.ToArray();
-		}
+		using MemoryStream memoryStream = new();
+		Serializer.Serialize(memoryStream, obj);
+		return memoryStream.ToArray();
 	}
 
 	public object Deserialize(Type type, ReadOnlyMemory<byte>? bytes)
 	{
-		using (MemoryStream memoryStream = new(bytes?.ToArray()))
-		{
-			return Serializer.Deserialize(type, memoryStream);
-		}
+		using MemoryStream memoryStream = new(bytes?.ToArray());
+		return Serializer.Deserialize(type, memoryStream);
 	}
 
-	public TType Deserialize<TType>(ReadOnlyMemory<byte>? bytes)
+	public TType Deserialize<TType>(ReadOnlyMemory<byte> bytes)
 	{
-		using (MemoryStream memoryStream = new(bytes?.ToArray()))
-		{
-			return Serializer.Deserialize<TType>(memoryStream);
-		}
+		using MemoryStream memoryStream = new(bytes.ToArray());
+		return Serializer.Deserialize<TType>(memoryStream);
 	}
 }

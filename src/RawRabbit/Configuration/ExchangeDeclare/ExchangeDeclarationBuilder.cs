@@ -13,7 +13,7 @@ public class ExchangeDeclarationBuilder : IExchangeDeclarationBuilder
 
 	public IExchangeDeclarationBuilder WithName(string exchangeName)
 	{
-		Truncator.Truncate(ref exchangeName);
+		Truncation.Truncate(ref exchangeName);
 		this.Declaration.Name = exchangeName;
 		return this;
 	}

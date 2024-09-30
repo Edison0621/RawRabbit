@@ -29,7 +29,7 @@ public class StaticChannelPool : IDisposable, IChannelPool
 		this._pool = new LinkedList<IChannel>(seed);
 		this._recoverables = new List<IRecoverable>();
 		this._channelRequestQueue = new ConcurrentChannelQueue();
-		this._channelRequestQueue._queued += (sender, args) => this.StartServeChannels();
+		this._channelRequestQueue._queued += (_, _) => this.StartServeChannels();
 		foreach (IChannel channel in seed)
 		{
 			this.ConfigureRecovery(channel);
@@ -114,7 +114,7 @@ public class StaticChannelPool : IDisposable, IChannelPool
 		}
 
 		this._recoverables.Add(recoverable);
-		recoverable.Recovery += (sender, args) =>
+		recoverable.Recovery += (_, _) =>
 		{
 			this._logger.Info("Channel {channelNumber} has been recovered and will be re-added to the channel pool", channel.ChannelNumber);
 			if (this._pool.Contains(channel))
@@ -125,7 +125,7 @@ public class StaticChannelPool : IDisposable, IChannelPool
 			this._pool.AddLast(channel);
 			this.StartServeChannels();
 		};
-		channel.ChannelShutdown += (sender, args) =>
+		channel.ChannelShutdown += (_, args) =>
 		{
 			if (args.Initiator == ShutdownInitiator.Application)
 			{

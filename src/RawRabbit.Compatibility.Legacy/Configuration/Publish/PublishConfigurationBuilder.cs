@@ -18,7 +18,7 @@ public class PublishConfigurationBuilder : IPublishConfigurationBuilder
 	{
 		Exchange = this._exchange.Configuration,
 		RoutingKey = this._routingKey,
-		PropertyModifier = this._properties ?? (b => {}),
+		PropertyModifier = this._properties ?? (_ => {}),
 		BasicReturn = this._basicReturn
 	};
 

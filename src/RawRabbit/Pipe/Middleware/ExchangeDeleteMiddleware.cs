@@ -21,8 +21,8 @@ public class ExchangeDeleteMiddleware : Middleware
 	public ExchangeDeleteMiddleware(ExchangeDeleteOptions options)
 	{
 		this._channelFunc = options?.ChannelFunc ?? (context => context.GetTransientChannel());
-		this._exchangeNameFunc = options?.ExchangeNameFunc ?? (context => string.Empty);
-		this._ifUsedFunc = options?.IfUsedFunc ?? (context => false);
+		this._exchangeNameFunc = options?.ExchangeNameFunc ?? (_ => string.Empty);
+		this._ifUsedFunc = options?.IfUsedFunc ?? (_ => false);
 	}
 
 	public override async Task InvokeAsync(IPipeContext context, CancellationToken token = new())

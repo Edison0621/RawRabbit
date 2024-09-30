@@ -20,7 +20,7 @@ public class ExceptionHandlingMiddleware : Middleware
 
 	public ExceptionHandlingMiddleware(IPipeBuilderFactory factory, ExceptionHandlingOptions options = null)
 	{
-		this._handlingFunc = options?.HandlingFunc ?? ((exception, context, token) => Task.FromResult(0));
+		this._handlingFunc = options?.HandlingFunc ?? ((_, _, _) => Task.FromResult(0));
 		this._innerPipe = factory.Create(options?.InnerPipe);
 	}
 

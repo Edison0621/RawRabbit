@@ -97,7 +97,7 @@ public class RetryLaterMiddleware : StagedMiddleware
 
 	private string GetDeadLetterQueueName(string originalExchangeName, TimeSpan retryAckSpan)
 	{
-		return this._conventions.RetryLaterQueueNameConvetion(originalExchangeName, retryAckSpan);
+		return this._conventions.RetryLaterQueueNameConvention(originalExchangeName, retryAckSpan);
 	}
 
 	protected virtual Acknowledgement GetMessageAcknowledgement(IPipeContext context)

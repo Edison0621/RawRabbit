@@ -37,8 +37,8 @@ internal class ZeroFormatterSerializerWorker : ISerializer
 			.Invoke(null, new object[] { bytes });
 	}
 
-	public TType Deserialize<TType>(ReadOnlyMemory<byte>? bytes)
+	public TType Deserialize<TType>(ReadOnlyMemory<byte> bytes)
 	{
-		return ZeroFormatterSerializer.Deserialize<TType>(bytes?.ToArray());
+		return ZeroFormatterSerializer.Deserialize<TType>(bytes.ToArray());
 	}
 }

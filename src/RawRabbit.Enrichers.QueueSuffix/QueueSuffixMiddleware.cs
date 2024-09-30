@@ -28,7 +28,7 @@ public class QueueSuffixMiddleware : StagedMiddleware
 		this._appendSuffixAction = options?._appendSuffixAction ?? ((queue, suffix) => queue.Name = $"{queue.Name}_{suffix}");
 		this._consumeCfgFunc = options?._consumeConfigFunc ?? (context => context.GetConsumeConfiguration());
 		this._skipSuffixFunc = options?._skipSuffixFunc ?? (string.IsNullOrWhiteSpace);
-		this._contextSuffixOverride = options?._contextSuffixOverrideFunc ?? (context => null);
+		this._contextSuffixOverride = options?._contextSuffixOverrideFunc ?? (_ => null);
 	}
 
 	public override Task InvokeAsync(IPipeContext context, CancellationToken token = default)

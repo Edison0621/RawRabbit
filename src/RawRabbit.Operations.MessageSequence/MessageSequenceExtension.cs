@@ -17,7 +17,7 @@ public static class MessageSequenceExtension
 			.InvokeAsync(ctx => ctx
 				.Use<RetrieveStateMachineMiddleware>(new RetrieveStateMachineOptions
 				{
-					StateMachineTypeFunc = pipeContext => typeof(StateMachine.MessageSequence)
+					StateMachineTypeFunc = _ => typeof(StateMachine.MessageSequence)
 				})
 			)
 			.GetAwaiter()

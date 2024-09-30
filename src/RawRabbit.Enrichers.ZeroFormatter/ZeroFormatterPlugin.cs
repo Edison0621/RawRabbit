@@ -11,7 +11,7 @@ public static class ZeroFormatterPlugin
 	public static IClientBuilder UseZeroFormatter(this IClientBuilder builder)
 	{
 		builder.Register(
-			pipe: p => { },
+			pipe: _ => { },
 			ioc: di => di.AddSingleton<ISerializer, ZeroFormatterSerializerWorker>());
 		return builder;
 	}

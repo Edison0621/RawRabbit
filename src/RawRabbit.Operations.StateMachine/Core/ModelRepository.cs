@@ -24,16 +24,12 @@ public class ModelRepository : IModelRepository
 		if (this._get == null && this._addOrUpdate == null)
 		{
 			ConcurrentDictionary<Guid, Model> fallback = new();
-			this._get = id =>
-			{
-				Model model;
-				return fallback.TryGetValue(id, out model)
-					? Task.FromResult(model)
-					: Task.FromResult<Model>(null);
-			};
+			this._get = id => fallback.TryGetValue(id, out Model model)
+				? Task.FromResult(model)
+				: Task.FromResult<Model>(null);
 			this._addOrUpdate = model =>
 			{
-				fallback.AddOrUpdate(model.Id, guid => model, (id, m) => model);
+				fallback.AddOrUpdate(model.Id, _ => model, (_, _) => model);
 				return Task.FromResult(0);
 			};
 		}

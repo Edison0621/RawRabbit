@@ -31,7 +31,7 @@ public class ConnectionStringParser
 			Password = RegexMatchGroupIsNonEmpty(mainMatch, "password") ? mainMatch.Groups["password"].Value : _defaults.Password,
 			Hostnames = mainMatch.Groups["hosts"].Value.Split(',').ToList(),
 			Port = port,
-			VirtualHost = ExctractVirutalHost(mainMatch)
+			VirtualHost = ExtractVirtualHost(mainMatch)
 		};
 
 		MatchCollection parametersMatches = _parametersRegex.Matches(mainMatch.Groups["parameters"].Value);
@@ -63,7 +63,7 @@ public class ConnectionStringParser
 		return cfg;
 	}
 
-	private static string ExctractVirutalHost(Match mainMatch)
+	private static string ExtractVirtualHost(Match mainMatch)
 	{
 		string vhost = RegexMatchGroupIsNonEmpty(mainMatch, "vhost") ? mainMatch.Groups["vhost"].Value : _defaults.VirtualHost;
 		return string.Equals(vhost, _defaults.VirtualHost, StringComparison.CurrentCultureIgnoreCase)

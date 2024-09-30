@@ -44,9 +44,9 @@ public static class RawRabbitDependencyRegisterExtension
 				};
 			})
 			.AddSingleton<IChannelPoolFactory, AutoScalingChannelPoolFactory>()
-			.AddSingleton(resolver => AutoScalingOptions.Default)
+			.AddSingleton(_ => AutoScalingOptions.Default)
 			.AddSingleton<IClientPropertyProvider, ClientPropertyProvider>()
-			.AddSingleton<ISerializer>(resolver => new Serialization.JsonSerializer(new Newtonsoft.Json.JsonSerializer
+			.AddSingleton<ISerializer>(_ => new Serialization.JsonSerializer(new Newtonsoft.Json.JsonSerializer
 			{
 				TypeNameAssemblyFormatHandling = TypeNameAssemblyFormatHandling.Simple,
 				Formatting = Formatting.None,

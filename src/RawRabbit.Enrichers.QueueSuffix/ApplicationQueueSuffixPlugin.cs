@@ -53,7 +53,7 @@ public static  class ApplicationQueueSuffixPlugin
 		string name =  applicationName.Replace(".", "_").ToLower();
 		builder.UseQueueSuffix(new QueueSuffixOptions
 		{
-			_customSuffixFunc = context => name,
+			_customSuffixFunc = _ => name,
 			_activeFunc = context => context.GetApplicationSuffixFlag()
 		});
 		return builder;

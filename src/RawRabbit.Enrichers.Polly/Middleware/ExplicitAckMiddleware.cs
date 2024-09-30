@@ -17,7 +17,7 @@ public class ExplicitAckMiddleware : Pipe.Middleware.ExplicitAckMiddleware
 	{
 		AsyncNoOpPolicy policy = context.GetPolicy(PolicyKeys.MessageAcknowledge);
 		Task<Acknowledgement> result = await policy.ExecuteAsync(
-			action: ct => Task.FromResult(base.AcknowledgeMessageAsync(context)),
+			action: _ => Task.FromResult(base.AcknowledgeMessageAsync(context)),
 			contextData: new Dictionary<string, object>
 			{
 				[RetryKey.PipeContext] = context

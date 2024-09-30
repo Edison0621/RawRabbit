@@ -44,7 +44,7 @@ public class ProcessGlobalLock : IGlobalLock
 		
 	public async Task ExecuteAsync(Guid modelId, Func<Task> handler, CancellationToken ct = default)
 	{
-		SemaphoreSlim semaphore = this._semaphores.GetOrAdd(modelId, guid => new SemaphoreSlim(1, 1));
+		SemaphoreSlim semaphore = this._semaphores.GetOrAdd(modelId, _ => new SemaphoreSlim(1, 1));
 		await semaphore.WaitAsync(ct);
 		try
 		{

@@ -32,7 +32,7 @@ public class ChannelFactory : IChannelFactory
 		{
 			this._logger.Debug("Creating a new connection for {hostNameCount} hosts.", this._clientConfig.Hostnames.Count);
 			this._connection = await this._connectionFactory.CreateConnectionAsync(this._clientConfig.Hostnames, this._clientConfig.ClientProvidedName, token);
-			this._connection.ConnectionShutdown += (sender, args) => this._logger.Warn("Connection was shutdown by {Initiator}. ReplyText {ReplyText}", args.Initiator, args.ReplyText);
+			this._connection.ConnectionShutdown += (_, args) => this._logger.Warn("Connection was shutdown by {Initiator}. ReplyText {ReplyText}", args.Initiator, args.ReplyText);
 		}
 		catch (BrokerUnreachableException e)
 		{
@@ -67,14 +67,14 @@ public class ChannelFactory : IChannelFactory
 
 		this._logger.Info("The existing connection is not open.");
 
-		if (this._connection.CloseReason != null && this._connection.CloseReason.Initiator == ShutdownInitiator.Application)
+		if (this._connection.CloseReason is { Initiator: ShutdownInitiator.Application })
 		{
 			this._logger.Info("Connection is closed with Application as initiator. It will not be recovered.");
 			this._connection.Dispose();
 			throw new ChannelAvailabilityException("Closed connection initiated by the Application. A new connection will not be created, and no channel can be created.");
 		}
 
-		if (!(this._connection is IRecoverable recoverable))
+		if (this._connection is not IRecoverable recoverable)
 		{
 			this._logger.Info("Connection is not recoverable");
 			this._connection.Dispose();
@@ -86,7 +86,7 @@ public class ChannelFactory : IChannelFactory
 		token.Register(() => recoverTcs.TrySetCanceled());
 
 		EventHandler<EventArgs> completeTask = null;
-		completeTask = (sender, args) =>
+		completeTask = (_, _) =>
 		{
 			if (recoverTcs.Task.IsCanceled)
 			{

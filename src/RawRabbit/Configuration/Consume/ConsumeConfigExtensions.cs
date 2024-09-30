@@ -7,6 +7,6 @@ public static class ConsumeConfigExtensions
 {
 	public static bool IsDirectReplyTo(this ConsumeConfiguration cfg)
 	{
-		return string.Equals(cfg.QueueName, QueueDecclarationExtensions.DirectQueueName, StringComparison.CurrentCultureIgnoreCase);
+		return string.Equals(cfg.QueueName, QueueDeclarationExtensions.DirectQueueName, StringComparison.CurrentCultureIgnoreCase);
 	}
 }

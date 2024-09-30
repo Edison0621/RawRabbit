@@ -16,8 +16,8 @@ public class ClientBuilder : IClientBuilder
 
 	public ClientBuilder()
 	{
-		this.PipeBuilderAction = builder => { };
-		this.DependencyInjection = collection => { };
+		this.PipeBuilderAction = _ => { };
+		this.DependencyInjection = _ => { };
 	}
 
 	public void Register(Action<IPipeBuilder> pipe, Action<IDependencyRegister> ioc)

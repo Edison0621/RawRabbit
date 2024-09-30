@@ -17,7 +17,7 @@ public class TransientChannelMiddleware : Pipe.Middleware.TransientChannelMiddle
 	{
 		AsyncNoOpPolicy policy = context.GetPolicy(PolicyKeys.ChannelCreate);
 		return policy.ExecuteAsync(
-			action: ct => base.CreateChannelAsync(context, token),
+			action: _ => base.CreateChannelAsync(context, token),
 			contextData: new Dictionary<string, object>
 			{
 				[RetryKey.PipeContext] = context,

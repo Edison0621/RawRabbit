@@ -17,7 +17,7 @@ public class QueueBindMiddleware : Pipe.Middleware.QueueBindMiddleware
 	{
 		AsyncNoOpPolicy policy = context.GetPolicy(PolicyKeys.QueueBind);
 		return policy.ExecuteAsync(
-			action: ct => base.BindQueueAsync(queue, exchange, routingKey, context, token),
+			action: _ => base.BindQueueAsync(queue, exchange, routingKey, context, token),
 			contextData: new Dictionary<string, object>
 			{
 				[RetryKey.TopologyProvider] = this._topologyProvider,

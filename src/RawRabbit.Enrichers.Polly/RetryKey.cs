@@ -82,9 +82,9 @@ public static class RetryExtensions
 			return fallback;
 		}
 		object value = ctx[key];
-		if (value is TType)
+		if (value is TType type)
 		{
-			return (TType) value;
+			return type;
 		}
 		return fallback;
 	}

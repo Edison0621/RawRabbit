@@ -25,32 +25,31 @@ public class AutoScalingChannelPool : DynamicChannelPool
 
 	private static void ValidateOptions(AutoScalingOptions options)
 	{
-		if (options.MinimunPoolSize <= 0)
+		if (options.MinimumPoolSize <= 0)
 		{
-			throw new ArgumentException($"Minimum Pool Size needs to be a positive integer. Got: {options.MinimunPoolSize}");
+			throw new ArgumentException($"Minimum Pool Size needs to be a positive integer. Got: {options.MinimumPoolSize}");
 		}
 		if (options.MaximumPoolSize <= 0)
 		{
-			throw new ArgumentException($"Maximum Pool Size needs to be a positive integer. Got: {options.MinimunPoolSize}");
+			throw new ArgumentException($"Maximum Pool Size needs to be a positive integer. Got: {options.MinimumPoolSize}");
 		}
-		if (options.MinimunPoolSize > options.MaximumPoolSize)
+		if (options.MinimumPoolSize > options.MaximumPoolSize)
 		{
-			throw new ArgumentException($"The Maximum Pool Size ({options.MaximumPoolSize}) must be larger than the Minimum Pool Size ({options.MinimunPoolSize})");
+			throw new ArgumentException($"The Maximum Pool Size ({options.MaximumPoolSize}) must be larger than the Minimum Pool Size ({options.MinimumPoolSize})");
 		}
 	}
 
 	public override async Task<IChannel> GetAsync(CancellationToken ct = default)
 	{
 		int activeChannels = this.GetActiveChannelCount();
-		if (activeChannels  < this._options.MinimunPoolSize)
+		if (activeChannels >= this._options.MinimumPoolSize) return await base.GetAsync(ct);
+
+		this._logger.Debug("Pool currently has {channelCount}, which is lower than the minimal pool size {minimalPoolSize}. Creating channels.", activeChannels, this._options.MinimumPoolSize);
+		int delta = this._options.MinimumPoolSize - this._pool.Count;
+		for (int i = 0; i < delta; i++)
 		{
-			this._logger.Debug("Pool currently has {channelCount}, which is lower than the minimal pool size {minimalPoolSize}. Creating channels.", activeChannels, this._options.MinimunPoolSize);
-			int delta = this._options.MinimunPoolSize - this._pool.Count;
-			for (int i = 0; i < delta; i++)
-			{
-				IChannel channel = await this._factory.CreateChannelAsync(ct);
-				this.Add(channel);
-			}
+			IChannel channel = await this._factory.CreateChannelAsync(ct);
+			this.Add(channel);
 		}
 
 		return await base.GetAsync(ct);
@@ -63,11 +62,11 @@ public class AutoScalingChannelPool : DynamicChannelPool
 			return;
 		}
 
-		this._timer = new Timer(state =>
+		this._timer = new Timer(_ =>
 		{
 			int workPerChannel = this._pool.Count == 0 ? int.MaxValue : this._channelRequestQueue.Count / this._pool.Count;
 			bool scaleUp = this._pool.Count < this._options.MaximumPoolSize;
-			bool scaleDown = this._options.MinimunPoolSize < this._pool.Count;
+			bool scaleDown = this._options.MinimumPoolSize < this._pool.Count;
 
 			this._logger.Debug("Channel pool currently has {channelCount} channels open and a total workload of {totalWorkload}", this._pool.Count, this._channelRequestQueue.Count);
 			if (scaleUp && this._options.DesiredAverageWorkload < workPerChannel)
@@ -113,14 +112,14 @@ public class AutoScalingChannelPool : DynamicChannelPool
 public class AutoScalingOptions
 {
 	public int DesiredAverageWorkload { get; set; }
-	public int MinimunPoolSize { get; set; }
+	public int MinimumPoolSize { get; set; }
 	public int MaximumPoolSize { get; set; }
 	public TimeSpan RefreshInterval { get; set; }
 	public TimeSpan GracefulCloseInterval { get; set; }
 
 	public static AutoScalingOptions Default => new()
 	{
-		MinimunPoolSize = 1,
+		MinimumPoolSize = 1,
 		MaximumPoolSize = 10,
 		DesiredAverageWorkload = 20000,
 		RefreshInterval = TimeSpan.FromSeconds(10),

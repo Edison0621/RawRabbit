@@ -25,8 +25,8 @@ public class AutoScalingChannelPoolFactory : IChannelPoolFactory, IDisposable
 
 	public IChannelPool GetChannelPool(string name = null)
 	{
-		name = name ?? DefaultPoolName;
-		Lazy<IChannelPool> pool = this._channelPools.GetOrAdd(name, s => new Lazy<IChannelPool>(() => new AutoScalingChannelPool(this._factory, this._options)));
+		name ??= DefaultPoolName;
+		Lazy<IChannelPool> pool = this._channelPools.GetOrAdd(name, _ => new Lazy<IChannelPool>(() => new AutoScalingChannelPool(this._factory, this._options)));
 		return pool.Value;
 	}
 

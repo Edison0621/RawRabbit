@@ -9,7 +9,7 @@ public static class CustomQueueSuffixPlugin
 	{
 		QueueSuffixOptions options =  new()
 		{
-			_customSuffixFunc = context => suffix,
+			_customSuffixFunc = _ => suffix,
 			_activeFunc = context => context.GetCustomQueueSuffixActivated(),
 			_contextSuffixOverrideFunc = context => context.GetCustomQueueSuffix()
 		};

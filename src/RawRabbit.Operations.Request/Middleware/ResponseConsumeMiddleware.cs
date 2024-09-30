@@ -62,7 +62,7 @@ public class ResponseConsumeMiddleware : Pipe.Middleware.Middleware
 		ConcurrentDictionary<string, TaskCompletionSource<BasicDeliverEventArgs>> responses = AllResponses.GetOrAdd(consumer, c =>
 			{
 				ConcurrentDictionary<string, TaskCompletionSource<BasicDeliverEventArgs>> pendings = new();
-				c.OnMessage((sender, args) =>
+				c.OnMessage((_, args) =>
 				{
 					if (!pendings.TryRemove(args.BasicProperties.CorrelationId, out TaskCompletionSource<BasicDeliverEventArgs> tsc))
 						return Task.CompletedTask;

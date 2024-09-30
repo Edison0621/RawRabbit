@@ -852,7 +852,7 @@ namespace RawRabbit.Logging.LogProviders
 
 		protected virtual OpenMdc GetOpenMdcMethod()
 		{
-			return (_, __) => _noopDisposableInstance;
+			return (_, _) => _noopDisposableInstance;
 		}
 	}
 
@@ -1490,12 +1490,10 @@ namespace RawRabbit.Logging.LogProviders
 
 				string message = messageFunc();
 
-				IEnumerable<string> patternMatches;
-
 				string formattedMessage =
 					LogMessageFormatter.FormatStructuredMessage(message,
 						formatParameters,
-						out patternMatches);
+						out IEnumerable<string> patternMatches);
 
 				// determine correct caller - this might change due to jit optimizations with method inlining
 				if (_sCallerStackBoundaryType == null)

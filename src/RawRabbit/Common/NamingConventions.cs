@@ -14,11 +14,11 @@ public interface INamingConventions
 	Func<Type, string> RoutingKeyConvention { get; set; }
 	Func<string> ErrorExchangeNamingConvention { get; set; }
 	Func<TimeSpan,string> RetryLaterExchangeConvention { get; set; }
-	Func<string, TimeSpan,string> RetryLaterQueueNameConvetion { get; set; }
+	Func<string, TimeSpan,string> RetryLaterQueueNameConvention { get; set; }
 	Func<Type, string> SubscriberQueueSuffix { get; set; }
 }
 
-public class NamingConventions : INamingConventions
+public sealed class NamingConventions : INamingConventions
 {
 	private readonly ConcurrentDictionary<Type, int> _subscriberCounter;
 	private readonly string _applicationName;
@@ -28,13 +28,13 @@ public class NamingConventions : INamingConventions
 	private static readonly Regex _iisHostedAppRegexVer1 = new(@"-ap\s\\""(?<ApplicationName>[^\\]+)");
 	private static readonly Regex _iisHostedAppRegexVer2 = new(@"\\\\apppools\\\\(?<ApplicationName>[^\\]+)");
 
-	public virtual Func<Type, string> ExchangeNamingConvention { get; set; }
-	public virtual Func<Type, string> QueueNamingConvention { get; set; }
-	public virtual Func<Type, string> RoutingKeyConvention { get; set; }
-	public virtual Func<string> ErrorExchangeNamingConvention { get; set; }
-	public virtual Func<TimeSpan, string> RetryLaterExchangeConvention { get; set; }
-	public virtual Func<string, TimeSpan, string> RetryLaterQueueNameConvetion { get; set; }
-	public virtual Func<Type, string> SubscriberQueueSuffix { get; set; }
+	public Func<Type, string> ExchangeNamingConvention { get; set; }
+	public Func<Type, string> QueueNamingConvention { get; set; }
+	public Func<Type, string> RoutingKeyConvention { get; set; }
+	public Func<string> ErrorExchangeNamingConvention { get; set; }
+	public Func<TimeSpan, string> RetryLaterExchangeConvention { get; set; }
+	public Func<string, TimeSpan, string> RetryLaterQueueNameConvention { get; set; }
+	public Func<Type, string> SubscriberQueueSuffix { get; set; }
 
 	public NamingConventions()
 	{
@@ -46,8 +46,8 @@ public class NamingConventions : INamingConventions
 		this.RoutingKeyConvention = type => CreateShortAfqn(type);
 		this.ErrorExchangeNamingConvention = () => "default_error_exchange";
 		this.SubscriberQueueSuffix = this.GetSubscriberQueueSuffix;
-		this.RetryLaterExchangeConvention = span => "default_retry_later_exchange";
-		this.RetryLaterQueueNameConvetion = (exchange, span) => $"retry_for_{exchange.Replace(".","_")}_in_{span.TotalMilliseconds}_ms";
+		this.RetryLaterExchangeConvention = _ => "default_retry_later_exchange";
+		this.RetryLaterQueueNameConvention = (exchange, span) => $"retry_for_{exchange.Replace(".","_")}_in_{span.TotalMilliseconds}_ms";
 	}
 
 	private string GetSubscriberQueueSuffix(Type messageType)
@@ -56,12 +56,12 @@ public class NamingConventions : INamingConventions
 
 		this._subscriberCounter.AddOrUpdate(
 			key: messageType,
-			addValueFactory: type =>
+			addValueFactory: _ =>
 			{
 				int next = 0;
 				return next;
 			},
-			updateValueFactory:(type, i) =>
+			updateValueFactory:(_, i) =>
 			{
 				int next = i+1;
 				sb.Append($"_{next}");
@@ -110,9 +110,9 @@ public class NamingConventions : INamingConventions
 		return applicationName.Replace(".","_").ToLower();
 	}
 
-	private static string CreateShortAfqn(Type type, string path = "", string delimeter = ".")
+	private static string CreateShortAfqn(Type type, string path = "", string delimiter = ".")
 	{
-		string t = $"{path}{(string.IsNullOrEmpty(path) ? string.Empty : delimeter)}{GetNonGenericTypeName(type)}";
+		string t = $"{path}{(string.IsNullOrEmpty(path) ? string.Empty : delimiter)}{GetNonGenericTypeName(type)}";
 
 		if (type.GetTypeInfo().IsGenericType)
 		{

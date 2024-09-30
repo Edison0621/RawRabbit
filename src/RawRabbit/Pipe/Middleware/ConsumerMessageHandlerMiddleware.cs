@@ -29,7 +29,7 @@ public class ConsumerMessageHandlerMiddleware : Middleware
 	{
 		this._contextFactory = contextFactory;
 		this._consumeFunc = options?.ConsumerFunc ?? (context =>context.GetConsumer());
-		this._consumePipe = pipeBuilderFactory.Create(options?.Pipe ?? (builder => {}));
+		this._consumePipe = pipeBuilderFactory.Create(options?.Pipe ?? (_ => {}));
 		this._throttledExecutionFunc = options?.ThrottleFuncFunc ?? (context => context.GetConsumeThrottleAction());
 	}
 
@@ -37,7 +37,7 @@ public class ConsumerMessageHandlerMiddleware : Middleware
 	{
 		IAsyncBasicConsumer consumer = this._consumeFunc(context);
 		Action<Func<Task>, CancellationToken> throttlingFunc = this.GetThrottlingFunc(context);
-		consumer.OnMessage((sender, args) =>
+		consumer.OnMessage((_, args) =>
 		{
 			throttlingFunc(() => this.InvokeConsumePipeAsync(context, args, token), token);
 

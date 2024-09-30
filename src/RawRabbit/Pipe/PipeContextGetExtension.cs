@@ -8,10 +8,10 @@ public static class PipeContextGetExtension
 		{
 			return fallback;
 		}
-		object result;
-		if (context.Properties.TryGetValue(key, out result))
+
+		if (context.Properties.TryGetValue(key, out object result))
 		{
-			return result is TType ? (TType)result : fallback;
+			return result is TType type ? type : fallback;
 		}
 		return fallback;
 	}

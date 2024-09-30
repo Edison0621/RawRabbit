@@ -6,7 +6,7 @@ namespace RawRabbit.Configuration.Consume;
 
 public class ConsumeConfigurationFactory : IConsumeConfigurationFactory
 {
-	private INamingConventions _conventions;
+	private readonly INamingConventions _conventions;
 
 	public ConsumeConfigurationFactory(INamingConventions conventions)
 	{

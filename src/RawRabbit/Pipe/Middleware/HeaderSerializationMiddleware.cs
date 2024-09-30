@@ -27,12 +27,12 @@ public class HeaderSerializationMiddleware : StagedMiddleware
 	public HeaderSerializationMiddleware(ISerializer serializer, HeaderSerializationOptions options = null)
 	{
 		this._serializer = serializer;
-		this._executePredicate = options?.ExecutePredicate ?? (context => true);
+		this._executePredicate = options?.ExecutePredicate ?? (_ => true);
 		this._basicPropsFunc = options?.BasicPropsFunc ?? (context => context.GetBasicProperties());
-		this._retrieveItemFunc = options?.RetrieveItemFunc ?? (context => null);
-		this._createItemFunc = options?.CreateItemFunc ?? (context => null);
-		this._createItemFunc = options?.CreateItemFunc ?? (context => null);
-		this._headerKeyFunc = options?.HeaderKeyFunc ?? (context => null);
+		this._retrieveItemFunc = options?.RetrieveItemFunc ?? (_ => null);
+		this._createItemFunc = options?.CreateItemFunc ?? (_ => null);
+		this._createItemFunc = options?.CreateItemFunc ?? (_ => null);
+		this._headerKeyFunc = options?.HeaderKeyFunc ?? (_ => null);
 	}
 
 	public override async Task InvokeAsync(IPipeContext context, CancellationToken token = default)
@@ -51,7 +51,7 @@ public class HeaderSerializationMiddleware : StagedMiddleware
 		}
 
 		object item = this.GetHeaderItem(context) ?? this.CreateHeaderItem(context);
-		byte[] serializedItem = this.SerializeItem(item, context);
+		byte[] serializedItem = this.SerializeItem(item);
 		properties.Headers.TryAdd(headerKey, serializedItem);
 
 		await this.Next.InvokeAsync(context, token);
@@ -77,7 +77,7 @@ public class HeaderSerializationMiddleware : StagedMiddleware
 		return this._createItemFunc?.Invoke(context);
 	}
 
-	protected virtual byte[] SerializeItem(object item, IPipeContext context)
+	protected virtual byte[] SerializeItem(object item)
 	{
 		return this._serializer.Serialize(item);
 	}

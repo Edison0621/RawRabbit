@@ -7,14 +7,17 @@ namespace RawRabbit.Channel;
 
 public class ConcurrentChannelQueue
 {
-	private readonly ConcurrentQueue<TaskCompletionSource<IChannel>> _queue;
-
 	public EventHandler _queued;
+	private readonly ConcurrentQueue<TaskCompletionSource<IChannel>> _queue;
 
 	public ConcurrentChannelQueue()
 	{
 		this._queue = new ConcurrentQueue<TaskCompletionSource<IChannel>>();
 	}
+
+	public int Count => this._queue.Count;
+
+	public bool IsEmpty => this._queue.IsEmpty;
 
 	public TaskCompletionSource<IChannel> Enqueue()
 	{
@@ -33,8 +36,4 @@ public class ConcurrentChannelQueue
 	{
 		return this._queue.TryDequeue(out channel);
 	}
-
-	public bool IsEmpty => this._queue.IsEmpty;
-
-	public int Count => this._queue.Count;
 }

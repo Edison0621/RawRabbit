@@ -25,12 +25,9 @@ public class JsonSerializer : StringSerializerBase
 				return str;
 		}
 
-		string serialized;
-		using (StringWriter sw = new())
-		{
-			this._json.Serialize(sw, obj);
-			serialized = sw.GetStringBuilder().ToString();
-		}
+		using StringWriter sw = new();
+		this._json.Serialize(sw, obj);
+		string serialized = sw.GetStringBuilder().ToString();
 		return serialized;
 	}
 
@@ -40,11 +37,9 @@ public class JsonSerializer : StringSerializerBase
 		{
 			return str;
 		}
-		object obj;
-		using (JsonTextReader jsonReader = new(new StringReader(str)))
-		{
-			obj = this._json.Deserialize(jsonReader, type);
-		}
+
+		using JsonTextReader jsonReader = new(new StringReader(str));
+		object obj = this._json.Deserialize(jsonReader, type);
 		return obj;
 	}
 }

@@ -170,7 +170,7 @@ public class TopologyProvider : ITopologyProvider, IDisposable
 	private static string CreateBindKey(string queue, string exchange, string routingKey, IDictionary<string, object> arguments)
 	{
 		string bindKey = $"{queue}_{exchange}_{routingKey}";
-		if (arguments != null && arguments.Count > 0)
+		if (arguments is { Count: > 0 })
 		{
 			// order the arguments, for the key to be identical no matter the ordering
 			IOrderedEnumerable<KeyValuePair<string, object>> orderedArguments = arguments.OrderBy(pair => pair.Key);
@@ -230,8 +230,7 @@ public class TopologyProvider : ITopologyProvider, IDisposable
 			return;
 		}
 
-		ScheduledTopologyTask topologyTask;
-		while (this._topologyTasks.TryDequeue(out topologyTask))
+		while (this._topologyTasks.TryDequeue(out ScheduledTopologyTask topologyTask))
 		{
 			switch (topologyTask)
 			{

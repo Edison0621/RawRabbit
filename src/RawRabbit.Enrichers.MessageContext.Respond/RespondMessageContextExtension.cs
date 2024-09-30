@@ -35,7 +35,7 @@ public static class RespondMessageContextExtension
 				.Use<StageMarkerMiddleware>(StageMarkerOptions.For(StageMarker.HandlerInvoked))
 				.Use<HeaderDeserializationMiddleware>(new HeaderDeserializationOptions
 				{
-					HeaderKeyFunc = c => PropertyHeaders.Context,
+					HeaderKeyFunc = _ => PropertyHeaders.Context,
 					HeaderTypeFunc = c => c.GetMessageContextType(),
 					ContextSaveAction = (pipeCtx, msgCtx) => pipeCtx.Properties.TryAdd(PipeKey.MessageContext, msgCtx)
 				}))

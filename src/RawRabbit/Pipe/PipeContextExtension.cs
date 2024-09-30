@@ -44,7 +44,7 @@ public static class PipeContextExtension
 
 	public static Action<Func<Task>, CancellationToken> GetConsumeThrottleAction(this IPipeContext context)
 	{
-		return context.Get<Action<Func<Task>, CancellationToken>>(PipeKey.ConsumeThrottleAction, (func, token) => func());
+		return context.Get<Action<Func<Task>, CancellationToken>>(PipeKey.ConsumeThrottleAction, (func, _) => func());
 	}
 
 	public static ExchangeDeclaration GetExchangeDeclaration(this IPipeContext context)

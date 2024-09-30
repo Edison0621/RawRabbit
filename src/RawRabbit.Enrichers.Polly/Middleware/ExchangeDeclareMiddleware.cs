@@ -18,7 +18,7 @@ public class ExchangeDeclareMiddleware : Pipe.Middleware.ExchangeDeclareMiddlewa
 	{
 		AsyncNoOpPolicy policy = context.GetPolicy(PolicyKeys.ExchangeDeclare);
 		return policy.ExecuteAsync(
-			action: ct => base.DeclareExchangeAsync(exchange, context, token),
+			action: _ => base.DeclareExchangeAsync(exchange, context, token),
 			contextData: new Dictionary<string, object>
 			{
 				[RetryKey.TopologyProvider] = this._topologyProvider,

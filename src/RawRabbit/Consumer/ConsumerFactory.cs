@@ -26,7 +26,7 @@ public class ConsumerFactory : IConsumerFactory
 	public Task<IAsyncBasicConsumer> GetConsumerAsync(ConsumeConfiguration cfg, IChannel channel = null, CancellationToken token = default)
 	{
 		string consumerKey = this.CreateConsumerKey(cfg);
-		Lazy<Task<IAsyncBasicConsumer>> lazyConsumerTask = this._consumerCache.GetOrAdd(consumerKey, routingKey =>
+		Lazy<Task<IAsyncBasicConsumer>> lazyConsumerTask = this._consumerCache.GetOrAdd(consumerKey, _ =>
 		{
 			return new Lazy<Task<IAsyncBasicConsumer>>(async () =>
 			{
@@ -40,7 +40,7 @@ public class ConsumerFactory : IConsumerFactory
 	public Task<IAsyncBasicConsumer> GetConfiguredConsumerAsync(ConsumeConfiguration cfg, IChannel channel = null, CancellationToken token = default)
 	{
 		string consumerKey = this.CreateConsumerKey(cfg);
-		Lazy<Task<IAsyncBasicConsumer>> lazyConsumerTask = this._consumerCache.GetOrAdd(consumerKey, routingKey =>
+		Lazy<Task<IAsyncBasicConsumer>> lazyConsumerTask = this._consumerCache.GetOrAdd(consumerKey, _ =>
 		{
 			return new Lazy<Task<IAsyncBasicConsumer>>(async () =>
 			{
@@ -128,15 +128,14 @@ public static class ConsumerExtensions
 {
 	public static async Task<string> CancelAsync(this AsyncEventingBasicConsumer consumer, CancellationToken token = default)
 	{
-		AsyncEventingBasicConsumer eventConsumer = consumer as AsyncEventingBasicConsumer;
-		if (eventConsumer == null)
+		if (consumer is not AsyncEventingBasicConsumer eventConsumer)
 		{
 			throw new NotSupportedException("Can only cancellation EventBasicConsumer");
 		}
 		TaskCompletionSource<string> cancelTcs = new();
 		token.Register(() => cancelTcs.TrySetCanceled());
 		string tag = eventConsumer.ConsumerTags.First();
-		consumer.Unregistered += (sender, args) =>
+		consumer.Unregistered += (_, args) =>
 		{
 			if (args.ConsumerTags.First() != tag)
 			{
@@ -154,8 +153,7 @@ public static class ConsumerExtensions
 
 	public static void OnMessage(this IAsyncBasicConsumer consumer, AsyncEventHandler<BasicDeliverEventArgs> onMessage, Predicate<BasicDeliverEventArgs> abort = null)
 	{
-		AsyncEventingBasicConsumer eventConsumer = consumer as AsyncEventingBasicConsumer;
-		if (eventConsumer == null)
+		if (consumer is not AsyncEventingBasicConsumer eventConsumer)
 		{
 			throw new NotSupportedException("Only supported for EventBasicConsumer");
 		}
@@ -167,7 +165,7 @@ public static class ConsumerExtensions
 		}
 
 		AsyncEventHandler<BasicDeliverEventArgs> abortHandler = null;
-		abortHandler = (sender, args) =>
+		abortHandler = (_, args) =>
 		{
 			if (abort(args))
 			{

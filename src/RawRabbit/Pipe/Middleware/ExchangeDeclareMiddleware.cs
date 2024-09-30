@@ -25,7 +25,7 @@ public class ExchangeDeclareMiddleware : Middleware
 	{
 		this._topologyProvider = topologyProvider;
 		this._exchangeFunc = options?.ExchangeFunc ?? (context => context.GetExchangeDeclaration());
-		this._throwOnFailFunc = options?.ThrowOnFailFunc ?? (context => false);
+		this._throwOnFailFunc = options?.ThrowOnFailFunc ?? (_ => false);
 	}
 
 	public override async Task InvokeAsync(IPipeContext context, CancellationToken token = default)

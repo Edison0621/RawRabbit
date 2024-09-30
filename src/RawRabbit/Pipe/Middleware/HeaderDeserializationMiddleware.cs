@@ -29,7 +29,7 @@ public class HeaderDeserializationMiddleware : StagedMiddleware
 		this._deliveryArgsFunc = options?.DeliveryArgsFunc ?? (context => context.GetDeliveryEventArgs());
 		this._headerKeyFunc = options?.HeaderKeyFunc;
 		this._contextSaveAction = options?.ContextSaveAction ?? ((context, item) => context.Properties.TryAdd(this._headerKeyFunc(context), item));
-		this._headerTypeFunc = options?.HeaderTypeFunc ?? (context =>typeof(object)) ;
+		this._headerTypeFunc = options?.HeaderTypeFunc ?? (_ =>typeof(object)) ;
 		this._serializer = serializer;
 	}
 
@@ -79,8 +79,7 @@ public class HeaderDeserializationMiddleware : StagedMiddleware
 			return null;
 		}
 
-		object headerBytes;
-		return args.BasicProperties.Headers.TryGetValue(headerKey, out headerBytes)
+		return args.BasicProperties.Headers.TryGetValue(headerKey, out object headerBytes)
 			? headerBytes as byte[]
 			: null;
 	}

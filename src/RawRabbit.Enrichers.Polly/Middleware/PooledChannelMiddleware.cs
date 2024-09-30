@@ -18,7 +18,7 @@ public class PooledChannelMiddleware : Pipe.Middleware.PooledChannelMiddleware
 	{
 		AsyncNoOpPolicy policy = context.GetPolicy(PolicyKeys.ChannelCreate);
 		return policy.ExecuteAsync(
-			action: ct => base.GetChannelAsync(context, token),
+			action: _ => base.GetChannelAsync(context, token),
 			contextData: new Dictionary<string, object>
 			{
 				[RetryKey.PipeContext] = context,

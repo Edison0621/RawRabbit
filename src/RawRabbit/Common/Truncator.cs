@@ -1,12 +1,12 @@
 ﻿namespace RawRabbit.Common;
 
-public class Truncator
+public class Truncation
 {
 	public static void Truncate(ref string name)
 	{
 		if (name.Length > 254)
 		{
-			name = string.Concat("...", name.Substring(name.Length - 250));
+			name = string.Concat("...", name[^250..]);
 		}
 	}
 }

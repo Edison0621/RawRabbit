@@ -67,7 +67,7 @@ public class MessageSequence : StateMachineBase<SequenceState, Type, SequenceMod
 			this._logger.Info("Setting Global Message Id to {globalMessageId}", globalMessageId);
 			this._model.Id = globalMessageId;
 		}
-		return this.PublishAsync(message, context => { });
+		return this.PublishAsync(message, _ => { });
 	}
 
 	public IMessageSequenceBuilder PublishAsync<TMessage>(TMessage message, Action<IPipeContext> context, CancellationToken ct = new())
@@ -161,8 +161,8 @@ public class MessageSequence : StateMachineBase<SequenceState, Type, SequenceMod
 
 		this._triggerConfigurer
 			.FromMessage<MessageSequence,TMessage, TMessageContext>(
-				(msg, ctx) => this._model.Id,
-				(sequence, message, ctx) => this._stateMachine.FireAsync(trigger, new MessageAndContext<TMessage, TMessageContext> {Context = ctx, Message = message}),
+				(_, _) => this._model.Id,
+				(_, message, ctx) => this._stateMachine.FireAsync(trigger, new MessageAndContext<TMessage, TMessageContext> {Context = ctx, Message = message}),
 				cfg => cfg
 					.FromDeclaredQueue(q => q
 						.WithNameSuffix(this._model.Id.ToString())
@@ -222,8 +222,8 @@ public class MessageSequence : StateMachineBase<SequenceState, Type, SequenceMod
 
 		this._triggerConfigurer
 			.FromMessage<MessageSequence, TMessage>(
-				message => this._model.Id,
-				(s, message) => this._stateMachine.Fire(trigger, message),
+				_ => this._model.Id,
+				(_, message) => this._stateMachine.Fire(trigger, message),
 				cfg => cfg
 					.FromDeclaredQueue(q => q
 						.WithNameSuffix(this._model.Id.ToString())
@@ -248,7 +248,7 @@ public class MessageSequence : StateMachineBase<SequenceState, Type, SequenceMod
 		}
 
 		Timer requestTimer = null;
-		requestTimer = new Timer(state =>
+		requestTimer = new Timer(_ =>
 		{
 			// ReSharper disable once AccessToModifiedClosure
 			requestTimer?.Dispose();

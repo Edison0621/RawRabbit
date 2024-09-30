@@ -9,7 +9,7 @@ namespace RawRabbit.Pipe.Middleware;
 
 public class BasicPropertiesOptions
 {
-	public Action<IPipeContext, IBasicProperties> PropertyModier { get; set; }
+	public Action<IPipeContext, IBasicProperties> PropertyModifier { get; set; }
 	public Func<IPipeContext, IBasicProperties> GetOrCreatePropsFunc { get; set; }
 	public Action<IPipeContext, IBasicProperties> PostCreateAction { get; set; }
 }
@@ -24,7 +24,7 @@ public class BasicPropertiesMiddleware : Middleware
 	public BasicPropertiesMiddleware(ISerializer serializer, BasicPropertiesOptions options = null)
 	{
 		this._serializer = serializer;
-		this._propertyModifier = options?.PropertyModier ?? ((ctx, props) => ctx.Get<Action<IBasicProperties>>(PipeKey.BasicPropertyModifier)?.Invoke(props));
+		this._propertyModifier = options?.PropertyModifier ?? ((ctx, props) => ctx.Get<Action<IBasicProperties>>(PipeKey.BasicPropertyModifier)?.Invoke(props));
 		this._postCreateAction = options?.PostCreateAction;
 		this._getOrCreatePropsFunc = options?.GetOrCreatePropsFunc ?? (ctx => ctx.GetBasicProperties() ?? new BasicProperties
 		{

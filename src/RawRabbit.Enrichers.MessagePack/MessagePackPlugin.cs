@@ -11,8 +11,8 @@ public static class MessagePackPlugin
 	public static IClientBuilder UseMessagePack(this IClientBuilder builder)
 	{
 		builder.Register(
-			pipe: p => { },
-			ioc: di => di.AddSingleton<ISerializer, MessagePackSerializerWorker>(resolver => new MessagePackSerializerWorker()));
+			pipe: _ => { },
+			ioc: di => di.AddSingleton<ISerializer, MessagePackSerializerWorker>(_ => new MessagePackSerializerWorker()));
 		return builder;
 	}
 }

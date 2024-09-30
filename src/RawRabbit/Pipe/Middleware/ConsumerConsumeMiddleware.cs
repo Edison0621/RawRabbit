@@ -28,7 +28,7 @@ public class ConsumerConsumeMiddleware : Middleware
 		this._factory = factory;
 		this._consumeConfigFunc = options?.ConsumeConfigFunc ?? (context => context.GetConsumeConfiguration());
 		this._consumerFunc = options?.ConsumerFunc ?? (context => context.GetConsumer());
-		this._configValidatePredicate = options?.ConfigValidatePredicate ?? (context => true);
+		this._configValidatePredicate = options?.ConfigValidatePredicate ?? (_ => true);
 	}
 
 	public override async Task InvokeAsync(IPipeContext context, CancellationToken token = new())

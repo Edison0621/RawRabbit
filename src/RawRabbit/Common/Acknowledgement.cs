@@ -2,8 +2,7 @@
 
 public abstract class Acknowledgement { }
 
-public class Ack : Acknowledgement
-{ }
+public class Ack : Acknowledgement;
 
 public class Nack : Acknowledgement
 {

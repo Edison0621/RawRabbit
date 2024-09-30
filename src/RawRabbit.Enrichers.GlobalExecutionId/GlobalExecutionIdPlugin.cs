@@ -21,8 +21,8 @@ public static class GlobalExecutionIdPlugin
 			// Message Received
 			.Use<HeaderDeserializationMiddleware>(new HeaderDeserializationOptions
 			{
-				HeaderKeyFunc = c => PropertyHeaders.GlobalExecutionId,
-				HeaderTypeFunc = c => typeof(string),
+				HeaderKeyFunc = _ => PropertyHeaders.GlobalExecutionId,
+				HeaderTypeFunc = _ => typeof(string),
 				ContextSaveAction = (ctx, id) => ctx.Properties.TryAdd(PipeKey.GlobalExecutionId, id)
 			})
 			.Use<PersistGlobalExecutionIdMiddleware>()

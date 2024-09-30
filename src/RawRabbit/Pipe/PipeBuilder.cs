@@ -31,7 +31,7 @@ public class PipeBuilder : IExtendedPipeBuilder
 	public PipeBuilder(IDependencyResolver resolver)
 	{
 		this._resolver = resolver;
-		this._additional = this._resolver.GetService<Action<IPipeBuilder>>() ?? (builder => {});
+		this._additional = this._resolver.GetService<Action<IPipeBuilder>>() ?? (_ => {});
 		this._pipe = new List<MiddlewareInfo>();
 	}
 
@@ -53,12 +53,12 @@ public class PipeBuilder : IExtendedPipeBuilder
 
 	public IPipeBuilder Replace<TCurrent, TNew>(Predicate<object[]> predicate = null, params object[] args) where TCurrent : Middleware.Middleware where TNew : Middleware.Middleware
 	{
-		return this.Replace<TCurrent, TNew>(predicate, oldArgs => args);
+		return this.Replace<TCurrent, TNew>(predicate, _ => args);
 	}
 
 	public IPipeBuilder Replace<TCurrent, TNew>(Predicate<object[]> predicate = null, Func<object[], object[]> argsFunc = null) where TCurrent : Middleware.Middleware where TNew : Middleware.Middleware
 	{
-		predicate = predicate ?? (objects => true);
+		predicate = predicate ?? (_ => true);
 		IEnumerable<MiddlewareInfo> matching = this._pipe.Where(c => c.Type == typeof(TCurrent) && predicate(c.ConstructorArgs));
 		foreach (MiddlewareInfo middlewareInfo in matching)
 		{
@@ -71,7 +71,7 @@ public class PipeBuilder : IExtendedPipeBuilder
 
 	public IPipeBuilder Remove<TMiddleware>(Predicate<object[]> predicate = null) where TMiddleware : Middleware.Middleware
 	{
-		predicate = predicate ?? (objects => true);
+		predicate = predicate ?? (_ => true);
 		List<MiddlewareInfo> matching = this._pipe.Where(c => c.Type == typeof(TMiddleware) && predicate(c.ConstructorArgs)).ToList();
 		foreach (MiddlewareInfo match in matching)
 		{
@@ -103,8 +103,7 @@ public class PipeBuilder : IExtendedPipeBuilder
 			Middleware.Middleware middleware = this.CreateInstance(mwInfo);
 			sortedMws.Add(middleware);
 
-			StageMarkerMiddleware stageMarkerMw = middleware as StageMarkerMiddleware;
-			if (stageMarkerMw != null)
+			if (middleware is StageMarkerMiddleware stageMarkerMw)
 			{
 				List<Middleware.Middleware> thisStageMws = stagedMiddleware
 					.Where(mw => mw.StageMarker == stageMarkerMw._stage)
